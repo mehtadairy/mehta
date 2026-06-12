@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FFFDF9; /* Warm luxury cream */
+  --foreground: #2B1E17; /* Sweet shop dark brown/charcoal */
+  --card: #ffffff;
+  --card-foreground: #2B1E17;
+  --popover: #ffffff;
+  --popover-foreground: #2B1E17;
+  --primary: #E05E1B; /* Rich brand orange */
+  --primary-foreground: #ffffff;
+  --secondary: #D4AF37; /* Luxury gold */
+  --secondary-foreground: #2B1E17;
+  --muted: #F3EFE7;
+  --muted-foreground: #6B5E56;
+  --accent: #FAF5EC;
+  --accent-foreground: #E05E1B;
+  --destructive: #EF4444;
+  --destructive-foreground: #ffffff;
+  --border: #E8DFD3;
+  --input: #E8DFD3;
+  --ring: #E05E1B;
+  --radius: 0.75rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  
+  --color-brand-orange: #E05E1B;
+  --color-brand-orange-hover: #C24F14;
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-dark: #B89324;
+  --color-brand-cream: #FAF5EC;
+  --color-brand-charcoal: #2B1E17;
+  --color-brand-beige: #F3EFE7;
+  
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-outfit), sans-serif;
+  
+  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
+  --animate-slide-in-right: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FFFDF9;
+}
+::-webkit-scrollbar-thumb {
+  background: #E8DFD3;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C5A880;
+}
+
+/* Hide Spin Buttons */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
 }
