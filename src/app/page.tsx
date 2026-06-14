@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { fetchProducts } from "@/lib/supabaseClient";
+import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
 import { Product } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,10 +31,19 @@ import {
   MessageSquare
 } from "lucide-react";
 
+const getCategoryFallbackImage = (slug: string) => {
+  if (slug === "milk-sweets") return "/mix_sweet_rolls_1781172915749.png";
+  if (slug === "ghee-sweets") return "/prod_ghari_1781172844424.png";
+  if (slug === "farsan") return "/dry_fruit_kachori_1781172416985.png";
+  return "/assorted_sweets_1781172431124.png";
+};
+
 export default function Home() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   
   // Weights selectors per product
   const [selectedWeights, setSelectedWeights] = useState<{ [productId: string]: string }>({});
@@ -45,6 +55,9 @@ export default function Home() {
     async function loadProducts() {
       const allProducts = await fetchProducts();
       setProducts(allProducts);
+      
+      const cats = await fetchCategories();
+      setCategories(cats);
       
       // Best Sellers (Popular products)
       const popular = allProducts.filter(p => p.popular);
@@ -99,14 +112,6 @@ export default function Home() {
     }
   ];
 
-  // Category list (Sweets, Namkeen, Dry Kachori, Sharbat, Gulkand)
-  const categories = [
-    { id: "traditional", name: "Traditional Sweets", image: "/assorted_sweets_1781172431124.png", link: "/shop?category=traditional" },
-    { id: "namkeen", name: "Premium Namkeen", image: "/namkeen_ganthia_1781172443622.png", link: "/shop?category=namkeen" },
-    { id: "dryfruit", name: "Dry Kachori Special", image: "/dry_fruit_kachori_1781172416985.png", link: "/shop?category=dryfruit" },
-    { id: "sharbat", name: "Gourmet Sharbat", image: "/milkshake_mix_1781172899700.png", link: "/shop?category=farsan" },
-    { id: "gulkand", name: "Heritage Gulkand", image: "/mix_sweet_rolls_1781172915749.png", link: "/shop?category=gifts" }
-  ];
 
   // Cart action
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
@@ -151,16 +156,39 @@ export default function Home() {
     }, 1000);
   };
 
-  // WhatsApp Order action
-  const handleWhatsAppOrder = (product: Product, e: React.MouseEvent) => {
+  // Buy Now action
+  const handleBuyNow = (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     const weight = selectedWeights[product.id] || Object.keys(product.prices)[0];
     const price = product.prices[weight];
-    const message = `Hello Mehta Dairy, I want to order "${product.name}" (${weight}) for ₹${price}. Please confirm availability.`;
-    const waUrl = `https://wa.me/919898981952?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
+    
+    if (typeof window === "undefined") return;
+
+    const storedCart = localStorage.getItem("mehta_cart");
+    const cart = storedCart ? JSON.parse(storedCart) : [];
+
+    const existingIndex = cart.findIndex(
+      (item: any) => item.productId === product.id && item.weight === weight
+    );
+
+    if (existingIndex > -1) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push({
+        productId: product.id,
+        productName: product.name,
+        image: product.images[0],
+        weight: weight,
+        price: price,
+        quantity: 1,
+      });
+    }
+
+    localStorage.setItem("mehta_cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cartUpdated"));
+    router.push("/checkout");
   };
 
   return (
@@ -300,15 +328,15 @@ export default function Home() {
             <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-center max-w-4xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
-                href={cat.link}
+                href={`/shop?category=${cat.slug}`}
                 className="group relative overflow-hidden rounded-2xl aspect-[4/5] bg-[#4A2F1F] shadow-md transition-all duration-500 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-end p-5"
               >
                 <img
-                  src={cat.image}
+                  src={cat.image_url || getCategoryFallbackImage(cat.slug)}
                   alt={cat.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -427,10 +455,10 @@ export default function Home() {
                         </button>
                         
                         <button
-                          onClick={(e) => handleWhatsAppOrder(product, e)}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#25D366] text-[#128C7E] hover:bg-[#25D366]/10 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                          onClick={(e) => handleBuyNow(product, e)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#D97706] text-white hover:bg-[#D97706]/90 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                         >
-                          <MessageSquare className="h-3.5 w-3.5 text-[#25D366]" /> WhatsApp
+                          Buy Now
                         </button>
                       </div>
 
@@ -521,10 +549,10 @@ export default function Home() {
                         </button>
                         
                         <button
-                          onClick={(e) => handleWhatsAppOrder(product, e)}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#25D366] text-[#128C7E] hover:bg-[#25D366]/10 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                          onClick={(e) => handleBuyNow(product, e)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#D97706] text-white hover:bg-[#D97706]/90 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                         >
-                          <MessageSquare className="h-3.5 w-3.5 text-[#25D366]" /> WhatsApp
+                          Buy Now
                         </button>
                       </div>
 

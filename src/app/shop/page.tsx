@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { Product, CATEGORIES } from "@/lib/types";
-import { fetchProducts } from "@/lib/supabaseClient";
+import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
 import { Search, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -105,6 +105,7 @@ function ShopContent() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>(CATEGORIES.map(c => ({ ...c, slug: c.id })));
   
   // Filters state
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -117,13 +118,18 @@ function ShopContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  // Load products
+  // Load products & categories
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
       const allProducts = await fetchProducts();
       setProducts(allProducts);
+      
+      const cats = await fetchCategories();
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+      }
     };
-    loadProducts();
+    loadData();
   }, []);
 
   // Sync parameters from url if changed
@@ -399,21 +405,21 @@ function ShopContent() {
                   </motion.button>
                   
                   {/* Dynamic category tiles */}
-                  {CATEGORIES.map(cat => {
-                    const isActive = selectedCategory === cat.id;
+                  {categories.map(cat => {
+                    const isActive = selectedCategory === cat.slug;
                     return (
                       <motion.button
-                        key={cat.id}
+                        key={cat.slug}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedCategory(cat.id)}
+                        onClick={() => setSelectedCategory(cat.slug)}
                         className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all aspect-square text-center relative overflow-hidden ${
                           isActive
                             ? "border-brand-orange bg-brand-orange/5 text-brand-orange font-bold shadow-3xs"
                             : "border-[#e8dcc4] hover:border-brand-orange bg-white text-brand-charcoal"
                         }`}
                       >
-                        {getCategoryIcon(cat.id)}
+                        {getCategoryIcon(cat.slug)}
                         <span className="text-[0.62rem] leading-none uppercase tracking-wider mt-1">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
                       </motion.button>
                     );
@@ -492,19 +498,19 @@ function ShopContent() {
                       <span className="text-[0.58rem] leading-none uppercase tracking-wider">All Items</span>
                     </button>
 
-                    {CATEGORIES.map(cat => {
-                      const isActive = selectedCategory === cat.id;
+                     {categories.map(cat => {
+                      const isActive = selectedCategory === cat.slug;
                       return (
                         <button
-                          key={cat.id}
-                          onClick={() => { setSelectedCategory(cat.id); setShowFiltersMobile(false); }}
+                          key={cat.slug}
+                          onClick={() => { setSelectedCategory(cat.slug); setShowFiltersMobile(false); }}
                           className={`flex flex-col items-center justify-center p-2.5 border rounded-lg transition-all aspect-square text-center ${
                             isActive
                               ? "border-brand-orange bg-brand-orange/5 text-brand-orange font-bold"
                               : "border-[#e8dcc4] bg-white text-brand-charcoal"
                           }`}
                         >
-                          {getCategoryIcon(cat.id)}
+                          {getCategoryIcon(cat.slug)}
                           <span className="text-[0.58rem] leading-none uppercase tracking-wider mt-0.5">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
                         </button>
                       );

@@ -142,3 +142,80 @@ CREATE TABLE IF NOT EXISTS public.refunds (id UUID PRIMARY KEY DEFAULT uuid_gene
 CREATE TABLE IF NOT EXISTS public.backup_logs (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), backup_type VARCHAR(100) NOT NULL, status VARCHAR(50) DEFAULT 'success', file_url TEXT, created_by VARCHAR(255), created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
 -- Push Subscriptions
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL, device_id VARCHAR(255), subscription_data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
+
+-- ==========================================================
+-- SUPABASE STORAGE BUCKET & RLS POLICIES FOR PRODUCT IMAGES
+-- ==========================================================
+
+-- 1. Insert 'products' bucket into storage.buckets if not exists
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'products', 
+  'products', 
+  true, 
+  5242880, -- 5MB limit
+  ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Drop existing policies on storage.objects for 'products' if any, to avoid conflicts
+DROP POLICY IF EXISTS "Public Read Access on Products Bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Public Insert Access on Products Bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update Access on Products Bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Public Delete Access on Products Bucket" ON storage.objects;
+
+-- 3. Create RLS Policies to allow public read/write access to 'products' bucket
+CREATE POLICY "Public Read Access on Products Bucket"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'products');
+
+CREATE POLICY "Public Insert Access on Products Bucket"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'products');
+
+CREATE POLICY "Public Update Access on Products Bucket"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'products');
+
+CREATE POLICY "Public Delete Access on Products Bucket"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'products');
+
+-- Add ingredients column to products table
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS ingredients jsonb DEFAULT '[]'::jsonb;
+
+-- New Professional Food Information Fields
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shelf_life INTEGER DEFAULT 12;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS storage_instructions TEXT DEFAULT 'Store in a cool and dry place.';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS allergens JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS dietary_tags JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS highlights JSONB DEFAULT '[]'::jsonb;
+
+-- Ingredients Management Table
+CREATE TABLE IF NOT EXISTS public.ingredients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT UNIQUE NOT NULL,
+  icon TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Join table for Products and Ingredients
+CREATE TABLE IF NOT EXISTS public.product_ingredients (
+  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+  ingredient_id UUID REFERENCES public.ingredients(id) ON DELETE CASCADE,
+  PRIMARY KEY (product_id, ingredient_id)
+);
+
+-- Enable RLS
+ALTER TABLE public.ingredients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.product_ingredients ENABLE ROW LEVEL SECURITY;
+
+-- Create public access policies for ingredients and product_ingredients
+CREATE POLICY "Enable read access for all users on ingredients" ON public.ingredients FOR SELECT USING (true);
+CREATE POLICY "Enable all access for all users on ingredients" ON public.ingredients FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Enable read access for all users on product_ingredients" ON public.product_ingredients FOR SELECT USING (true);
+CREATE POLICY "Enable all access for all users on product_ingredients" ON public.product_ingredients FOR ALL USING (true) WITH CHECK (true);
+
+
+

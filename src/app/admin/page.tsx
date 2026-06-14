@@ -14,15 +14,16 @@ import {
   Order, 
   Coupon 
 } from "@/lib/types";
-import { fetchProducts, supabase } from "@/lib/supabaseClient";
+import { fetchProducts, fetchIngredients, addIngredient, updateProductIngredients, supabase } from "@/lib/supabaseClient";
 import imageCompression from "browser-image-compression";
+import { motion, AnimatePresence } from "framer-motion";
 import AdminCategories from "@/components/AdminCategories";
 import AdminBanners from "@/components/AdminBanners";
-import AdminCMS from "@/components/AdminCMS";
 import AdminNotifications from "@/components/AdminNotifications";
 import AdminPayments from "@/components/AdminPayments";
 import AdminAnalytics from "@/components/AdminAnalytics";
 import AdminBackups from "@/components/AdminBackups";
+import AdminIngredients from "@/components/AdminIngredients";
 import { 
   LayoutDashboard, 
   Dessert, 
@@ -41,7 +42,8 @@ import {
   Phone,
   FileText,
   Bell,
-  Database
+  Database,
+  Search
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -49,7 +51,7 @@ export default function AdminPanel() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "cms" | "notifications" | "payments" | "backups">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients">("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -58,6 +60,9 @@ export default function AdminPanel() {
   // Product CRUD states
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [prodIngredients, setProdIngredients] = useState<string[]>([]); // stores selected ingredient UUIDs
+  const [prodSubTab, setProdSubTab] = useState<"all" | "milk-sweets" | "ghee-sweets" | "farsan">("all");
+  const [prodSearchQuery, setProdSearchQuery] = useState("");
   
   // Product Form states
   const [prodName, setProdName] = useState("");
@@ -72,6 +77,16 @@ export default function AdminPanel() {
   const [prodImage, setProdImage] = useState("https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
+
+  // Ingredients and Food states
+  const [allIngredients, setAllIngredients] = useState<any[]>([]);
+  const [ingSearchQuery, setIngSearchQuery] = useState("");
+  const [prodShelfLife, setProdShelfLife] = useState("12");
+  const [prodStorageInstructions, setProdStorageInstructions] = useState("Store in a cool and dry place.");
+  const [prodAllergens, setProdAllergens] = useState<string[]>([]);
+  const [prodDietaryTags, setProdDietaryTags] = useState<string[]>([]);
+  const [prodHighlights, setProdHighlights] = useState<string[]>([]);
+  const [newHighlight, setNewHighlight] = useState("");
   
   // Load Admin Data
   useEffect(() => {
@@ -121,6 +136,8 @@ export default function AdminPanel() {
       const { data: bans } = await supabase.from('banners').select('*').order('sort_order', { ascending: true });
       if (bans) setBanners(bans);
 
+      const dbIngredients = await fetchIngredients();
+      setAllIngredients(dbIngredients);
     };
     if (isAdminAuth) loadData();
   }, [activeTab, isAdminAuth]);
@@ -179,10 +196,20 @@ export default function AdminPanel() {
         stock: Number(prodStock),
         popular: prodPopular,
         festival_special: prodFestive,
-        images: [prodImage]
+        images: [prodImage],
+        shelf_life: Number(prodShelfLife) || 12,
+        storage_instructions: prodStorageInstructions,
+        allergens: prodAllergens,
+        dietary_tags: prodDietaryTags,
+        highlights: prodHighlights
       }).eq('id', editingProduct.id);
       
       if (!error) {
+        await updateProductIngredients(editingProduct.id, prodIngredients);
+        const updatedIngredientNames = allIngredients
+          .filter(ing => prodIngredients.includes(ing.id))
+          .map(ing => ing.name);
+
         setProducts(products.map(p => p.id === editingProduct.id ? {
           ...p,
           name: prodName,
@@ -192,7 +219,14 @@ export default function AdminPanel() {
           stock: Number(prodStock),
           popular: prodPopular,
           festivalSpecial: prodFestive,
-          images: [prodImage]
+          images: [prodImage],
+          ingredients: updatedIngredientNames,
+          ingredientIds: prodIngredients,
+          shelfLife: Number(prodShelfLife) || 12,
+          storageInstructions: prodStorageInstructions,
+          allergens: prodAllergens,
+          dietaryTags: prodDietaryTags,
+          highlights: prodHighlights
         } : p));
         setEditingProduct(null);
       } else {
@@ -210,11 +244,21 @@ export default function AdminPanel() {
         festival_special: prodFestive,
         images: [prodImage],
         rating: 5.0,
-        reviews_count: 0
+        reviews_count: 0,
+        shelf_life: Number(prodShelfLife) || 12,
+        storage_instructions: prodStorageInstructions,
+        allergens: prodAllergens,
+        dietary_tags: prodDietaryTags,
+        highlights: prodHighlights
       }]).select();
 
       if (!error && data) {
         const newP = data[0];
+        await updateProductIngredients(newP.id, prodIngredients);
+        const updatedIngredientNames = allIngredients
+          .filter(ing => prodIngredients.includes(ing.id))
+          .map(ing => ing.name);
+
         const newProd: Product = {
           id: newP.id,
           name: newP.name,
@@ -226,7 +270,14 @@ export default function AdminPanel() {
           rating: newP.rating || 5.0,
           reviewsCount: newP.reviews_count || 0,
           stock: newP.stock,
-          images: newP.images
+          images: newP.images,
+          ingredients: updatedIngredientNames,
+          ingredientIds: prodIngredients,
+          shelfLife: newP.shelf_life,
+          storageInstructions: newP.storage_instructions,
+          allergens: newP.allergens || [],
+          dietaryTags: newP.dietary_tags || [],
+          highlights: newP.highlights || []
         };
         setProducts([newProd, ...products]);
       } else {
@@ -243,6 +294,13 @@ export default function AdminPanel() {
     setProdStock("100");
     setProdPopular(false);
     setProdFestive(false);
+    setProdIngredients([]);
+    setProdShelfLife("12");
+    setProdStorageInstructions("Store in a cool and dry place.");
+    setProdAllergens([]);
+    setProdDietaryTags([]);
+    setProdHighlights([]);
+    setNewHighlight("");
     setShowProductForm(false);
   };
 
@@ -258,6 +316,12 @@ export default function AdminPanel() {
     setProdPopular(product.popular);
     setProdFestive(product.festivalSpecial);
     setProdImage(product.images[0]);
+    setProdIngredients(product.ingredientIds || []);
+    setProdShelfLife(product.shelfLife?.toString() || "12");
+    setProdStorageInstructions(product.storageInstructions || "Store in a cool and dry place.");
+    setProdAllergens(product.allergens || []);
+    setProdDietaryTags(product.dietaryTags || []);
+    setProdHighlights(product.highlights || []);
     setShowProductForm(true);
   };
 
@@ -463,16 +527,16 @@ export default function AdminPanel() {
                 <Dessert className="h-4 w-4" /> Category Management
               </button>
               <button 
+                onClick={() => setActiveTab("ingredients")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "ingredients" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <Tag className="h-4 w-4" /> Ingredients Management
+              </button>
+              <button 
                 onClick={() => setActiveTab("banners")}
                 className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "banners" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
               >
                 <UploadCloud className="h-4 w-4" /> Homepage Banners
-              </button>
-              <button 
-                onClick={() => setActiveTab("cms")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "cms" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <FileText className="h-4 w-4" /> CMS Pages
               </button>
               <button 
                 onClick={() => setActiveTab("notifications")}
@@ -528,9 +592,27 @@ export default function AdminPanel() {
                     )}
                   </div>
 
-                  {/* Product Form Modal/Panel */}
-                  {showProductForm && (
-                    <form onSubmit={handleAddProduct} className="bg-brand-cream/35 border border-brand-beige rounded-2xl p-6 flex flex-col gap-4 animate-fade-in-up">
+                  {/* Product Form Modal Popup */}
+                  <AnimatePresence>
+                    {showProductForm && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowProductForm(false)}
+                          className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+                        ></motion.div>
+                        
+                        {/* Modal Container */}
+                        <motion.div 
+                          initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                          animate={{ scale: 1, y: 0, opacity: 1 }}
+                          exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                          className="relative z-10 w-full max-w-2xl bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+                        >
+                          <form onSubmit={handleAddProduct} className="flex flex-col gap-4 w-full">
                       <div className="flex items-center justify-between border-b border-brand-beige pb-3 mb-2">
                         <h4 className="font-serif text-sm font-bold text-brand-charcoal">
                           {editingProduct ? `Edit Details: ${editingProduct.name}` : "Create Sweet / Savior Item"}
@@ -557,15 +639,49 @@ export default function AdminPanel() {
                             onChange={(e) => setProdCat(e.target.value)}
                             className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white cursor-pointer font-semibold"
                           >
-                            <option value="milk-sweets">Sweets of Pure Milk</option>
-                            <option value="ghee-sweets">Sweets of Pure Ghee</option>
-                            <option value="farsan">Tasty & Chat-Patta Farsan</option>
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Description Details *</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Description Details *</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!prodName) {
+                                alert("Please enter the product name first.");
+                                return;
+                              }
+                              const selectedIngNames = allIngredients
+                                .filter(ing => prodIngredients.includes(ing.id))
+                                .map(ing => ing.name);
+                              
+                              let ingStr = "";
+                              if (selectedIngNames.length > 0) {
+                                const namesCopy = [...selectedIngNames];
+                                if (namesCopy.length === 1) {
+                                  ingStr = ` prepared using premium ${namesCopy[0].toLowerCase()}`;
+                                } else {
+                                  const last = namesCopy.pop();
+                                  ingStr = ` prepared using premium ${namesCopy.map(n => n.toLowerCase()).join(", ")} and ${last?.toLowerCase()}`;
+                                }
+                              }
+
+                              const catObj = categories.find(c => c.slug === prodCat);
+                              const cleanCat = catObj ? catObj.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "").toLowerCase() : "item";
+                              
+                              const desc = `${prodName} is a traditional ${cleanCat}${ingStr}. Crafted with legacy methods, it delivers a rich flavor and premium texture. Best consumed within ${prodShelfLife} days and ${prodStorageInstructions.toLowerCase().replace(/\.$/, "")}.`;
+                              setProdDesc(desc);
+                            }}
+                            className="bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange px-2 py-0.5 text-[0.6rem] font-bold rounded transition-colors"
+                          >
+                            Generate Description
+                          </button>
+                        </div>
                         <textarea 
                           value={prodDesc}
                           onChange={(e) => setProdDesc(e.target.value)}
@@ -642,7 +758,192 @@ export default function AdminPanel() {
                         </label>
                       </div>
 
-                      <div className="flex flex-col gap-1.5 mt-2">
+                      {/* Upgraded Ingredients Selector */}
+                      <div className="flex flex-col gap-1.5 mt-2 border-t border-brand-beige pt-4">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Ingredients Selection</label>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Search or add ingredient..." 
+                            value={ingSearchQuery}
+                            onChange={(e) => setIngSearchQuery(e.target.value)}
+                            className="border border-brand-beige rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none flex-grow"
+                          />
+                          {ingSearchQuery.trim() && !allIngredients.some(i => i.name.toLowerCase() === ingSearchQuery.trim().toLowerCase()) && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const newIngName = ingSearchQuery.trim();
+                                const added = await addIngredient(newIngName);
+                                if (added) {
+                                  setAllIngredients([...allIngredients, added].sort((a,b) => a.name.localeCompare(b.name)));
+                                  setProdIngredients([...prodIngredients, added.id]);
+                                  setIngSearchQuery("");
+                                }
+                              }}
+                              className="bg-brand-orange text-white px-3 py-1.5 text-xs font-bold rounded-lg hover:bg-brand-orange-hover"
+                            >
+                              + Create & Add "{ingSearchQuery.trim()}"
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-[140px] overflow-y-auto border border-brand-beige rounded-lg p-3 bg-brand-cream/10 mt-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {allIngredients
+                              .filter(ing => ing.name.toLowerCase().includes(ingSearchQuery.toLowerCase()))
+                              .map(ing => {
+                                const isChecked = prodIngredients.includes(ing.id);
+                                return (
+                                  <label key={ing.id} className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal cursor-pointer">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setProdIngredients(prodIngredients.filter(x => x !== ing.id));
+                                        } else {
+                                          setProdIngredients([...prodIngredients, ing.id]);
+                                        }
+                                      }}
+                                      className="accent-brand-orange h-4 w-4"
+                                    />
+                                    <span>{ing.icon} {ing.name}</span>
+                                  </label>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Shelf Life & Storage Instructions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-brand-beige pt-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Shelf Life (Days)</label>
+                          <input 
+                            type="number" 
+                            value={prodShelfLife}
+                            onChange={(e) => setProdShelfLife(e.target.value)}
+                            placeholder="e.g. 12"
+                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Storage Instructions</label>
+                          <input 
+                            type="text" 
+                            value={prodStorageInstructions}
+                            onChange={(e) => setProdStorageInstructions(e.target.value)}
+                            placeholder="e.g. Keep refrigerated after opening."
+                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Allergen Information */}
+                      <div className="flex flex-col gap-1.5 border-t border-brand-beige pt-4">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Allergen Information</label>
+                        <div className="flex flex-wrap gap-4 bg-white p-3 border border-brand-beige rounded-lg">
+                          {["Contains Milk", "Contains Cashew", "Contains Almond", "Contains Pistachio", "Contains Gluten"].map(allergen => {
+                            const isChecked = prodAllergens.includes(allergen);
+                            return (
+                              <label key={allergen} className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setProdAllergens(prodAllergens.filter(x => x !== allergen));
+                                    } else {
+                                      setProdAllergens([...prodAllergens, allergen]);
+                                    }
+                                  }}
+                                  className="accent-brand-orange h-4 w-4"
+                                />
+                                <span>{allergen}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Dietary Tags */}
+                      <div className="flex flex-col gap-1.5 border-t border-brand-beige pt-4">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Dietary Tags</label>
+                        <div className="flex flex-wrap gap-4 bg-white p-3 border border-brand-beige rounded-lg">
+                          {[
+                            "100% Vegetarian",
+                            "Premium Quality",
+                            "Freshly Prepared",
+                            "No Artificial Colors",
+                            "Traditional Recipe",
+                            "Made From Pure Milk"
+                          ].map(tag => {
+                            const isChecked = prodDietaryTags.includes(tag);
+                            return (
+                              <label key={tag} className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setProdDietaryTags(prodDietaryTags.filter(x => x !== tag));
+                                    } else {
+                                      setProdDietaryTags([...prodDietaryTags, tag]);
+                                    }
+                                  }}
+                                  className="accent-brand-orange h-4 w-4"
+                                />
+                                <span>{tag}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Product Highlights */}
+                      <div className="flex flex-col gap-1.5 border-t border-brand-beige pt-4">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Product Highlights</label>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Add short highlight (e.g. Prepared Fresh Daily)..." 
+                            value={newHighlight}
+                            onChange={(e) => setNewHighlight(e.target.value)}
+                            className="border border-brand-beige rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none flex-grow"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (newHighlight.trim()) {
+                                setProdHighlights([...prodHighlights, newHighlight.trim()]);
+                                setNewHighlight("");
+                              }
+                            }}
+                            className="bg-brand-charcoal text-white px-3 py-1.5 text-xs font-bold rounded-lg hover:bg-black"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        {prodHighlights.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {prodHighlights.map((hl, idx) => (
+                              <span key={idx} className="bg-brand-cream text-brand-charcoal border border-brand-beige rounded-md px-2 py-1 text-[0.65rem] font-semibold flex items-center gap-1">
+                                {hl}
+                                <button
+                                  type="button"
+                                  onClick={() => setProdHighlights(prodHighlights.filter((_, i) => i !== idx))}
+                                  className="text-red-500 hover:text-red-700 font-bold"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1.5 mt-2 border-t border-brand-beige pt-4">
                         <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Product Image (Supabase Storage)</label>
                         
                         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -698,6 +999,60 @@ export default function AdminPanel() {
                         </button>
                       </div>
                     </form>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
+                  {/* Search and Category Sub-tabs */}
+                  {!showProductForm && (
+                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-brand-cream/20 p-4 rounded-xl border border-brand-beige">
+                      {/* Search Bar */}
+                      <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-white px-3 py-1.5 focus-within:border-brand-orange transition-all">
+                        <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                        <input 
+                          type="text" 
+                          placeholder="Search product name..."
+                          value={prodSearchQuery}
+                          onChange={(e) => setProdSearchQuery(e.target.value)}
+                          className="w-full text-xs bg-transparent border-none outline-none text-brand-charcoal"
+                        />
+                        {prodSearchQuery && (
+                          <button onClick={() => setProdSearchQuery("")} className="text-muted-foreground hover:text-brand-charcoal">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Sub-tabs */}
+                      <div className="flex flex-wrap gap-1.5 border border-brand-beige bg-white p-1 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setProdSubTab("all")}
+                          className={`px-3 py-1.5 text-[0.68rem] font-bold rounded-md uppercase tracking-wider transition-colors ${
+                            prodSubTab === "all" 
+                              ? "bg-brand-orange text-white" 
+                              : "text-brand-charcoal hover:bg-brand-cream"
+                          }`}
+                        >
+                          All Items
+                        </button>
+                        {categories.map(cat => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setProdSubTab(cat.slug)}
+                            className={`px-3 py-1.5 text-[0.68rem] font-bold rounded-md uppercase tracking-wider transition-colors ${
+                              prodSubTab === cat.slug 
+                                ? "bg-brand-orange text-white" 
+                                : "text-brand-charcoal hover:bg-brand-cream"
+                            }`}
+                          >
+                            {cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   {/* Products catalog list table */}
@@ -713,7 +1068,12 @@ export default function AdminPanel() {
                         </tr>
                       </thead>
                       <tbody>
-                        {products.map((p) => (
+                        {products.filter(p => {
+                          const matchesSearch = p.name.toLowerCase().includes(prodSearchQuery.toLowerCase()) || 
+                                                p.description.toLowerCase().includes(prodSearchQuery.toLowerCase());
+                          const matchesSubTab = prodSubTab === "all" || p.category === prodSubTab;
+                          return matchesSearch && matchesSubTab;
+                        }).map((p) => (
                           <tr key={p.id} className="border-b border-brand-beige/50">
                             <td className="py-3">
                               <div className="flex gap-2.5 items-center">
@@ -861,9 +1221,11 @@ export default function AdminPanel() {
                 <AdminBanners banners={banners} setBanners={setBanners} />
               )}
 
-              {/* ==================== TAB 8: CMS PAGES ==================== */}
-              {activeTab === "cms" && <AdminCMS />}
-              
+              {/* ==================== TAB 8: INGREDIENTS ==================== */}
+              {activeTab === "ingredients" && (
+                <AdminIngredients />
+              )}
+
               {/* ==================== TAB 9: NOTIFICATIONS ==================== */}
               {activeTab === "notifications" && <AdminNotifications />}
               

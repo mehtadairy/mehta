@@ -19,9 +19,10 @@ import {
   ChevronDown
 } from "lucide-react";
 import { 
-  Coupon
+  Coupon,
+  Product
 } from "@/lib/types";
-import { supabase, fetchCategories } from "@/lib/supabaseClient";
+import { supabase, fetchCategories, fetchProducts } from "@/lib/supabaseClient";
 
 export default function Header() {
   const pathname = usePathname();
@@ -33,6 +34,13 @@ export default function Header() {
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (searchOpen && allProducts.length === 0) {
+      fetchProducts().then(data => setAllProducts(data));
+    }
+  }, [searchOpen, allProducts.length]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -105,17 +113,30 @@ export default function Header() {
 
     syncState();
     
+    const handleOpenCart = () => setCartOpen(true);
+    const handleOpenSearch = () => {
+      setSearchOpen(true);
+      setTimeout(() => {
+        const input = document.getElementById("header-search-input");
+        if (input) input.focus();
+      }, 100);
+    };
+
     // Listen for storage events or dispatch events
     window.addEventListener("storage", syncState);
     window.addEventListener("cartUpdated", syncState);
     window.addEventListener("wishlistUpdated", syncState);
     window.addEventListener("authUpdated", syncState);
+    window.addEventListener("openCartDrawer", handleOpenCart);
+    window.addEventListener("openHeaderSearch", handleOpenSearch);
 
     return () => {
       window.removeEventListener("storage", syncState);
       window.removeEventListener("cartUpdated", syncState);
       window.removeEventListener("wishlistUpdated", syncState);
       window.removeEventListener("authUpdated", syncState);
+      window.removeEventListener("openCartDrawer", handleOpenCart);
+      window.removeEventListener("openHeaderSearch", handleOpenSearch);
     };
   }, []);
 
@@ -273,7 +294,7 @@ export default function Header() {
                     {categories.map((cat) => (
                       <Link 
                         key={cat.id} 
-                        href={`/shop?category=${cat.id}`}
+                        href={`/shop?category=${cat.slug}`}
                         className="block rounded-lg px-3 py-1.8 text-[0.68rem] font-bold text-brand-charcoal hover:bg-brand-cream hover:text-brand-orange uppercase tracking-wider transition-colors"
                       >
                         {cat.name}
@@ -289,21 +310,7 @@ export default function Header() {
                   </div>
                 </div>
 
-                <div className="relative py-1 flex items-center">
-                  <Link 
-                    href="/offers" 
-                    className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/offers" ? "text-brand-orange" : "text-brand-charcoal"}`}
-                  >
-                    Offers
-                  </Link>
-                  {pathname === "/offers" && (
-                    <motion.div 
-                      layoutId="activeNavLine"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </div>
+
 
                 <div className="relative py-1 flex items-center">
                   <Link 
@@ -426,15 +433,21 @@ export default function Header() {
         {/* Mobile Menu Panel */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-brand-beige bg-white/98 py-4 px-6 mt-4 shadow-md rounded-2xl mx-4 overflow-hidden"
-            >
-              <div className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} onClick={() => setIsMobileMenuOpen(false)}></div>
-              <nav className="flex flex-col gap-3.5">
+            <>
+              {/* Dark Modal Backdrop placed outside layout to prevent overlay interception */}
+              <div 
+                className="fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              ></div>
+
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="lg:hidden border-t border-brand-beige bg-white py-4 px-6 mt-4 shadow-md rounded-2xl mx-4 overflow-hidden relative z-50"
+              >
+                <nav className="flex flex-col gap-3.5 relative z-50">
               <Link 
                 href="/" 
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -456,7 +469,7 @@ export default function Header() {
                 {categories.map((cat: any) => (
                   <Link 
                     key={cat.id} 
-                    href={`/shop?category=${cat.id}`}
+                    href={`/shop?category=${cat.slug}`}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="text-[0.68rem] font-semibold text-brand-charcoal hover:text-brand-orange"
                   >
@@ -465,13 +478,7 @@ export default function Header() {
                 ))}
               </div>
 
-              <Link 
-                href="/offers" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/offers" ? "text-brand-orange" : "text-brand-charcoal"}`}
-              >
-                Offers
-              </Link>
+
               <Link 
                 href="/blogs" 
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -522,9 +529,10 @@ export default function Header() {
               )}
             </nav>
           </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.header>
+        </>
+      )}
+    </AnimatePresence>
+  </motion.header>
 
       {/* --- COLLAPSIBLE FULL-WIDTH SEARCH OVERLAY --- */}
       <AnimatePresence>
@@ -542,9 +550,10 @@ export default function Header() {
               transition={{ duration: 0.2 }}
               className="bg-white w-full max-w-2xl rounded-xl shadow-xl border border-brand-beige overflow-hidden"
             >
-              <form onSubmit={handleSearchSubmit} className="flex items-center p-4 gap-3">
+              <form onSubmit={handleSearchSubmit} className="flex items-center p-4 gap-3 border-b border-brand-beige">
                 <Search className="h-5 w-5 text-muted-foreground" />
                 <input 
+                  id="header-search-input"
                   type="text" 
                   placeholder="Search premium sweets, crunchy farsan, cookies..."
                   value={searchQuery}
@@ -560,6 +569,87 @@ export default function Header() {
                   <X className="h-5 w-5" />
                 </button>
               </form>
+
+              {/* Quick Results Panel */}
+              <div className="p-5 flex flex-col gap-4 bg-[#FCF9F2]/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.7rem] font-bold text-brand-gold uppercase tracking-wider">
+                    Quick Results
+                  </span>
+                </div>
+
+                {searchQuery.trim().length === 0 ? (
+                  <div className="py-8 text-center text-xs font-bold text-muted-foreground/60 tracking-wider">
+                    KEEP TYPING TO SEE RESULTS...
+                  </div>
+                ) : (() => {
+                  const filtered = allProducts.filter(prod => 
+                    prod.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    prod.category.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-8 text-center text-xs font-bold text-muted-foreground/60 tracking-wider">
+                        NO PRODUCTS FOUND
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-1">
+                      {filtered.slice(0, 5).map((prod) => {
+                        const firstPrice = Object.values(prod.prices)[0];
+                        const firstWeight = Object.keys(prod.prices)[0];
+                        const labelWeight = firstWeight === "1kg" ? "1 KG" : firstWeight === "500g" ? "500 GM" : "250 GM";
+                        
+                        return (
+                          <Link 
+                            key={prod.id}
+                            href={`/product/${prod.id}`}
+                            onClick={() => setSearchOpen(false)}
+                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-brand-cream border border-transparent hover:border-brand-beige/50 transition-all group"
+                          >
+                            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-brand-cream border border-brand-beige flex-shrink-0 flex items-center justify-center p-1">
+                              <img 
+                                src={prod.images[0]} 
+                                alt={prod.name} 
+                                className="w-full h-full object-contain rounded-full" 
+                              />
+                            </div>
+                            <div className="flex-grow">
+                              <h4 className="font-serif text-sm font-bold text-brand-charcoal group-hover:text-brand-orange transition-colors line-clamp-1">
+                                {prod.name}
+                              </h4>
+                              <span className="text-[0.62rem] text-brand-gold uppercase tracking-wider font-bold">
+                                {prod.category === "milk-sweets" ? "Pure Milk Sweet" : prod.category === "ghee-sweets" ? "Pure Ghee Sweet" : "Tasty Farsan"}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-sans text-xs font-bold text-brand-charcoal block">
+                                ₹{firstPrice.toFixed(2)}
+                              </span>
+                              <span className="text-[0.6rem] text-muted-foreground font-semibold">
+                                {labelWeight}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* View All Results Button */}
+                <button
+                  type="button"
+                  onClick={handleSearchSubmit}
+                  className="w-full py-3 bg-[#0a4d8c] hover:bg-[#073866] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer text-center mt-1"
+                >
+                  View All Results
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

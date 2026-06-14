@@ -10,6 +10,13 @@ export interface Product {
   rating: number;
   reviewsCount: number;
   stock: number;
+  ingredients?: string[];
+  ingredientIds?: string[];
+  shelfLife?: number;
+  storageInstructions?: string;
+  allergens?: string[];
+  dietaryTags?: string[];
+  highlights?: string[];
 }
 
 export interface Category {
@@ -83,7 +90,11 @@ export interface UserProfile {
   savedAddresses: Address[];
 }
 
-export const CATEGORIES: Category[] = [];
+export const CATEGORIES: Category[] = [
+  { id: 'milk-sweets', name: 'Sweets of Pure Milk', description: 'Fresh khoya and mawa delicacies', image: '', icon: '' },
+  { id: 'ghee-sweets', name: 'Sweets of Pure Ghee', description: 'Timeless traditional desi ghee sweets', image: '', icon: '' },
+  { id: 'farsan', name: 'Tasty & Chat-Patta Farsan', description: 'Crispy snacks and dry kachoris', image: '', icon: '' }
+];
 export const getOrders = (): Order[] => [];
 export const saveOrders = (orders: Order[]) => {};
 export const getCoupons = (): Coupon[] => [];

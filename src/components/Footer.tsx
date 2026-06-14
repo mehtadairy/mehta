@@ -46,7 +46,7 @@ export default function Footer() {
             </h4>
             <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
               <li><Link href="/shop" className="hover:text-brand-orange transition-colors">Products</Link></li>
-              <li><Link href="/offers" className="hover:text-brand-orange transition-colors">Offers</Link></li>
+
               <li><Link href="/about" className="hover:text-brand-orange transition-colors">About Us</Link></li>
               <li><Link href="/blogs" className="hover:text-brand-orange transition-colors">Blogs</Link></li>
               <li><Link href="/contact" className="hover:text-brand-orange transition-colors">Contact Us</Link></li>

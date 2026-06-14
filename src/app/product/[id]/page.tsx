@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { Product } from "@/lib/types";
 import { fetchProducts } from "@/lib/supabaseClient";
-import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone } from "lucide-react";
+import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart } from "lucide-react";
 import { motion } from "framer-motion";
 
 const getIngredients = (name: string, category: string) => {
@@ -29,6 +29,86 @@ const getIngredients = (name: string, category: string) => {
     return "Milk Solids (Khoya), Pure Cow Ghee, Sugar, Cardamom, Dry Fruits";
   }
   return "Gram Flour, Pure Edible Oil, Iodized Salt, Black Pepper, Spices and Condiments";
+};
+
+const INGREDIENTS_MAP: { [key: string]: { name: string; icon: React.ReactNode } } = {
+  dryfruits: {
+    name: "Dry Fruits",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 38 C 14 30, 20 22, 28 24 C 34 25, 36 32, 30 38 C 24 44, 18 42, 16 38 Z" />
+        <path d="M36 28 C 42 22, 50 26, 48 34 C 46 40, 38 42, 34 36 C 30 32, 32 30, 36 28 Z" />
+        <path d="M22 32 L 26 30 M 40 32 L 44 34" />
+      </svg>
+    )
+  },
+  garlic: {
+    name: "Garlic",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M32 12 C 26 22, 16 28, 16 42 C 16 50, 23 54, 32 54 C 41 54, 48 50, 48 42 C 48 28, 38 22, 32 12 Z" />
+        <path d="M32 12 C 32 25, 26 38, 26 54 M 32 12 C 32 25, 38 38, 38 54 M 20 44 C 24 48, 28 50, 32 50 C 36 50, 40 48, 44 44" />
+      </svg>
+    )
+  },
+  gramflour: {
+    name: "Gram Flour",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 30 C 12 18, 52 18, 52 30 C 52 46, 42 52, 32 52 C 22 52, 12 46, 12 30 Z" />
+        <path d="M16 30 C 22 22, 42 22, 48 30" />
+        <circle cx="28" cy="26" r="0.5" fill="currentColor" />
+        <circle cx="34" cy="24" r="0.5" fill="currentColor" />
+        <circle cx="30" cy="28" r="0.5" fill="currentColor" />
+      </svg>
+    )
+  },
+  groundnutoil: {
+    name: "Groundnut Oil",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M24 16 L 40 16 L 38 24 L 46 32 L 46 54 L 18 54 L 18 32 L 26 24 Z" />
+        <rect x="26" y="10" width="12" height="6" rx="1" />
+        <path d="M22 36 L 42 36 M 22 44 L 42 44" />
+        <path d="M32 38 C 30 40, 30 43, 32 45 C 34 43, 34 40, 32 38 Z" fill="currentColor" />
+      </svg>
+    )
+  },
+  iodisedsalt: {
+    name: "Iodised Salt",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 24 L 42 24 L 40 54 L 24 54 Z" />
+        <path d="M24 24 L 26 14 L 38 14 L 40 24" />
+        <circle cx="30" cy="18" r="0.5" fill="currentColor" />
+        <circle cx="32" cy="16" r="0.5" fill="currentColor" />
+        <circle cx="34" cy="18" r="0.5" fill="currentColor" />
+        <rect x="26" y="34" width="12" height="12" rx="1" />
+        <path d="M28 40 L 36 40" />
+      </svg>
+    )
+  },
+  wheatflour: {
+    name: "Wheat Flour",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 24 C 18 18, 46 18, 46 24 C 48 38, 44 54, 32 54 C 20 54, 16 38, 18 24 Z" />
+        <path d="M16 26 Q 32 30 48 26" />
+        <path d="M32 32 L 32 46 M 28 36 L 32 38 L 36 36 M 28 40 L 32 42 L 36 40" />
+      </svg>
+    )
+  },
+  whiteflour: {
+    name: "White Flour",
+    icon: (
+      <svg className="w-7 h-7 text-brand-gold mb-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 24 C 18 18, 46 18, 46 24 C 48 38, 44 54, 32 54 C 20 54, 16 38, 18 24 Z" strokeDasharray="3 3" />
+        <path d="M18 24 C 18 18, 46 18, 46 24 C 48 38, 44 54, 32 54 C 20 54, 16 38, 18 24 Z" fill="none" />
+        <path d="M16 26 Q 32 30 48 26" />
+        <path d="M26 34 L 38 42 M 38 34 L 26 42" />
+      </svg>
+    )
+  }
 };
 
 const getPiecesText = (name: string, weight: string) => {
@@ -161,6 +241,22 @@ export default function ProductDetails() {
     window.dispatchEvent(new Event("wishlistUpdated"));
   };
 
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareText = `Check out this delicious sweet: ${product.name} from Mehta Sweet Mart!`;
+
+  const shareOnTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, "_blank");
+  };
+  const shareOnFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank");
+  };
+  const shareOnPinterest = () => {
+    window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(shareText)}`, "_blank");
+  };
+  const shareOnWhatsApp = () => {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareUrl)}`, "_blank");
+  };
+
   return (
     <>
       <Header />
@@ -219,18 +315,16 @@ export default function ProductDetails() {
               </div>
 
               {/* Price Row */}
-              <div className="flex items-center gap-4 border-b border-brand-beige pb-4">
-                <span className="font-serif text-3xl font-extrabold text-[#0a4d8c]">
+              <div className="flex items-baseline gap-3 pb-2">
+                <span className="font-sans text-3xl font-extrabold text-brand-orange">
                   ₹{price.toFixed(2)}
                 </span>
-                <span className="text-[0.68rem] font-bold text-brand-charcoal uppercase bg-[#fdfaf2] px-3 py-1 rounded-full border border-[#e8dcc4]">
+                <span className="font-sans text-lg text-muted-foreground line-through font-medium">
+                  ₹{(price * 1.15).toFixed(2)}
+                </span>
+                <span className="text-[0.68rem] font-bold text-brand-charcoal uppercase bg-[#fdfaf2] px-3 py-1 rounded-full border border-[#e8dcc4] ml-auto">
                   Product Life: {productLife}
                 </span>
-                <div className="ml-auto text-[#0a4d8c]" title="Premium Traditional Recipe">
-                  <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                  </svg>
-                </div>
               </div>
 
               {/* Selector */}
@@ -249,16 +343,16 @@ export default function ProductDetails() {
                         whileHover={{ scale: 1.03, y: -1 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setSelectedWeight(w)}
-                        className={`border px-4 py-2.5 text-xs font-bold transition-all text-left flex flex-col min-w-[150px] rounded-lg relative overflow-hidden ${
+                        className={`flex flex-col items-center justify-center px-4 py-2.5 rounded-xl border text-xs relative overflow-hidden transition-all duration-200 min-w-[90px] ${
                           selectedWeight === w
-                            ? "border-[#0a4d8c] bg-[#0a4d8c]/5 text-[#0a4d8c]"
-                            : "border-[#e0e0e0] hover:border-[#0a4d8c] bg-white text-brand-charcoal"
+                            ? "border-brand-orange bg-brand-orange/5 text-brand-orange"
+                            : "border-brand-beige hover:border-brand-orange bg-white text-brand-charcoal"
                         }`}
                       >
                         {selectedWeight === w && (
                           <motion.span 
                             layoutId="activeWeightGlow"
-                            className="absolute inset-0 bg-[#0a4d8c]/2 pointer-events-none"
+                            className="absolute inset-0 bg-brand-orange/2 pointer-events-none"
                             transition={{ type: "spring", stiffness: 150, damping: 20 }}
                           />
                         )}
@@ -270,10 +364,12 @@ export default function ProductDetails() {
                 </div>
               </div>
 
-              {/* Quantity Stepper & Add to Cart */}
-              <div className="flex flex-wrap items-center gap-4 py-4 border-t border-brand-beige">
+              {/* Quantity Stepper & Add to Cart & Buy Now Wrapper */}
+              <div className="flex flex-col gap-3.5 py-4 border-t border-brand-beige">
+                
+                {/* Qty Row */}
                 <div className="flex items-center">
-                  <span className="text-xs font-bold text-brand-charcoal mr-3">Qty :</span>
+                  <span className="text-xs font-bold text-brand-charcoal mr-3 uppercase tracking-wider">Qty :</span>
                   <div className="flex items-center border border-brand-beige rounded-lg overflow-hidden bg-brand-cream/35">
                     <motion.button 
                       whileTap={{ scale: 0.85 }}
@@ -295,53 +391,135 @@ export default function ProductDetails() {
                   </div>
                 </div>
 
+                <div className="border-t border-brand-beige/60 my-1"></div>
+
+                {/* ADD TO CART */}
                 <motion.button
-                  whileHover={{ scale: 1.04, boxShadow: "0 4px 12px rgba(10, 77, 140, 0.3)" }}
-                  whileTap={{ scale: 0.96 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={handleAddToCart}
-                  className={`flex-grow sm:flex-grow-0 rounded-lg px-8 py-3 text-xs font-bold text-white shadow-md transition-all uppercase tracking-wider ${
+                  className={`w-full inline-flex items-center justify-center gap-2 rounded-lg py-3.5 text-xs font-bold text-white shadow-sm transition-all uppercase tracking-wider cursor-pointer ${
                     addedFeedback 
                       ? "bg-emerald-600 hover:bg-emerald-700" 
-                      : "bg-[#0a4d8c] hover:bg-[#073866]"
+                      : "bg-brand-orange hover:bg-brand-orange-hover"
                   }`}
                 >
-                  {addedFeedback ? "Added to Cart!" : "Add to Cart"}
+                  <ShoppingCart className="w-4 h-4" /> {addedFeedback ? "Added!" : "Add to Cart"}
                 </motion.button>
-                
+
+                {/* BUY NOW */}
                 <motion.button
-                  whileHover={{ scale: 1.04, boxShadow: "0 4px 12px rgba(37, 211, 102, 0.3)" }}
-                  whileTap={{ scale: 0.96 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={() => {
-                    const message = `Hello, I would like to order ${quantity}x ${product.name} (${selectedWeight}). Please let me know the process.`;
-                    window.open(`https://wa.me/919913252232?text=${encodeURIComponent(message)}`, '_blank');
+                    handleAddToCart();
+                    router.push("/checkout");
                   }}
-                  className="flex-grow sm:flex-grow-0 rounded-lg px-8 py-3 text-xs font-bold text-white shadow-md transition-all uppercase tracking-wider bg-[#25D366] hover:bg-[#1DA851] flex items-center justify-center gap-2"
+                  className="w-full inline-flex items-center justify-center rounded-lg border border-brand-orange py-3.5 text-xs font-bold text-brand-orange bg-white shadow-sm transition-all uppercase tracking-wider cursor-pointer hover:bg-brand-orange/5"
                 >
-                  <Phone className="w-4 h-4" /> Order on WhatsApp
+                  Buy Now
                 </motion.button>
+
               </div>
 
-              {/* Ingredients Details */}
-              <div className="border-t border-brand-beige pt-4">
-                <span className="text-xs font-bold text-brand-charcoal block mb-3">Ingredients :</span>
-                <div className="flex gap-4 mb-3">
-                  <div className="flex flex-col items-center p-2.5 border border-[#e8dcc4] bg-[#fdfaf2] rounded-lg text-center w-20 shadow-2xs">
-                    <svg className="w-6 h-6 text-brand-gold mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-[0.62rem] font-bold text-brand-charcoal leading-none">Purity</span>
+              {/* --- NEW FOOD PRODUCT INFORMATION PANEL --- */}
+              <div className="border-t border-brand-beige pt-6 flex flex-col gap-5">
+                
+                {/* Product Highlights Feature Cards */}
+                {product.highlights && product.highlights.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {product.highlights.map((highlight, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5 bg-[#fdfaf2] border border-[#e8dcc4] rounded-xl p-3 shadow-3xs">
+                        <Sparkles className="w-4 h-4 text-[#d4af37] flex-shrink-0" />
+                        <span className="text-[0.7rem] font-bold text-brand-charcoal leading-tight">{highlight}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex flex-col items-center p-2.5 border border-[#e8dcc4] bg-[#fdfaf2] rounded-lg text-center w-20 shadow-2xs">
-                    <svg className="w-6 h-6 text-brand-gold mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span className="text-[0.62rem] font-bold text-brand-charcoal leading-none">Sugar</span>
+                )}
+
+                {/* Dietary Tags badges */}
+                {product.dietaryTags && product.dietaryTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {product.dietaryTags.map((tag, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1.5 bg-brand-cream text-brand-charcoal border border-[#e8dcc4] rounded-full px-3 py-1 text-[0.62rem] font-bold shadow-3xs uppercase tracking-wider">
+                        <Leaf className="w-3 h-3 text-[#d4af37]" /> {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Allergen Warning badges */}
+                {product.allergens && product.allergens.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {product.allergens.map((allergen, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-2.5 py-1 text-[0.65rem] font-bold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> {allergen}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Shelf Life & Storage Instructions Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 bg-white border border-[#e8dcc4] p-3.5 rounded-xl shadow-3xs">
+                    <Calendar className="w-5 h-5 text-brand-orange mt-0.5" />
+                    <div>
+                      <span className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wide block">🕒 Shelf Life</span>
+                      <span className="text-xs font-bold text-brand-charcoal">{product.shelfLife || 12} Days</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-white border border-[#e8dcc4] p-3.5 rounded-xl shadow-3xs">
+                    <Info className="w-5 h-5 text-brand-orange mt-0.5" />
+                    <div>
+                      <span className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wide block">Storage Instructions</span>
+                      <span className="text-[0.7rem] font-semibold text-brand-charcoal leading-snug">{product.storageInstructions || "Store in a cool and dry place."}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start text-xs text-muted-foreground gap-1.5 leading-relaxed">
-                  <span className="text-[#0a4d8c] font-bold text-[0.65rem] mt-0.5">▶</span>
-                  <span>{getIngredients(product.name, product.category)}</span>
+
+                {/* Ingredients section */}
+                <div className="bg-[#fdfaf2] border border-[#e8dcc4] rounded-xl p-4.5 shadow-3xs">
+                  <span className="text-xs font-bold text-brand-charcoal uppercase tracking-wider block mb-3">Ingredients Details :</span>
+                  {product.ingredients && product.ingredients.length > 0 ? (
+                    <div className="flex flex-wrap gap-3.5 mb-3">
+                      {product.ingredients.map((ingName, idx) => {
+                        const lowerName = ingName.toLowerCase();
+                        let emoji = "🥛";
+                        if (lowerName.includes("cashew") || lowerName.includes("kaju") || lowerName.includes("nut") || lowerName.includes("almond") || lowerName.includes("pistachio")) emoji = "🥜";
+                        else if (lowerName.includes("sugar")) emoji = "🍬";
+                        else if (lowerName.includes("cardamom") || lowerName.includes("elaichi")) emoji = "🌱";
+                        else if (lowerName.includes("saffron") || lowerName.includes("kesar")) emoji = "🍂";
+                        else if (lowerName.includes("besan") || lowerName.includes("flour") || lowerName.includes("wheat")) emoji = "🌾";
+                        else if (lowerName.includes("silver") || lowerName.includes("varakh")) emoji = "✨";
+                        else if (lowerName.includes("ghee") || lowerName.includes("oil")) emoji = "🛢️";
+                        else if (lowerName.includes("salt")) emoji = "🧂";
+                        else if (lowerName.includes("coconut")) emoji = "🥥";
+                        else if (lowerName.includes("banana")) emoji = "🍌";
+                        else if (lowerName.includes("honey")) emoji = "🍯";
+
+                        return (
+                          <div key={idx} className="flex flex-col items-center justify-center p-2 border border-[#e8dcc4] bg-white rounded-lg text-center w-16 h-16 shadow-4xs">
+                            <span className="text-xl mb-0.5">{emoji}</span>
+                            <span className="text-[0.55rem] font-bold text-brand-charcoal leading-none line-clamp-2">{ingName}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground italic mb-2">No ingredients specified.</div>
+                  )}
+                  
+                  {/* Detailed list view */}
+                  <div className="flex items-start text-xs text-muted-foreground gap-1.5 leading-relaxed border-t border-[#e8dcc4] pt-2.5">
+                    <span className="text-[#0a4d8c] font-bold text-[0.65rem] mt-0.5">▶</span>
+                    <span>
+                      {product.ingredients && product.ingredients.length > 0 
+                        ? product.ingredients.join(", ") 
+                        : getIngredients(product.name, product.category)}
+                    </span>
+                  </div>
                 </div>
+
               </div>
 
               {/* Shipping/Delivery Terms */}
@@ -360,10 +538,10 @@ export default function ProductDetails() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-brand-charcoal">Share:</span>
                   <div className="flex gap-1.5">
-                    <button className="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-sans font-bold">𝕏</button>
-                    <button className="w-7 h-7 bg-[#3b5998] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold">f</button>
-                    <button className="w-7 h-7 bg-[#bd081c] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold">p</button>
-                    <button className="w-7 h-7 bg-[#25d366] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold">w</button>
+                    <button onClick={shareOnTwitter} className="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-sans font-bold cursor-pointer" title="Share on X (Twitter)">𝕏</button>
+                    <button onClick={shareOnFacebook} className="w-7 h-7 bg-[#3b5998] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold cursor-pointer" title="Share on Facebook">f</button>
+                    <button onClick={shareOnPinterest} className="w-7 h-7 bg-[#bd081c] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold cursor-pointer" title="Share on Pinterest">p</button>
+                    <button onClick={shareOnWhatsApp} className="w-7 h-7 bg-[#25d366] text-white rounded-full flex items-center justify-center text-[0.68rem] hover:opacity-80 font-bold cursor-pointer" title="Share on WhatsApp">w</button>
                   </div>
                 </div>
 
