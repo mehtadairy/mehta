@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBasket, Heart } from "lucide-react";
-import { Product } from "@/lib/mockData";
+import { Product } from "@/lib/types";
 
 interface ProductCardProps {
   product: Product;
@@ -111,11 +112,12 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image container with Hover Circular Spin Animation */}
       <Link href={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-brand-cream rounded-t-2xl">
         <div className="w-full h-full transition-transform duration-500 group-hover:scale-105 flex items-center justify-center p-2">
-          <img
+          <Image
             src={product.images[0]}
             alt={product.name}
-            className="h-full w-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_12s_linear_infinite]"
-            loading="lazy"
+            fill
+            className="object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_12s_linear_infinite]"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
       </Link>

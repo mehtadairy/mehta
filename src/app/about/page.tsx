@@ -1,314 +1,376 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React from "react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { Award, ShieldCheck, HelpCircle, UtensilsCrossed, Sparkles } from "lucide-react";
-import { motion, useInView } from "framer-motion";
-
-function Counter({ value, suffix = "", duration = 2 }: { value: number; suffix?: string; duration?: number }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
-  useEffect(() => {
-    if (!isInView) return;
-
-    let start = 0;
-    const end = value;
-    if (start === end) return;
-
-    const totalMiliseconds = duration * 1000;
-    const incrementTime = Math.max(Math.floor(totalMiliseconds / end), 16);
-    
-    const timer = setInterval(() => {
-      start += Math.ceil(end / (totalMiliseconds / incrementTime));
-      if (start >= end) {
-        clearInterval(timer);
-        setCount(end);
-      } else {
-        setCount(start);
-      }
-    }, incrementTime);
-
-    return () => clearInterval(timer);
-  }, [value, duration, isInView]);
-
-  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
-}
+import {
+  Sparkles,
+  Award,
+  Clock,
+  MapPin,
+  Phone,
+  MessageSquare,
+  ArrowRight,
+  ShieldCheck,
+  RotateCcw,
+  CheckCircle2
+} from "lucide-react";
 
 export default function About() {
   return (
-    <>
+    <div className="bg-[#FAF6EE] min-h-screen text-[#2C2C2C] selection:bg-[#D97706]/20">
       <Header />
       <WhatsAppFloat />
 
-      {/* --- HERO BANNER --- */}
-      <section className="bg-brand-cream border-b border-brand-beige py-16 text-center mt-20 sm:mt-24">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
-          <motion.span 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 100, damping: 15 }}
-            className="inline-flex max-w-fit items-center gap-1.5 rounded-full bg-brand-gold/15 border border-brand-gold px-3.5 py-1 text-[0.68rem] font-bold text-brand-gold uppercase tracking-wider mx-auto"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Established 1952
-          </motion.span>
-          <motion.h2 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-charcoal"
-          >
-            The Story of Mehta Sweet Mart
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto"
-          >
-            A journey of pure cow ghee, handcrafted delicacies, and traditional values uniting families across India and overseas for over seven decades.
-          </motion.p>
+      {/* --- SECTION 1: HERO --- */}
+      <section className="relative h-[500px] flex items-center justify-center overflow-hidden">
+        {/* Background Image: Storefront Outside */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/store_outside.jpeg')" }}
+        ></div>
+
+        {/* Subtle dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"></div>
+
+        <div className="relative z-10 text-center max-w-4xl px-4 flex flex-col items-center gap-4">
+          <span className="text-[0.7rem] font-bold text-[#C9A227] uppercase tracking-[0.3em] block">
+            Palitana, Gujarat
+          </span>
+          <h1 className="font-serif text-5xl sm:text-6xl font-bold text-white tracking-wide uppercase">
+            MEHTA DAIRY
+          </h1>
+          <p className="font-serif text-xl sm:text-2xl italic text-[#FAF6EE]/90">
+            Serving Palitana Since 1972
+          </p>
+          <div className="h-0.5 w-16 bg-[#C9A227]"></div>
+          <p className="text-xs sm:text-sm text-white/80 uppercase tracking-widest max-w-lg leading-relaxed">
+            More Than 50 Years of Trust, Tradition & Quality
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/shop"
+              className="inline-flex items-center justify-center rounded-xl bg-[#FAF6EE] text-[#4A2F1F] hover:bg-[#FAF6EE]/90 px-8 py-3.5 text-xs font-bold uppercase tracking-wider shadow-md transition-all hover:-translate-y-0.5"
+            >
+              Explore Products
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* --- OUR LEGACY STORY --- */}
-      <section className="py-20 bg-white overflow-hidden">
+      {/* --- SECTION 2: OUR STORY --- */}
+      <section className="py-24 bg-white border-b border-[#4A2F1F]/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Visual block left */}
-            <motion.div 
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ type: "spring", stiffness: 90, damping: 15 }}
-              className="lg:col-span-5 aspect-4/3 overflow-hidden rounded-2xl border border-brand-beige bg-brand-cream shadow-md"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=600&auto=format&fit=crop&q=80" 
-                alt="Karigar crafting traditional Indian sweets" 
-                className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-105"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* Story Content Left */}
+            <div className="flex flex-col gap-6">
+              <span className="text-[0.68rem] font-bold text-[#D97706] uppercase tracking-[0.25em] flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#C9A227]" /> Since 1972 Legacy
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] leading-tight">
+                Our Story
+              </h2>
+              <div className="h-0.5 w-16 bg-[#C9A227]"></div>
+
+              <p className="text-xs sm:text-sm text-[#555] leading-relaxed">
+                Founded in 1972 by <strong className="text-[#4A2F1F]">Shri Khantilal Tribhovandas Mehta</strong>, Mehta Dairy began with a simple vision: serving fresh sweets and authentic flavors to the people of Palitana.
+              </p>
+
+              <p className="text-xs sm:text-sm text-[#555] leading-relaxed">
+                Over the decades, the business has become a trusted destination for families, visitors, and Jain pilgrims seeking quality sweets, namkeen, sharbat, and traditional delicacies.
+              </p>
+
+              <p className="text-xs sm:text-sm text-[#555] leading-relaxed font-semibold text-[#4A2F1F]">
+                Today, under the leadership of <strong className="text-[#4A2F1F]">Shri Jaydeepbhai Bhaveshbhai Mehta</strong>, Mehta Dairy continues its commitment to quality while embracing modern technology and online ordering.
+              </p>
+            </div>
+
+            {/* Mehta Dairy Branding Wall Image Right */}
+            <div className="relative rounded-2xl overflow-hidden border border-[#4A2F1F]/10 bg-[#FAF6EE] p-3 shadow-md group">
+              <img
+                src="/store_entry_image.jpeg"
+                alt="Mehta Dairy Branding Wall Inside"
+                className="w-full h-auto rounded-xl object-cover transition-transform duration-700 group-hover:scale-103"
               />
-            </motion.div>
-            {/* Text details right */}
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ type: "spring", stiffness: 90, damping: 15 }}
-              className="lg:col-span-7 flex flex-col gap-5"
-            >
-              <h3 className="font-serif text-2xl font-bold text-brand-charcoal">Our Heritage Journey</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Mehta Sweet Mart started in 1952 as a tiny sweet shop in the historic streets of old Ahmedabad. Founded by Shri Hariprasad Mehta, the shop quickly became a popular neighborhood spot, famous for its rich Kesar Peda and hot, crispy Fafda-Jalebi served fresh every morning.
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Hariprasadji believed in a simple philosophy: "Purity is the highest virtue of sweet-making." He insisted on sourcing fresh milk directly from local dairy farmers and slow-churning pure cow ghee. This commitment to raw material quality became the foundation of our brand.
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Today, his grandchildren carry forward this legacy, blending traditional sweet-making processes with state-of-the-art hygiene standards. We ship our sweets worldwide, allowing families abroad to taste the authentic flavors of home.
-              </p>
-            </motion.div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* --- STATS BAND --- */}
-      <section className="bg-gradient-to-r from-[#800c0c] to-[#4d0707] py-12 text-white border-y border-brand-gold/20 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff04_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none opacity-40"></div>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            <div className="flex flex-col gap-1">
-              <span className="font-serif text-3xl sm:text-4xl font-extrabold text-brand-gold">
-                <Counter value={74} suffix="+" />
-              </span>
-              <span className="text-[0.62rem] tracking-widest text-brand-cream/70 uppercase font-semibold">Years of Legacy</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-serif text-3xl sm:text-4xl font-extrabold text-brand-gold">
-                <Counter value={50000} suffix="+" />
-              </span>
-              <span className="text-[0.62rem] tracking-widest text-brand-cream/70 uppercase font-semibold">Happy Customers</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-serif text-3xl sm:text-4xl font-extrabold text-brand-gold">
-                <Counter value={150} suffix="+" />
-              </span>
-              <span className="text-[0.62rem] tracking-widest text-brand-cream/70 uppercase font-semibold">Sweet Varieties</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-serif text-3xl sm:text-4xl font-extrabold text-brand-gold">
-                <Counter value={50} suffix="+" />
-              </span>
-              <span className="text-[0.62rem] tracking-widest text-brand-cream/70 uppercase font-semibold">Legacy Recipes</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- QUALITY & HYGIENE COMMITMENT --- */}
-      <section className="py-20 bg-brand-cream/35 border-y border-brand-beige">
+      {/* --- SECTION 3: FOUNDER & LEADERSHIP --- */}
+      <section className="py-24 bg-[#FAF6EE] border-b border-[#4A2F1F]/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-16">
-            <motion.h2 
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="font-serif text-3xl font-bold tracking-tight text-brand-charcoal mb-4"
-            >
-              Commitment to Excellence
-            </motion.h2>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-sm text-muted-foreground"
-            >
-              We understand that sweet-making is an art that requires absolute precision and hygiene control.
-            </motion.p>
+            <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Our Leaders</span>
+            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1 uppercase">Founder & Leadership</h2>
+            <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
           </div>
 
-          <motion.div 
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={{
-              hidden: { opacity: 0 },
-              show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-            }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, y: 30, scale: 0.95 },
-                show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 90, damping: 15 } }
-              }}
-              whileHover={{ y: -6, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.02)" }}
-              className="bg-white rounded-2xl border border-brand-beige p-6.5 text-center flex flex-col items-center transition-shadow duration-300"
-            >
-              <div className="h-12 w-12 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange mb-4 border border-brand-orange/20">
-                <UtensilsCrossed className="h-6 w-6" />
-              </div>
-              <h4 className="font-serif text-base font-bold text-brand-charcoal mb-2.5">Sourcing & Ingredients</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                We use premium Kashmiri saffron, Goan cashews, Californian almonds, and fresh milk fat. No synthetic colors or thickeners are ever used in our kitchen.
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
 
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, y: 30, scale: 0.95 },
-                show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 90, damping: 15 } }
-              }}
-              whileHover={{ y: -6, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.02)" }}
-              className="bg-white rounded-2xl border border-brand-beige p-6.5 text-center flex flex-col items-center transition-shadow duration-300"
-            >
-              <div className="h-12 w-12 rounded-full bg-brand-gold/10 flex items-center justify-center text-brand-gold mb-4 border border-brand-gold/20">
-                <ShieldCheck className="h-6 w-6" />
+            {/* Card 1: Founder */}
+            <div className="bg-white rounded-2xl border border-[#4A2F1F]/10 p-8 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="flex flex-col gap-3">
+                <span className="text-[0.62rem] font-bold text-[#C9A227] uppercase tracking-widest">The Roots</span>
+                <h4 className="font-serif text-xl font-bold text-[#4A2F1F]">Shri Khantilal Tribhovandas Mehta</h4>
+                <p className="text-xs text-[#D97706] font-semibold uppercase tracking-wider">Founder of Mehta Dairy</p>
+                <div className="h-px bg-[#4A2F1F]/10 my-1"></div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Established the business in 1972 with a vision of quality and trust, serving original milk formulations to Palitana's visitors and residents.
+                </p>
               </div>
-              <h4 className="font-serif text-base font-bold text-brand-charcoal mb-2.5">Hygiene & Safety</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Our manufacturing plant is completely certified. Our staff follow strict sanitization codes, wearing masks and gloves while hand-packing boxes.
-              </p>
-            </motion.div>
+            </div>
 
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, y: 30, scale: 0.95 },
-                show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 90, damping: 15 } }
-              }}
-              whileHover={{ y: -6, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.02)" }}
-              className="bg-white rounded-2xl border border-brand-beige p-6.5 text-center flex flex-col items-center transition-shadow duration-300"
-            >
-              <div className="h-12 w-12 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange mb-4 border border-brand-orange/20">
-                <Award className="h-6 w-6" />
+            {/* Card 2: Current Leadership */}
+            <div className="bg-white rounded-2xl border border-[#4A2F1F]/10 p-8 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="flex flex-col gap-3">
+                <span className="text-[0.62rem] font-bold text-[#D97706] uppercase tracking-widest">Next Generation</span>
+                <h4 className="font-serif text-xl font-bold text-[#4A2F1F]">Shri Jaydeepbhai Bhaveshbhai Mehta</h4>
+                <p className="text-xs text-[#D97706] font-semibold uppercase tracking-wider">Current CEO</p>
+                <div className="h-px bg-[#4A2F1F]/10 my-1"></div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Leading the next generation while preserving the values and traditional recipes of Mehta Dairy, integrating safe digital checkout experiences.
+                </p>
               </div>
-              <h4 className="font-serif text-base font-bold text-brand-charcoal mb-2.5">Authentic Karigars</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Our sweets are crafted by master chefs who have worked with us for over three decades, ensuring consistent taste and authentic textures.
-              </p>
-            </motion.div>
-          </motion.div>
+            </div>
+
+          </div>
         </div>
       </section>
 
-      {/* --- MANUFACTURING TIMELINE --- */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <motion.h3 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="font-serif text-2xl font-bold text-brand-charcoal text-center mb-14"
-          >
-            How We Make Sweets
-          </motion.h3>
-          
-          <motion.div 
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={{
-              hidden: { opacity: 0 },
-              show: { opacity: 1, transition: { staggerChildren: 0.15 } }
-            }}
-            className="flex flex-col gap-8"
-          >
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, x: -30 },
-                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 100, damping: 16 } }
-              }}
-              className="flex gap-6 items-start"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white font-bold text-xs flex-shrink-0 shadow-sm mt-0.5">1</div>
-              <div>
-                <h4 className="font-serif text-sm font-bold text-brand-charcoal mb-1">Slow Roasting & Boiling</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  We slow-roast chickpea flour and nuts in brass kadhais over a low flame to bring out rich aromas, and boil fresh whole milk to prepare dense khoya solids daily.
-                </p>
-              </div>
-            </motion.div>
+      {/* --- SECTION 4: OUR JOURNEY (Timeline) --- */}
+      <section className="py-24 bg-white border-b border-[#4A2F1F]/10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-xl mx-auto mb-16">
+            <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Our History</span>
+            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1 uppercase">Our Journey</h2>
+            <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
+          </div>
 
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, x: -30 },
-                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 100, damping: 16 } }
-              }}
-              className="flex gap-6 items-start"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gold text-white font-bold text-xs flex-shrink-0 shadow-sm mt-0.5">2</div>
-              <div>
-                <h4 className="font-serif text-sm font-bold text-brand-charcoal mb-1">Traditional Shuffling & Shaping</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Our sweets are mixed, layered, and shaped by hand. Delicate items like Cham Cham and Sandesh are kneaded by hand to retain air pockets and moisture.
-                </p>
-              </div>
-            </motion.div>
+          <div className="relative border-l-2 border-[#C9A227]/30 ml-4 pl-8 flex flex-col gap-12">
 
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, x: -30 },
-                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 100, damping: 16 } }
-              }}
-              className="flex gap-6 items-start"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white font-bold text-xs flex-shrink-0 shadow-sm mt-0.5">3</div>
-              <div>
-                <h4 className="font-serif text-sm font-bold text-brand-charcoal mb-1">Vacuum Packing & Logistics</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Every order is vacuum packed in airtight trays to lock in freshness. We pack with food-grade silica gel and ship via express air couriers.
-                </p>
+            <div className="relative group">
+              <div className="absolute -left-[41px] top-1 bg-[#4A2F1F] text-white rounded-full w-5 h-5 border-4 border-white shadow-sm transition-transform group-hover:scale-110"></div>
+              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">1972</h4>
+              <h5 className="text-xs font-semibold text-[#D97706] uppercase tracking-wider mt-0.5">Mehta Dairy Founded</h5>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+                Started serving pure, fresh, authentic sweets to the people of Palitana.
+              </p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -left-[41px] top-1 bg-[#C9A227] text-white rounded-full w-5 h-5 border-4 border-white shadow-sm transition-transform group-hover:scale-110"></div>
+              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">1980s</h4>
+              <h5 className="text-xs font-semibold text-[#D97706] uppercase tracking-wider mt-0.5">Expanded Product Offerings</h5>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+                Introduced crunchy farsans, premium namkeens, and refreshing custom sharbats.
+              </p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -left-[41px] top-1 bg-[#4A2F1F] text-white rounded-full w-5 h-5 border-4 border-white shadow-sm transition-transform group-hover:scale-110"></div>
+              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">2000s</h4>
+              <h5 className="text-xs font-semibold text-[#D97706] uppercase tracking-wider mt-0.5">Trusted By Generations</h5>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+                Established as the premier destination for visitors, pilgrims, and local Gujarati families.
+              </p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -left-[41px] top-1 bg-[#C9A227] text-white rounded-full w-5 h-5 border-4 border-white shadow-sm transition-transform group-hover:scale-110"></div>
+              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">2020s</h4>
+              <h5 className="text-xs font-semibold text-[#D97706] uppercase tracking-wider mt-0.5">Modern Store Renovation</h5>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+                Renovated our physical store layouts to integrate beautiful modern glass displays and checkouts.
+              </p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -left-[41px] top-1 bg-[#4A2F1F] text-white rounded-full w-5 h-5 border-4 border-white shadow-sm transition-transform group-hover:scale-110"></div>
+              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">2026</h4>
+              <h5 className="text-xs font-semibold text-[#D97706] uppercase tracking-wider mt-0.5">Online Store Launch</h5>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+                Launched our digital e-commerce web platform to deliver authentic Palitana flavors directly to doorsteps.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* --- SECTION 5: INSIDE MEHTA DAIRY (Gallery) --- */}
+      <section className="py-24 bg-[#FAF6EE] border-b border-[#4A2F1F]/10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-xl mx-auto mb-16">
+            <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Our Store Experience</span>
+            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Inside Mehta Dairy</h2>
+            <p className="text-xs text-muted-foreground mt-2 uppercase tracking-widest font-semibold text-[#C9A227]">
+              A modern sweet shop built on traditional values.
+            </p>
+            <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3.5"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Gallery Item 1: Counter displays */}
+            <div className="group overflow-hidden rounded-2xl border border-[#4A2F1F]/10 bg-white p-2.5 shadow-sm">
+              <div className="overflow-hidden rounded-xl aspect-[4/3] relative">
+                <img
+                  src="/store_inside_counter.jpeg"
+                  alt="Sweet counters and Display case inside Mehta Dairy"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
               </div>
-            </motion.div>
-          </motion.div>
+              <div className="p-3 text-center">
+                <h5 className="font-serif text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">Premium Counter Displays</h5>
+              </div>
+            </div>
+
+            {/* Gallery Item 2: Display Shelves */}
+            <div className="group overflow-hidden rounded-2xl border border-[#4A2F1F]/10 bg-white p-2.5 shadow-sm">
+              <div className="overflow-hidden rounded-xl aspect-[4/3] relative">
+                <img
+                  src="/store_products_storage.jpeg"
+                  alt="Product shelves filled with fresh snacks and boxes inside Mehta Dairy"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-3 text-center">
+                <h5 className="font-serif text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">Aromatic Savory Shelves</h5>
+              </div>
+            </div>
+
+            {/* Gallery Item 3: Front door welcome */}
+            <div className="group overflow-hidden rounded-2xl border border-[#4A2F1F]/10 bg-white p-2.5 shadow-sm">
+              <div className="overflow-hidden rounded-xl aspect-[4/3] relative">
+                <img
+                  src="/store_outside.jpeg"
+                  alt="Welcome glass entry door storefront of Mehta Dairy"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-3 text-center">
+                <h5 className="font-serif text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">Welcoming Store Entry</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- SECTION 6: WHY CUSTOMERS TRUST US --- */}
+      <section className="py-24 bg-white border-b border-[#4A2F1F]/10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-xl mx-auto mb-16">
+            <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Our Commitments</span>
+            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Why Customers Trust Us</h2>
+            <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#D97706] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Since 1972</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Serving the finest authentic taste formulations since our first day of opening.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">50+ Years Legacy</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Handmade sweet-making processes preserved across three generations of leadership.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#D97706] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Fresh Daily Production</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Prepared in small controlled batches daily to retain moisture and authentic aroma.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Premium Ingredients</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Made using pure cow ghee, Californian almonds, Goan cashews, and zero artificial colors.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#D97706] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Traditional Recipes</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Taste that reminds you of home. Secret spice blends maintained with pride.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-6 rounded-2xl border border-[#4A2F1F]/10 hover:bg-[#FAF6EE]/50 transition-colors">
+              <CheckCircle2 className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
+              <div>
+                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Secure Online Ordering</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Encrypted Razorpay integrations and direct fast WhatsApp assistance channels.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* --- SECTION 7: CONTACT --- */}
+      <section className="py-24 bg-[#FAF6EE]">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-3xl border border-[#4A2F1F]/10 p-8 sm:p-12 shadow-sm flex flex-col md:flex-row gap-8 items-center justify-between">
+            <div className="flex flex-col gap-4 max-w-md">
+              <span className="text-[0.62rem] font-bold text-[#D97706] uppercase tracking-widest">Connect With Us</span>
+              <h3 className="font-serif text-3xl font-bold text-[#4A2F1F] leading-tight">Mehta Dairy</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Visit our physical store in Palitana to browse sweets, namkeens, and premium gifting sets, or request delivery over WhatsApp/Call.
+              </p>
+
+              <div className="flex flex-col gap-2.5 text-xs font-semibold text-[#4A2F1F] mt-2">
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-4.5 w-4.5 text-[#C9A227]" /> Palitana, Gujarat, India.
+                </span>
+                <span className="flex items-center gap-2">
+                  <Phone className="h-4.5 w-4.5 text-[#C9A227]" /> +91 98989 81952
+                </span>
+                <span className="flex items-center gap-2">
+                  <Clock className="h-4.5 w-4.5 text-[#C9A227]" /> 9:00 AM - 10:00 PM (Daily)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 w-full md:w-auto min-w-[240px]">
+              <a
+                href="https://wa.me/919898981952?text=Hello%20Mehta%20Dairy"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white hover:bg-[#1ebd57] py-3 text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
+              >
+                <MessageSquare className="h-4 w-4 fill-current" /> WhatsApp Chat
+              </a>
+
+              <a
+                href="https://maps.google.com"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#4A2F1F] text-[#4A2F1F] hover:bg-[#4A2F1F]/5 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                <MapPin className="h-4 w-4" /> Google Maps Link
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
       <Footer />
-    </>
+    </div>
   );
 }

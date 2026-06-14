@@ -11,11 +11,11 @@ import {
   getProfile, 
   saveProfile, 
   getOrders, 
-  getProducts,
+  getCoupons,
   Product, 
-  Order, 
-  Address 
-} from "@/lib/mockData";
+  Order 
+} from "@/lib/types";
+import { fetchProducts, supabase } from "@/lib/supabaseClient";
 import { 
   User, 
   ShoppingBag, 
@@ -36,24 +36,26 @@ function AccountContent() {
   const router = useRouter();
   const initialTab = searchParams.get("tab") || "profile";
 
-  // Login Simulator State
+  // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authName, setAuthName] = useState("");
-  const [authPhone, setAuthPhone] = useState("");
-  const [authFeedback, setAuthFeedback] = useState("");
+
+  // OTP Login State
+  const [otpPhone, setOtpPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
   // Account State
   const [activeTab, setActiveTab] = useState(initialTab);
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   
   // Profile Update State
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [profileSuccess, setProfileSuccess] = useState(false);
 
   // Address creation form
@@ -67,27 +69,76 @@ function AccountContent() {
 
   // Load and sync data
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const loadData = async () => {
+      if (typeof window === 'undefined') return;
+      
+      const loggedInStatus = localStorage.getItem("mehta_logged_in") === "true";
+      const phone = localStorage.getItem("mehta_user_phone");
+      setIsLoggedIn(loggedInStatus);
 
-    const loggedInStatus = localStorage.getItem("mehta_logged_in") === "true";
-    setIsLoggedIn(loggedInStatus);
+      if (loggedInStatus && phone) {
+        // Fetch Profile from API
+        fetch(`/api/user/profile?phone=${phone}`)
+          .then(res => res.json())
+          .then(async data => {
+            if (data.success && data.profile) {
+              const { data: addrs } = await supabase.from('addresses').select('*').eq('customer_id', data.profile.id);
+              const mappedAddrs = addrs?.map(a => ({
+                 id: a.id,
+                 name: a.full_name,
+                 phone: a.mobile,
+                 street: a.address,
+                 city: a.city,
+                 state: a.state,
+                 pincode: a.pincode,
+                 isDefault: a.is_default
+              })) || [];
+              
+              setProfile({ ...data.profile, saved_addresses: mappedAddrs });
+              setEditName(data.profile.name);
+              setEditPhone(data.profile.phone);
+              setEditEmail(data.profile.email || "");
+            }
+          })
+          .catch(err => console.error("Error fetching profile:", err));
 
-    if (loggedInStatus) {
-      // Load Profile
-      const userProfile = getProfile();
-      setProfile(userProfile);
-      setEditName(userProfile.name);
-      setEditPhone(userProfile.phone);
+        // Load Orders
+        const { data: userOrders, error: ordersError } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('user_phone', phone)
+          .order('created_at', { ascending: false });
 
-      // Load Orders
-      setOrders(getOrders());
+        if (!ordersError && userOrders) {
+           const formattedOrders = userOrders.map((o: any) => ({
+             id: o.id,
+             orderNumber: o.order_number,
+             date: new Date(o.created_at).toLocaleDateString(),
+             status: o.status,
+             total: o.total,
+             items: o.order_items ? o.order_items.map((i: any) => ({
+                productId: i.product_id,
+                productName: i.product_name,
+                weight: i.weight,
+                quantity: i.quantity,
+                price: i.price,
+                image: i.image
+             })) : []
+           }));
+           setOrders(formattedOrders as any);
+        } else {
+           setOrders(getOrders());
+        }
 
-      // Load Wishlist products
-      const allProducts = getProducts();
-      const wishlistIds = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
-      const wishlistItems = allProducts.filter(p => wishlistIds.includes(p.id));
-      setWishlist(wishlistItems);
-    }
+        // Load Wishlist products
+        const storedWishlist = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
+        const allProducts = await fetchProducts();
+        const w = storedWishlist.map((id: string) => allProducts.find(prod => prod.id === id)).filter(Boolean);
+        setWishlistItems(w);
+      }
+      setIsLoading(false);
+    };
+    loadData();
   }, [activeTab]);
 
   // Sync tab from search query
@@ -95,114 +146,168 @@ function AccountContent() {
     setActiveTab(searchParams.get("tab") || "profile");
   }, [searchParams]);
 
-  // Login / Signup triggers
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authEmail || !authPassword) return;
-
-    // Simulated login success
-    localStorage.setItem("mehta_logged_in", "true");
-    setIsLoggedIn(true);
-    setAuthFeedback("");
-    window.dispatchEvent(new Event("authUpdated"));
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authEmail || !authPassword || !authName || !authPhone) return;
-
-    // Create user profile in mockData
-    const newProfile = {
-      name: authName,
-      email: authEmail,
-      phone: authPhone,
-      savedAddresses: []
-    };
-    saveProfile(newProfile);
-    localStorage.setItem("mehta_logged_in", "true");
-    setIsLoggedIn(true);
-    setAuthFeedback("");
-    window.dispatchEvent(new Event("authUpdated"));
-  };
-
   const handleLogout = () => {
     localStorage.removeItem("mehta_logged_in");
+    localStorage.removeItem("mehta_user_phone");
     setIsLoggedIn(false);
     window.dispatchEvent(new Event("authUpdated"));
     router.push("/");
   };
 
+  // OTP Login Functions
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpPhone) return;
+    setIsLoading(true);
+    setOtpError("");
+    
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: otpPhone })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setIsOtpSent(true);
+      } else {
+        setOtpError(data.message || "Failed to send OTP.");
+      }
+    } catch (err) {
+      setOtpError("An error occurred while sending OTP.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpPhone || !otpCode) return;
+    setIsLoading(true);
+    setOtpError("");
+    
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: otpPhone, otp: otpCode })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Data contains profile from Supabase API
+        localStorage.setItem("mehta_logged_in", "true");
+        localStorage.setItem("mehta_user_phone", otpPhone);
+        setProfile(data.profile);
+        setIsLoggedIn(true);
+        setOtpError("");
+        window.dispatchEvent(new Event("authUpdated"));
+      } else {
+        setOtpError(data.message || "Invalid OTP.");
+      }
+    } catch (err) {
+      setOtpError("An error occurred while verifying OTP.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Update Profile Info
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName || !editPhone) return;
+    
+    const phone = localStorage.getItem("mehta_user_phone");
+    if (!phone) return;
 
-    const updated = {
-      ...profile,
-      name: editName,
-      phone: editPhone
-    };
-    setProfile(updated);
-    saveProfile(updated);
-    setProfileSuccess(true);
-    setTimeout(() => setProfileSuccess(false), 3000);
-    window.dispatchEvent(new Event("authUpdated"));
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, name: editName, email: editEmail })
+      });
+      const data = await res.json();
+      
+      if (data.success && data.profile) {
+        setProfile(data.profile);
+        setProfileSuccess(true);
+        setTimeout(() => setProfileSuccess(false), 3000);
+        window.dispatchEvent(new Event("authUpdated"));
+      }
+    } catch (err) {
+      console.error("Failed to update profile", err);
+    }
   };
 
   // Add Address
-  const handleAddAddress = (e: React.FormEvent) => {
+  const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addrName || !addrPhone || !addrStreet || !addrCity || !addrState || !addrPincode) return;
+    if (!addrName || !addrPhone || !addrStreet || !addrCity || !addrState || !addrPincode || !profile) return;
+    
+    try {
+      const { data, error } = await supabase.from('addresses').insert([{
+        customer_id: profile.id,
+        full_name: addrName,
+        mobile: addrPhone,
+        address: addrStreet,
+        city: addrCity,
+        state: addrState,
+        pincode: addrPincode,
+        is_default: !profile.saved_addresses || profile.saved_addresses.length === 0
+      }]).select().single();
 
-    const newAddr: Address = {
-      id: `addr-${Date.now()}`,
-      name: addrName,
-      phone: addrPhone,
-      street: addrStreet,
-      city: addrCity,
-      state: addrState,
-      pincode: addrPincode,
-      isDefault: !profile?.savedAddresses || profile.savedAddresses.length === 0
-    };
+      if (error) throw error;
 
-    const updatedAddresses = [...(profile?.savedAddresses || []), newAddr];
-    const updatedProfile = {
-      ...profile,
-      savedAddresses: updatedAddresses
-    };
-    setProfile(updatedProfile);
-    saveProfile(updatedProfile);
-    setShowAddressForm(false);
+      const mappedAddr = {
+        id: data.id,
+        name: data.full_name,
+        phone: data.mobile,
+        street: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        isDefault: data.is_default
+      };
 
-    // Reset Form
-    setAddrName("");
-    setAddrPhone("");
-    setAddrStreet("");
-    setAddrCity("");
-    setAddrState("");
-    setAddrPincode("");
+      setProfile({
+        ...profile,
+        saved_addresses: [...(profile.saved_addresses || []), mappedAddr]
+      });
+
+      setShowAddressForm(false);
+      setAddrName("");
+      setAddrPhone("");
+      setAddrStreet("");
+      setAddrCity("");
+      setAddrState("");
+      setAddrPincode("");
+    } catch (err) {
+      console.error("Failed to add address", err);
+    }
   };
 
   // Delete Address
-  const handleDeleteAddress = (id: string) => {
-    const updatedAddresses = (profile?.savedAddresses || []).filter((a: Address) => a.id !== id);
-    const updatedProfile = {
-      ...profile,
-      savedAddresses: updatedAddresses
-    };
-    setProfile(updatedProfile);
-    saveProfile(updatedProfile);
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      const { error } = await supabase.from('addresses').delete().eq('id', id);
+      if (error) throw error;
+      
+      setProfile({
+        ...profile,
+        saved_addresses: profile.saved_addresses.filter((a: any) => a.id !== id)
+      });
+    } catch (err) {
+      console.error("Failed to delete address", err);
+    }
   };
 
   // Remove from Wishlist
-  const handleRemoveWishlist = (productId: string) => {
-    const wishlistIds = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
-    const updatedIds = wishlistIds.filter((id: string) => id !== productId);
+  const handleRemoveFromWishlist = async (id: string) => {
+    const updated = wishlistItems.filter(item => item.id !== id);
+    setWishlistItems(updated);
+    const updatedIds = updated.map(i => i.id);
     localStorage.setItem("mehta_wishlist", JSON.stringify(updatedIds));
-    
-    // Refresh Wishlist view
-    const allProducts = getProducts();
-    setWishlist(allProducts.filter(p => updatedIds.includes(p.id)));
     window.dispatchEvent(new Event("wishlistUpdated"));
   };
 
@@ -215,137 +320,75 @@ function AccountContent() {
       {!isLoggedIn ? (
         <section className="py-24 bg-brand-cream/35 flex items-center justify-center min-h-[500px]">
           <div className="bg-white border border-brand-beige rounded-2xl shadow-xl max-w-md w-full p-8 overflow-hidden">
-            {!showRegister ? (
-              /* LOGIN FORM */
-              <form onSubmit={handleLogin} className="flex flex-col gap-5 animate-fade-in">
-                <div className="text-center mb-2">
-                  <h2 className="font-serif text-2xl font-bold text-brand-charcoal">Login Account</h2>
+              <div className="flex flex-col gap-5 animate-fade-in">
+                <div className="text-center mb-6">
+                  <h2 className="font-serif text-2xl font-bold text-brand-charcoal">Login to your account</h2>
                   <p className="text-xs text-muted-foreground mt-1">Access order history, tracking status and saved addresses.</p>
                 </div>
                 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address</label>
-                  <div className="relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/35 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
-                    <Mail className="h-4.5 w-4.5 text-muted-foreground mr-2" />
-                    <input 
-                      type="email" 
-                      placeholder="name@example.com"
-                      value={authEmail}
-                      onChange={(e) => setAuthEmail(e.target.value)}
-                      className="w-full text-xs outline-none bg-transparent"
-                      required
-                    />
-                  </div>
-                </div>
+                {!isOtpSent ? (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Phone Number</label>
+                      <div className="relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/35 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
+                        <Phone className="h-4.5 w-4.5 text-muted-foreground mr-2" />
+                        <span className="text-xs text-brand-charcoal font-bold mr-1">+91</span>
+                        <input 
+                          type="tel" 
+                          placeholder="98765 43210"
+                          value={otpPhone}
+                          onChange={(e) => setOtpPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          className="w-full text-xs outline-none bg-transparent"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {otpError && <p className="text-[0.65rem] text-red-500 mt-1">{otpError}</p>}
+                    </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Password</label>
-                  <div className="relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/35 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
-                    <Lock className="h-4.5 w-4.5 text-muted-foreground mr-2" />
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      className="w-full text-xs outline-none bg-transparent"
-                      required
-                    />
-                  </div>
-                </div>
+                    <button 
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={isLoading || otpPhone.length < 10}
+                      className="rounded-lg bg-brand-orange hover:bg-brand-orange-hover disabled:bg-brand-orange/50 py-2.8 text-xs font-bold text-white shadow-md transition-colors mt-2 flex justify-center items-center gap-2"
+                    >
+                      {isLoading ? "Sending..." : "Send OTP via SMS"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Enter OTP</label>
+                      <p className="text-[0.65rem] text-muted-foreground mb-1">
+                        Sent to +91 {otpPhone}. <button type="button" onClick={() => { setIsOtpSent(false); setOtpError(""); }} className="text-brand-orange underline">Change number</button>
+                      </p>
+                      <div className="relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/35 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
+                        <Lock className="h-4.5 w-4.5 text-muted-foreground mr-2" />
+                        <input 
+                          type="text" 
+                          placeholder="123456"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full text-xs outline-none bg-transparent tracking-widest font-bold"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {otpError && <p className="text-[0.65rem] text-red-500 mt-1">{otpError}</p>}
+                      <p className="text-[0.6rem] text-muted-foreground">Use 123456 if in simulation mode.</p>
+                    </div>
 
-                <button 
-                  type="submit"
-                  className="rounded-lg bg-brand-orange hover:bg-brand-orange-hover py-2.8 text-xs font-bold text-white shadow-md transition-colors mt-2"
-                >
-                  Log In
-                </button>
-
-                <div className="text-center text-xs text-muted-foreground mt-2">
-                  Don't have an account?{" "}
-                  <button 
-                    type="button" 
-                    onClick={() => setShowRegister(true)}
-                    className="text-brand-orange font-bold hover:underline"
-                  >
-                    Register / Sign Up
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* REGISTER FORM */
-              <form onSubmit={handleRegister} className="flex flex-col gap-4 animate-fade-in">
-                <div className="text-center mb-2">
-                  <h2 className="font-serif text-2xl font-bold text-brand-charcoal">Create Account</h2>
-                  <p className="text-xs text-muted-foreground mt-1">Sign up to unlock special coupons and quick checkout options.</p>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Full Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="Aarya Mehta"
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address</label>
-                  <input 
-                    type="email" 
-                    placeholder="name@example.com"
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    placeholder="98765 43210"
-                    value={authPhone}
-                    onChange={(e) => setAuthPhone(e.target.value)}
-                    className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Create Password"
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                    required
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  className="rounded-lg bg-brand-orange hover:bg-brand-orange-hover py-2.8 text-xs font-bold text-white shadow-md transition-colors mt-2"
-                >
-                  Create Account & Register
-                </button>
-
-                <div className="text-center text-xs text-muted-foreground mt-2">
-                  Already have an account?{" "}
-                  <button 
-                    type="button" 
-                    onClick={() => setShowRegister(false)}
-                    className="text-brand-orange font-bold hover:underline"
-                  >
-                    Sign In / Log In
-                  </button>
-                </div>
-              </form>
-            )}
+                    <button 
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={isLoading || otpCode.length < 6}
+                      className="rounded-lg bg-brand-orange hover:bg-brand-orange-hover disabled:bg-brand-orange/50 py-2.8 text-xs font-bold text-white shadow-md transition-colors mt-2 flex justify-center items-center gap-2"
+                    >
+                      {isLoading ? "Verifying..." : "Verify & Login"}
+                    </button>
+                  </>
+                )}
+              </div>
           </div>
         </section>
       ) : (
@@ -388,7 +431,7 @@ function AccountContent() {
                   onClick={() => setActiveTab("wishlist")}
                   className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "wishlist" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
                 >
-                  <Heart className="h-4 w-4" /> Gifting Wishlist ({wishlist.length})
+                  <Heart className="h-4 w-4" /> Gifting Wishlist ({wishlistItems.length})
                 </button>
 
                 <div className="h-px bg-brand-beige my-2"></div>
@@ -424,12 +467,13 @@ function AccountContent() {
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address (Read-only)</label>
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address (Optional)</label>
                         <input 
                           type="email" 
-                          value={profile?.email}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-brand-cream/35 text-muted-foreground outline-none cursor-not-allowed"
-                          disabled
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
+                          placeholder="Add your email"
                         />
                       </div>
 
@@ -497,9 +541,34 @@ function AccountContent() {
                             {/* Order Details Body */}
                             <div className="p-4 flex flex-col sm:flex-row gap-6 justify-between items-start">
                               <div className="flex-grow flex flex-col gap-3">
-                                <span className="inline-flex max-w-fit items-center gap-1 rounded-full bg-brand-orange/10 px-2.5 py-0.8 text-[0.65rem] font-bold text-brand-orange uppercase tracking-wider">
-                                  ● Status: {order.status}
-                                </span>
+                                <div className="mb-4 bg-white p-3 rounded-xl border border-brand-beige">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider">Order Timeline</span>
+                                    <span className="inline-flex max-w-fit items-center gap-1 rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-[0.65rem] font-bold text-brand-orange uppercase tracking-wider">
+                                      {order.status}
+                                    </span>
+                                  </div>
+                                  <div className="relative w-full h-1 bg-gray-100 rounded-full mt-3 mb-1">
+                                    <div 
+                                      className="absolute top-0 left-0 h-1 bg-emerald-500 rounded-full transition-all duration-1000"
+                                      style={{ 
+                                        width: order.status === 'Cancelled' ? '100%' :
+                                               order.status === 'Delivered' ? '100%' : 
+                                               order.status === 'Shipped' ? '66%' : 
+                                               order.status === 'Processing' ? '33%' : '5%',
+                                        backgroundColor: order.status === 'Cancelled' ? '#ef4444' : '#10b981'
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <div className="flex justify-between text-[0.6rem] text-muted-foreground font-semibold px-1 mt-2">
+                                    <span className={['Pending', 'Paid', 'Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700' : ''}>Placed</span>
+                                    <span className={['Paid', 'Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700' : ''}>Confirmed</span>
+                                    <span className={['Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700' : ''}>Shipped</span>
+                                    <span className={order.status === 'Delivered' ? 'text-emerald-700' : order.status === 'Cancelled' ? 'text-red-600' : ''}>
+                                      {order.status === 'Cancelled' ? 'Cancelled' : 'Delivered'}
+                                    </span>
+                                  </div>
+                                </div>
                                 
                                 <div className="flex flex-col gap-2.5 mt-1">
                                   {order.items.map((item, idx) => (
@@ -641,11 +710,11 @@ function AccountContent() {
                       </form>
                     )}
 
-                    {!profile?.savedAddresses || profile.savedAddresses.length === 0 ? (
+                    {!profile?.saved_addresses || profile.saved_addresses.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-6">No saved addresses found. Please add a billing/shipping address.</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {profile?.savedAddresses?.map((addr: Address) => (
+                        {profile?.saved_addresses?.map((addr: any) => (
                           <div key={addr.id} className="rounded-xl border border-brand-beige p-4 flex justify-between items-start bg-brand-cream/10">
                             <div>
                               <h4 className="font-serif text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
@@ -684,7 +753,7 @@ function AccountContent() {
                       My Wishlist
                     </h3>
 
-                    {wishlist.length === 0 ? (
+                    {wishlistItems.length === 0 ? (
                       <div className="text-center py-12">
                         <Heart className="h-12 w-12 text-brand-beige mb-3 mx-auto" />
                         <p className="text-xs text-muted-foreground">Your wishlist is currently empty.</p>
@@ -692,11 +761,11 @@ function AccountContent() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        {wishlist.map((item) => (
+                        {wishlistItems.map((item) => (
                           <div key={item.id} className="relative">
                             <ProductCard product={item} />
                             <button 
-                              onClick={() => handleRemoveWishlist(item.id)}
+                              onClick={() => handleRemoveFromWishlist(item.id)}
                               className="absolute top-2 right-12 z-20 h-8 w-8 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-colors"
                               title="Remove from Wishlist"
                             >

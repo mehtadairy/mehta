@@ -5,7 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { getCoupons, Coupon } from "@/lib/mockData";
+import { getCoupons, Coupon } from "@/lib/types";
 import { ShoppingBasket, Trash2, Plus, Minus, ArrowLeft, ArrowRight, Tag } from "lucide-react";
 
 export default function Cart() {

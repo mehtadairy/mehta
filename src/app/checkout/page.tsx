@@ -6,15 +6,9 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { 
-  getAddresses, 
-  saveAddresses, 
-  addOrder, 
-  getProfile,
-  Address,
-  Coupon
-} from "@/lib/mockData";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket } from "lucide-react";
+import { Address, Coupon } from "@/lib/types";
+import { supabase } from "@/lib/supabaseClient";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle } from "lucide-react";
 
 export default function Checkout() {
   const router = useRouter();
@@ -34,6 +28,9 @@ export default function Checkout() {
   const [newCity, setNewCity] = useState("");
   const [newState, setNewState] = useState("");
   const [newPincode, setNewPincode] = useState("");
+  const [pincodeError, setPincodeError] = useState("");
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [deliveryDays, setDeliveryDays] = useState("");
 
   // Payment integration simulator
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -65,14 +62,36 @@ export default function Checkout() {
     }
 
     // Addresses load
-    const userAddresses = getAddresses();
-    setAddresses(userAddresses);
-    const defaultAddr = userAddresses.find(a => a.isDefault);
-    if (defaultAddr) {
-      setSelectedAddressId(defaultAddr.id);
-    } else if (userAddresses.length > 0) {
-      setSelectedAddressId(userAddresses[0].id);
-    }
+    const loadAddrs = async () => {
+      const phone = localStorage.getItem("mehta_user_phone");
+      if (!phone) return;
+      
+      const { data: customer } = await supabase.from('customers').select('id').eq('phone', phone).single();
+      if (!customer) return;
+
+      const { data: userAddrs } = await supabase.from('addresses').select('*').eq('customer_id', customer.id);
+      if (userAddrs && userAddrs.length > 0) {
+        const mapped = userAddrs.map(a => ({
+          id: a.id,
+          name: a.full_name,
+          phone: a.mobile,
+          street: a.address,
+          city: a.city,
+          state: a.state,
+          pincode: a.pincode,
+          isDefault: a.is_default
+        }));
+        setAddresses(mapped);
+        
+        const defaultAddr = mapped.find(a => a.isDefault);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
+        } else {
+          setSelectedAddressId(mapped[0].id);
+        }
+      }
+    };
+    loadAddrs();
 
     // Coupon load
     const storedCoupon = localStorage.getItem("mehta_applied_coupon");
@@ -88,31 +107,88 @@ export default function Checkout() {
         : appliedCoupon.value)
     : 0;
 
-  const deliveryCharge = deliveryMethod === 'Home' 
-    ? (cartSubtotal >= 750 ? 0 : 60) 
-    : 0;
+  // Dynamic Delivery Calculation
+  useEffect(() => {
+    const fetchDeliveryZone = async () => {
+      if (deliveryMethod === 'Pickup') {
+        setDeliveryCharge(0);
+        setDeliveryDays("");
+        setPincodeError("");
+        return;
+      }
+      
+      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+      if (!selectedAddress) return;
+
+      const { data, error } = await supabase
+        .from('delivery_zones')
+        .select('*')
+        .eq('pincode', selectedAddress.pincode)
+        .single();
+
+      if (error || !data) {
+        setDeliveryCharge(100); // Default charge for unmapped pincodes
+        setDeliveryDays("3-5 Days");
+        setPincodeError("Standard delivery applies. To ensure delivery to your specific pincode, please contact support.");
+      } else {
+        setPincodeError("");
+        setDeliveryDays(data.estimated_days || "1-3 Days");
+        if (data.free_delivery_above && cartSubtotal >= data.free_delivery_above) {
+          setDeliveryCharge(0);
+        } else {
+          setDeliveryCharge(data.delivery_charge || 0);
+        }
+      }
+    };
+
+    fetchDeliveryZone();
+  }, [selectedAddressId, deliveryMethod, cartSubtotal, addresses]);
 
   const totalPayable = Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
 
   // Address Submit
-  const handleAddAddress = (e: React.FormEvent) => {
+  const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newPhone || !newStreet || !newCity || !newState || !newPincode) return;
 
-    const newAddr: Address = {
-      id: `addr-${Date.now()}`,
-      name: newName,
-      phone: newPhone,
-      street: newStreet,
+    const phone = localStorage.getItem("mehta_user_phone");
+    if (!phone) return;
+
+    const { data: customer } = await supabase.from('customers').select('id').eq('phone', phone).single();
+    if (!customer) {
+      alert("Customer record not found. Please log in again.");
+      return;
+    }
+
+    const { data, error } = await supabase.from('addresses').insert([{
+      customer_id: customer.id,
+      full_name: newName,
+      mobile: newPhone,
+      address: newStreet,
       city: newCity,
       state: newState,
       pincode: newPincode,
-      isDefault: addresses.length === 0
+      is_default: addresses.length === 0
+    }]).select().single();
+
+    if (error) {
+      alert("Failed to save address: " + error.message);
+      return;
+    }
+
+    const newAddr: Address = {
+      id: data.id,
+      name: data.full_name,
+      phone: data.mobile,
+      street: data.address,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode,
+      isDefault: data.is_default
     };
 
     const updated = [...addresses, newAddr];
     setAddresses(updated);
-    saveAddresses(updated);
     setSelectedAddressId(newAddr.id);
 
     // Reset Address form
@@ -134,55 +210,160 @@ export default function Checkout() {
     setShowPaymentModal(true);
   };
 
-  const executePayment = () => {
+  const executePayment = async () => {
     setIsPaying(true);
     
-    // Simulate payment transaction delays
-    setTimeout(() => {
-      setIsPaying(false);
-      setPaymentSuccess(true);
-      
+    try {
+      // Construct the order payload
       const orderAddress = deliveryMethod === 'Home' 
         ? addresses.find(a => a.id === selectedAddressId) as Address
         : { id: 'pickup', name: 'Self Pickup', phone: 'N/A', street: 'Mehta Sweet Mart Main Branch', city: 'Ahmedabad', state: 'Gujarat', pincode: '380009', isDefault: false };
 
-      const profile = getProfile();
+      const userName = localStorage.getItem("mehta_user_name") || "Customer";
+      const userPhone = localStorage.getItem("mehta_user_phone") || "9999999999";
+      const orderId = `ord_${Date.now()}`;
 
-      // Submit Order to Mock Database
-      const orderItemModel = cart.map(item => ({
-        productId: item.productId,
-        productName: item.productName,
+      const orderPayload = {
+        id: orderId,
+        order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+        user_name: userName,
+        user_phone: userPhone,
+        subtotal: cartSubtotal,
+        discount: discountAmount,
+        coupon_code: appliedCoupon?.code || null,
+        delivery_charge: deliveryCharge,
+        total: totalPayable,
+        shipping_address: orderAddress,
+        payment_method: paymentOption === 'COD' ? 'COD' : 'Razorpay',
+        payment_status: 'Pending',
+        status: 'Pending'
+      };
+
+      const orderItems = cart.map(item => ({
+        order_id: orderId,
+        product_id: item.productId,
+        product_name: item.productName,
         image: item.image,
         weight: item.weight,
         price: item.price,
         quantity: item.quantity
       }));
 
-      const newOrder = addOrder({
-        items: orderItemModel,
-        subtotal: cartSubtotal,
-        discount: discountAmount,
-        couponCode: appliedCoupon?.code,
-        deliveryCharge: deliveryCharge,
-        total: totalPayable,
-        shippingAddress: orderAddress,
-        paymentMethod: paymentOption === 'COD' ? 'COD' : 'Razorpay',
-        paymentStatus: paymentOption === 'COD' ? 'Pending' : 'Paid',
-        paymentId: paymentOption === 'COD' ? undefined : `pay_${Math.floor(10000000 + Math.random() * 90000000)}`,
-        status: 'Processing',
-        userName: profile.name,
-        userPhone: profile.phone
+      // 2. Create Order on Backend (which logs it to DB)
+      const orderRes = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: totalPayable, orderPayload, orderItems })
       });
+      const orderData = await orderRes.json();
+      
+      if (!orderData || !orderData.id) {
+        alert("Server error. Please try again.");
+        setIsPaying(false);
+        return;
+      }
 
-      setFinalOrderNumber(newOrder.orderNumber);
-      setReceiptNumber(newOrder.paymentId || "COD-ORDER");
+      if (paymentOption === 'COD') {
+        // Handle COD Flow - Backend already logged it as pending
+        await handleOrderSubmission('COD', 'Pending', undefined, undefined, orderPayload);
+        setIsPaying(false);
+        setPaymentSuccess(true);
+        return;
+      }
 
-      // Clear Shopping Cart & Coupons
-      localStorage.removeItem("mehta_cart");
-      localStorage.removeItem("mehta_applied_coupon");
-      window.dispatchEvent(new Event("cartUpdated"));
+      // 3. Initialize Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_your_key_id', // Note: use public key here if available
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Mehta Sweet Mart",
+        description: "Premium Sweets Transaction",
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          // 4. Verify Payment on Backend
+          const verifyRes = await fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const verifyData = await verifyRes.json();
+          
+          if (verifyData.success) {
+            await handleOrderSubmission('Razorpay', 'Paid', response.razorpay_payment_id, response.razorpay_order_id, orderPayload);
+            setPaymentSuccess(true);
+          } else {
+            alert("Payment verification failed!");
+          }
+          setIsPaying(false);
+        },
+        prefill: {
+          name: localStorage.getItem("mehta_user_name") || "Customer",
+          contact: localStorage.getItem("mehta_user_phone") || "9999999999",
+        },
+        theme: {
+          color: "#D46D2D" // brand-orange
+        }
+      };
 
-    }, 2500);
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        alert(response.error.description);
+        setIsPaying(false);
+      });
+      rzp.open();
+      
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+      setIsPaying(false);
+    }
+  };
+
+  const handleOrderSubmission = async (method: string, paymentStatus: string, paymentId?: string, rzpOrderId?: string, orderPayload?: any) => {
+    // 3. Instead of inserting into Supabase here (which is done on backend),
+    // we just trigger the notification flow and update local states
+    const finalOrder = {
+      ...orderPayload,
+      payment_method: method,
+      payment_status: paymentStatus,
+      payment_id: paymentId,
+      status: 'Processing'
+    };
+    
+    // Trigger Notifications
+    try {
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: finalOrder,
+          customerEmail: "user@example.com", // Replace with real email if available
+          customerPhone: orderPayload.user_phone
+        })
+      });
+    } catch (e) {
+      console.error("Failed to trigger notifications", e);
+    }
+
+    setFinalOrderNumber(finalOrder.order_number);
+    setReceiptNumber(finalOrder.payment_id || "COD-ORDER");
+
+    localStorage.removeItem("mehta_cart");
+    localStorage.removeItem("mehta_applied_coupon");
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
   };
 
   const closeReceiptModal = () => {
@@ -461,6 +642,19 @@ export default function Checkout() {
                   <span>Grand Total</span>
                   <span className="font-serif text-lg text-brand-orange">₹{totalPayable}</span>
                 </div>
+
+                {pincodeError && (
+                  <div className="bg-red-50 text-red-600 text-[0.65rem] font-medium p-2 rounded-lg mt-2 mb-2 border border-red-100 flex gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    <p>{pincodeError}</p>
+                  </div>
+                )}
+
+                {deliveryDays && !pincodeError && (
+                  <div className="bg-emerald-50 text-emerald-700 text-[0.65rem] font-bold p-2 rounded-lg mt-2 mb-2 border border-emerald-100 text-center">
+                    Estimated Delivery: {deliveryDays}
+                  </div>
+                )}
 
                 <button 
                   onClick={handleProceedToPayment}

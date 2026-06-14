@@ -5,7 +5,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { 
-  getProducts, 
   saveProducts, 
   getOrders, 
   saveOrders, 
@@ -14,7 +13,16 @@ import {
   Product, 
   Order, 
   Coupon 
-} from "@/lib/mockData";
+} from "@/lib/types";
+import { fetchProducts, supabase } from "@/lib/supabaseClient";
+import imageCompression from "browser-image-compression";
+import AdminCategories from "@/components/AdminCategories";
+import AdminBanners from "@/components/AdminBanners";
+import AdminCMS from "@/components/AdminCMS";
+import AdminNotifications from "@/components/AdminNotifications";
+import AdminPayments from "@/components/AdminPayments";
+import AdminAnalytics from "@/components/AdminAnalytics";
+import AdminBackups from "@/components/AdminBackups";
 import { 
   LayoutDashboard, 
   Dessert, 
@@ -27,16 +35,25 @@ import {
   TrendingUp, 
   IndianRupee, 
   Check,
-  X
+  X,
+  UploadCloud,
+  Loader2,
+  Phone,
+  FileText,
+  Bell,
+  Database
 } from "lucide-react";
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "marketing">("dashboard");
-
-  // Core Database Arrays
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "cms" | "notifications" | "payments" | "backups">("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
 
   // Product CRUD states
   const [showProductForm, setShowProductForm] = useState(false);
@@ -45,7 +62,7 @@ export default function AdminPanel() {
   // Product Form states
   const [prodName, setProdName] = useState("");
   const [prodDesc, setProdDesc] = useState("");
-  const [prodCat, setProdCat] = useState("traditional");
+  const [prodCat, setProdCat] = useState("milk-sweets");
   const [prodPrice250, setProdPrice250] = useState("");
   const [prodPrice500, setProdPrice500] = useState("");
   const [prodPrice1kg, setProdPrice1kg] = useState("");
@@ -53,21 +70,81 @@ export default function AdminPanel() {
   const [prodPopular, setProdPopular] = useState(false);
   const [prodFestive, setProdFestive] = useState(false);
   const [prodImage, setProdImage] = useState("https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   
-  // Coupon Form states
-  const [showCouponForm, setShowCouponForm] = useState(false);
-  const [cpCode, setCpCode] = useState("");
-  const [cpType, setCpType] = useState<"percentage" | "fixed">("percentage");
-  const [cpVal, setCpVal] = useState("");
-  const [cpMin, setCpMin] = useState("");
-  const [cpDesc, setCpDesc] = useState("");
-
   // Load Admin Data
   useEffect(() => {
-    setProducts(getProducts());
-    setOrders(getOrders());
-    setCoupons(getCoupons());
-  }, [activeTab]);
+    if (!isAdminAuth) {
+      const stored = localStorage.getItem("mehta_admin_auth");
+      if (stored === "true") setIsAdminAuth(true);
+      return;
+    }
+
+    const loadData = async () => {
+      const allProducts = await fetchProducts();
+      setProducts(allProducts);
+      
+      const { data: userOrders, error: ordersError } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('created_at', { ascending: false });
+
+      if (!ordersError && userOrders) {
+         const formattedOrders = userOrders.map((o: any) => ({
+           id: o.id,
+           orderNumber: o.order_number,
+           date: new Date(o.created_at).toLocaleDateString(),
+           status: o.status,
+           total: o.total,
+           paymentStatus: o.payment_status,
+           userName: o.user_name,
+           userPhone: o.user_phone,
+           items: o.order_items ? o.order_items.map((i: any) => ({
+              productId: i.product_id,
+              productName: i.product_name,
+              weight: i.weight,
+              quantity: i.quantity,
+              price: i.price,
+              image: i.image
+           })) : []
+         }));
+         setOrders(formattedOrders as any);
+      } else {
+         setOrders(getOrders());
+      }
+      
+      
+      const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+      if (cats) setCategories(cats);
+
+      const { data: bans } = await supabase.from('banners').select('*').order('sort_order', { ascending: true });
+      if (bans) setBanners(bans);
+
+    };
+    if (isAdminAuth) loadData();
+  }, [activeTab, isAdminAuth]);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      if (res.ok) {
+        setIsAdminAuth(true);
+        localStorage.setItem("mehta_admin_auth", "true");
+      } else {
+        const data = await res.json();
+        setLoginError(data.error || "Login failed");
+      }
+    } catch (e) {
+      setLoginError("Network error");
+    }
+  };
 
   // Calculations for Stats Card
   const totalRevenue = orders
@@ -77,7 +154,7 @@ export default function AdminPanel() {
   const totalCustomers = Array.from(new Set(orders.map(o => o.userName))).length || 1;
 
   // --- PRODUCT CRUD ACTIONS ---
-  const handleAddProduct = (e: React.FormEvent) => {
+  const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodName || !prodDesc) return;
 
@@ -94,43 +171,67 @@ export default function AdminPanel() {
 
     if (editingProduct) {
       // EDIT MODE
-      const updated = products.map(p => {
-        if (p.id === editingProduct.id) {
-          return {
-            ...p,
-            name: prodName,
-            description: prodDesc,
-            category: prodCat,
-            prices: parsedPrices,
-            stock: Number(prodStock),
-            popular: prodPopular,
-            festivalSpecial: prodFestive,
-            images: [prodImage]
-          };
-        }
-        return p;
-      });
-      setProducts(updated);
-      saveProducts(updated);
-      setEditingProduct(null);
-    } else {
-      // ADD MODE
-      const newProd: Product = {
-        id: `prod-${Date.now()}`,
+      const { error } = await supabase.from('products').update({
         name: prodName,
         description: prodDesc,
-        category: prodCat,
+        category_slug: prodCat,
         prices: parsedPrices,
-        popular: prodPopular,
-        festivalSpecial: prodFestive,
-        rating: 5.0,
-        reviewsCount: 0,
         stock: Number(prodStock),
+        popular: prodPopular,
+        festival_special: prodFestive,
         images: [prodImage]
-      };
-      const updated = [newProd, ...products];
-      setProducts(updated);
-      saveProducts(updated);
+      }).eq('id', editingProduct.id);
+      
+      if (!error) {
+        setProducts(products.map(p => p.id === editingProduct.id ? {
+          ...p,
+          name: prodName,
+          description: prodDesc,
+          category: prodCat,
+          prices: parsedPrices,
+          stock: Number(prodStock),
+          popular: prodPopular,
+          festivalSpecial: prodFestive,
+          images: [prodImage]
+        } : p));
+        setEditingProduct(null);
+      } else {
+        console.error("Failed to update product:", error);
+      }
+    } else {
+      // ADD MODE
+      const { data, error } = await supabase.from('products').insert([{
+        name: prodName,
+        description: prodDesc,
+        category_slug: prodCat,
+        prices: parsedPrices,
+        stock: Number(prodStock),
+        popular: prodPopular,
+        festival_special: prodFestive,
+        images: [prodImage],
+        rating: 5.0,
+        reviews_count: 0
+      }]).select();
+
+      if (!error && data) {
+        const newP = data[0];
+        const newProd: Product = {
+          id: newP.id,
+          name: newP.name,
+          description: newP.description,
+          category: newP.category_slug,
+          prices: newP.prices,
+          popular: newP.popular,
+          festivalSpecial: newP.festival_special,
+          rating: newP.rating || 5.0,
+          reviewsCount: newP.reviews_count || 0,
+          stock: newP.stock,
+          images: newP.images
+        };
+        setProducts([newProd, ...products]);
+      } else {
+        console.error("Failed to insert product:", error);
+      }
     }
 
     // Reset fields
@@ -160,60 +261,152 @@ export default function AdminPanel() {
     setShowProductForm(true);
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (confirm("Are you sure you want to delete this product?")) {
-      const updated = products.filter(p => p.id !== id);
-      setProducts(updated);
-      saveProducts(updated);
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (!error) {
+        setProducts(products.filter(p => p.id !== id));
+      } else {
+        console.error("Failed to delete product:", error);
+      }
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be smaller than 5MB");
+      return;
+    }
+
+    // Validate type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Please select a valid image file (JPG, PNG, WEBP)");
+      return;
+    }
+
+    setUploadError("");
+    setIsUploadingImage(true);
+
+    try {
+      // 1. Compress image
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: "image/webp"
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      
+      // 2. Generate unique filename
+      const fileExt = "webp";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // 3. Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('products')
+        .upload(filePath, compressedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/webp'
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // 4. Get Public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      setProdImage(publicUrlData.publicUrl);
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setUploadError(err.message || "Failed to upload image.");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
   // --- ORDER MANAGEMENT ACTIONS ---
-  const handleUpdateOrderStatus = (orderId: string, newStatus: any) => {
-    const updated = orders.map(o => {
-      if (o.id === orderId) {
-        // Auto mark as paid if delivered
-        const payStatus = newStatus === 'Delivered' ? 'Paid' : o.paymentStatus;
-        return { ...o, status: newStatus, paymentStatus: payStatus };
-      }
-      return o;
-    });
-    setOrders(updated);
-    saveOrders(updated);
-  };
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: any) => {
+    const payStatus = newStatus === 'Delivered' ? 'Paid' : orders.find(o => o.id === orderId)?.paymentStatus;
 
-  // --- MARKETING MARKETING ACTIONS ---
-  const handleAddCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cpCode || !cpVal) return;
+    const { error } = await supabase.from('orders').update({
+      status: newStatus,
+      payment_status: payStatus
+    }).eq('id', orderId);
 
-    const newCoupon: Coupon = {
-      code: cpCode.toUpperCase().trim(),
-      discountType: cpType,
-      value: Number(cpVal),
-      minOrderValue: Number(cpMin) || 0,
-      description: cpDesc || `Get flat/percentage discount off orders.`
-    };
-
-    const updated = [newCoupon, ...coupons];
-    setCoupons(updated);
-    saveCoupons(updated);
-
-    // Reset Form
-    setCpCode("");
-    setCpVal("");
-    setCpMin("");
-    setCpDesc("");
-    setShowCouponForm(false);
-  };
-
-  const handleDeleteCoupon = (code: string) => {
-    if (confirm(`Delete coupon code ${code}?`)) {
-      const updated = coupons.filter(c => c.code !== code);
-      setCoupons(updated);
-      saveCoupons(updated);
+    if (!error) {
+      const updated = orders.map(o => {
+        if (o.id === orderId) {
+          return { ...o, status: newStatus, paymentStatus: payStatus as string };
+        }
+        return o;
+      });
+      setOrders(updated as any);
+    } else {
+      console.error("Failed to update order:", error);
     }
   };
+
+  if (!isAdminAuth) {
+    return (
+      <div className="min-h-screen bg-brand-cream flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-serif font-bold text-brand-charcoal">
+              Admin Portal
+            </h2>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleAdminLogin}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <label htmlFor="email-address" className="sr-only">Email address</label>
+                <input
+                  id="email-address"
+                  name="email"
+                  type="email"
+                  required
+                  className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-brand-beige placeholder-gray-500 text-brand-charcoal focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm mb-4"
+                  placeholder="Admin Email address"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                />
+                <label htmlFor="password" className="sr-only">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-brand-beige placeholder-gray-500 text-brand-charcoal focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm"
+                  placeholder="Password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            {loginError && <p className="text-red-500 text-sm text-center">{loginError}</p>}
+            <div>
+              <button
+                type="submit"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-brand-orange hover:bg-brand-orange-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange transition-colors shadow-lg"
+              >
+                Sign in
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -264,97 +457,58 @@ export default function AdminPanel() {
                 <Users className="h-4 w-4" /> Customers Directory
               </button>
               <button 
-                onClick={() => setActiveTab("marketing")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "marketing" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+                onClick={() => setActiveTab("categories")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "categories" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
               >
-                <Tag className="h-4 w-4" /> Marketing Coupon Codes
+                <Dessert className="h-4 w-4" /> Category Management
+              </button>
+              <button 
+                onClick={() => setActiveTab("banners")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "banners" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <UploadCloud className="h-4 w-4" /> Homepage Banners
+              </button>
+              <button 
+                onClick={() => setActiveTab("cms")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "cms" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <FileText className="h-4 w-4" /> CMS Pages
+              </button>
+              <button 
+                onClick={() => setActiveTab("notifications")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "notifications" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <Bell className="h-4 w-4" /> Notifications
+              </button>
+              <button 
+                onClick={() => setActiveTab("payments")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "payments" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <IndianRupee className="h-4 w-4" /> Payments
+              </button>
+              <button 
+                onClick={() => setActiveTab("backups")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "backups" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <Database className="h-4 w-4" /> Backups
+              </button>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem("mehta_admin_auth");
+                  setIsAdminAuth(false);
+                }}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors text-red-500 hover:bg-red-50`}
+              >
+                Logout
               </button>
             </aside>
 
             {/* Main Tabs Container */}
             <main className="lg:col-span-9 bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-xs min-h-[450px]">
               
-              {/* ==================== TAB 1: OVERVIEW ==================== */}
+              {/* ==================== TAB 1: DASHBOARD ANALYTICS ==================== */}
               {activeTab === "dashboard" && (
-                <div className="flex flex-col gap-8 animate-fade-in">
-                  <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-beige pb-3">
-                    Administrative Overview
-                  </h3>
-
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
-                    <div className="border border-brand-beige rounded-xl p-5 bg-brand-cream/10">
-                      <div className="flex items-center justify-between text-muted-foreground mb-3 text-xs">
-                        <span>Total Revenue</span>
-                        <IndianRupee className="h-4 w-4 text-brand-orange" />
-                      </div>
-                      <span className="font-serif text-2xl font-bold text-brand-charcoal">₹{totalRevenue}</span>
-                    </div>
-
-                    <div className="border border-brand-beige rounded-xl p-5 bg-brand-cream/10">
-                      <div className="flex items-center justify-between text-muted-foreground mb-3 text-xs">
-                        <span>Total Invoices</span>
-                        <ShoppingBag className="h-4 w-4 text-brand-gold" />
-                      </div>
-                      <span className="font-serif text-2xl font-bold text-brand-charcoal">{orders.length}</span>
-                    </div>
-
-                    <div className="border border-brand-beige rounded-xl p-5 bg-brand-cream/10">
-                      <div className="flex items-center justify-between text-muted-foreground mb-3 text-xs">
-                        <span>Buyer Base</span>
-                        <Users className="h-4 w-4 text-brand-orange" />
-                      </div>
-                      <span className="font-serif text-2xl font-bold text-brand-charcoal">{totalCustomers}</span>
-                    </div>
-
-                    <div className="border border-brand-beige rounded-xl p-5 bg-brand-cream/10">
-                      <div className="flex items-center justify-between text-muted-foreground mb-3 text-xs">
-                        <span>Catalog Sweets</span>
-                        <Dessert className="h-4 w-4 text-brand-gold" />
-                      </div>
-                      <span className="font-serif text-2xl font-bold text-brand-charcoal">{products.length}</span>
-                    </div>
-                  </div>
-
-                  {/* Recent Invoices list */}
-                  <div>
-                    <h4 className="font-serif text-sm font-bold text-brand-charcoal mb-4 flex items-center gap-1">
-                      <TrendingUp className="h-4 w-4 text-brand-orange" /> Recent Orders Placed
-                    </h4>
-                    {orders.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-6 text-center border rounded-xl border-dashed border-brand-beige">No invoices recorded yet.</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="border-b border-brand-beige text-muted-foreground font-semibold">
-                              <th className="py-2.5">Invoice ID</th>
-                              <th className="py-2.5">Customer</th>
-                              <th className="py-2.5">Date</th>
-                              <th className="py-2.5">Paid Total</th>
-                              <th className="py-2.5 text-right">Progress Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {orders.slice(0, 5).map((order) => (
-                              <tr key={order.id} className="border-b border-brand-beige/50">
-                                <td className="py-3 font-semibold text-brand-charcoal">{order.orderNumber}</td>
-                                <td className="py-3">{order.userName}</td>
-                                <td className="py-3">{order.date}</td>
-                                <td className="py-3 font-serif font-bold text-brand-orange">₹{order.total}</td>
-                                <td className="py-3 text-right">
-                                  <span className="inline-block bg-brand-cream px-2.5 py-0.5 rounded-full font-semibold text-[0.62rem] uppercase tracking-wider text-brand-gold-dark">
-                                    {order.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <AdminAnalytics />
               )}
 
               {/* ==================== TAB 2: PRODUCTS CRUD ==================== */}
@@ -403,13 +557,9 @@ export default function AdminPanel() {
                             onChange={(e) => setProdCat(e.target.value)}
                             className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white cursor-pointer font-semibold"
                           >
-                            <option value="traditional">Traditional Sweets</option>
-                            <option value="dryfruit">Dry Fruit Sweets</option>
-                            <option value="bengali">Bengali Sweets</option>
-                            <option value="farsan">Premium Farsan</option>
-                            <option value="namkeen">Crispy Namkeen</option>
-                            <option value="gifts">Gift Boxes</option>
-                            <option value="specials">Festival Specials</option>
+                            <option value="milk-sweets">Sweets of Pure Milk</option>
+                            <option value="ghee-sweets">Sweets of Pure Ghee</option>
+                            <option value="farsan">Tasty & Chat-Patta Farsan</option>
                           </select>
                         </div>
                       </div>
@@ -493,13 +643,43 @@ export default function AdminPanel() {
                       </div>
 
                       <div className="flex flex-col gap-1.5 mt-2">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Product Photo Placeholder URL</label>
-                        <input 
-                          type="text" 
-                          value={prodImage}
-                          onChange={(e) => setProdImage(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white"
-                        />
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Product Image (Supabase Storage)</label>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                          {/* Image Preview */}
+                          <div className="relative h-24 w-24 rounded-lg overflow-hidden border border-brand-beige bg-brand-cream/50 flex-shrink-0 flex justify-center items-center">
+                            {isUploadingImage ? (
+                              <Loader2 className="h-6 w-6 text-brand-orange animate-spin" />
+                            ) : prodImage ? (
+                              <img src={prodImage} alt="Product Preview" className="h-full w-full object-cover" />
+                            ) : (
+                              <Dessert className="h-8 w-8 text-brand-beige" />
+                            )}
+                          </div>
+                          
+                          {/* Upload Controls */}
+                          <div className="flex flex-col gap-2 flex-grow">
+                            <label className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-colors border ${isUploadingImage ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-brand-charcoal border-brand-beige hover:border-brand-orange hover:text-brand-orange shadow-sm'}`}>
+                              <UploadCloud className="h-4 w-4" />
+                              {isUploadingImage ? 'Uploading to Supabase...' : 'Select Image File'}
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/jpeg, image/png, image/webp"
+                                onChange={handleImageUpload}
+                                disabled={isUploadingImage}
+                              />
+                            </label>
+                            
+                            <p className="text-[0.65rem] text-muted-foreground">
+                              Max 5MB. Formats: JPG, PNG, WEBP. Images are auto-optimized.
+                            </p>
+                            
+                            {uploadError && (
+                              <p className="text-[0.65rem] text-red-500 font-bold">{uploadError}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex justify-end gap-3 mt-4 border-t border-brand-beige pt-4">
@@ -671,139 +851,27 @@ export default function AdminPanel() {
                   )}
                 </div>
               )}
-
-              {/* ==================== TAB 5: COUPON CODES ==================== */}
-              {activeTab === "marketing" && (
-                <div className="flex flex-col gap-6 animate-fade-in">
-                  <div className="flex justify-between items-center border-b border-brand-beige pb-3">
-                    <h3 className="font-serif text-lg font-bold text-brand-charcoal">
-                      Marketing Coupons Configurations
-                    </h3>
-                    {!showCouponForm && (
-                      <button 
-                        onClick={() => setShowCouponForm(true)}
-                        className="inline-flex items-center gap-1 text-xs font-bold bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg px-4 py-2 transition-colors shadow-xs"
-                      >
-                        <Plus className="h-4 w-4" /> Create Coupon
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Coupon Form modal */}
-                  {showCouponForm && (
-                    <form onSubmit={handleAddCoupon} className="bg-brand-cream/35 border border-brand-beige rounded-2xl p-6 flex flex-col gap-4 animate-fade-in-up">
-                      <div className="flex items-center justify-between border-b border-brand-beige pb-3 mb-2">
-                        <h4 className="font-serif text-sm font-bold text-brand-charcoal">Create Coupon Code</h4>
-                        <button type="button" onClick={() => setShowCouponForm(false)} className="p-1 hover:bg-brand-cream rounded-full"><X className="h-4.5 w-4.5" /></button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Coupon Code Name *</label>
-                          <input 
-                            type="text" 
-                            placeholder="e.g. MITHAI20"
-                            value={cpCode}
-                            onChange={(e) => setCpCode(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none uppercase font-bold"
-                            required
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Discount type</label>
-                          <select 
-                            value={cpType}
-                            onChange={(e) => setCpType(e.target.value as any)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white cursor-pointer font-semibold"
-                          >
-                            <option value="percentage">Percentage (%) Discount</option>
-                            <option value="fixed">Fixed Flat (₹) Discount</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Discount Value *</label>
-                          <input 
-                            type="number" 
-                            placeholder="e.g. 10 or 150"
-                            value={cpVal}
-                            onChange={(e) => setCpVal(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white"
-                            required
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Minimum Order Threshold (₹)</label>
-                          <input 
-                            type="number" 
-                            placeholder="e.g. 500"
-                            value={cpMin}
-                            onChange={(e) => setCpMin(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Short Description *</label>
-                        <input 
-                          type="text" 
-                          placeholder="Get 10% off your next sweet box above ₹500"
-                          value={cpDesc}
-                          onChange={(e) => setCpDesc(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex justify-end gap-3 mt-4 border-t border-brand-beige pt-4">
-                        <button 
-                          type="button" 
-                          onClick={() => setShowCouponForm(false)}
-                          className="px-4 py-2 border border-brand-beige rounded-lg text-xs font-bold text-brand-charcoal"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="px-5 py-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg text-xs font-bold"
-                        >
-                          Create Coupon
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {/* Coupons checklist directory */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {coupons.map((c) => (
-                      <div key={c.code} className="border border-brand-beige rounded-xl p-4 flex justify-between items-start bg-brand-cream/10">
-                        <div>
-                          <h4 className="font-serif text-sm font-bold text-brand-charcoal flex items-center gap-2">
-                            <span className="bg-brand-orange/10 border border-brand-orange/20 text-brand-orange px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider font-bold">{c.code}</span>
-                          </h4>
-                          <p className="text-[0.7rem] text-muted-foreground mt-2 leading-relaxed font-semibold">
-                            {c.description}
-                          </p>
-                          <span className="text-[0.65rem] text-brand-gold font-bold block mt-1.5">
-                            Min Order Requirement: ₹{c.minOrderValue}
-                          </span>
-                        </div>
-                        
-                        <button 
-                          onClick={() => handleDeleteCoupon(c.code)}
-                          className="text-red-500 hover:text-red-700 transition-colors p-1"
-                          aria-label="Delete Coupon"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {/* ==================== TAB 6: CATEGORIES ==================== */}
+              {activeTab === "categories" && (
+                <AdminCategories categories={categories} setCategories={setCategories} />
               )}
+
+              {/* ==================== TAB 7: BANNERS ==================== */}
+              {activeTab === "banners" && (
+                <AdminBanners banners={banners} setBanners={setBanners} />
+              )}
+
+              {/* ==================== TAB 8: CMS PAGES ==================== */}
+              {activeTab === "cms" && <AdminCMS />}
+              
+              {/* ==================== TAB 9: NOTIFICATIONS ==================== */}
+              {activeTab === "notifications" && <AdminNotifications />}
+              
+              {/* ==================== TAB 10: PAYMENTS ==================== */}
+              {activeTab === "payments" && <AdminPayments />}
+              
+              {/* ==================== TAB 11: BACKUPS ==================== */}
+              {activeTab === "backups" && <AdminBackups />}
 
             </main>
           </div>

@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FFFDF9; /* Warm luxury cream */
-  --foreground: #2B1E17; /* Sweet shop dark brown/charcoal */
-  --card: #ffffff;
-  --card-foreground: #2B1E17;
-  --popover: #ffffff;
-  --popover-foreground: #2B1E17;
-  --primary: #E05E1B; /* Rich brand orange */
+  --background: #FCF9F2; /* Luxury Ivory */
+  --foreground: #2A1E17; /* Deep Espresso Charcoal */
+  --card: #FFFFFF;
+  --card-foreground: #2A1E17;
+  --popover: #FFFFFF;
+  --popover-foreground: #2A1E17;
+  --primary: #D46D2D; /* Premium Saffron/Orange */
   --primary-foreground: #ffffff;
-  --secondary: #D4AF37; /* Luxury gold */
-  --secondary-foreground: #2B1E17;
+  --secondary: #D4AF37; /* Luxury Gold */
+  --secondary-foreground: #2A1E17;
   --muted: #F3EFE7;
-  --muted-foreground: #6B5E56;
+  --muted-foreground: #7E6B5A;
   --accent: #FAF5EC;
-  --accent-foreground: #E05E1B;
+  --accent-foreground: #D46D2D;
   --destructive: #EF4444;
   --destructive-foreground: #ffffff;
-  --border: #E8DFD3;
-  --input: #E8DFD3;
-  --ring: #E05E1B;
+  --border: #EAE0D3;
+  --input: #EAE0D3;
+  --ring: #D46D2D;
   --radius: 0.75rem;
 }
 
@@ -27,13 +27,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
-  --color-brand-orange: #E05E1B;
-  --color-brand-orange-hover: #C24F14;
+  --color-brand-orange: #D46D2D;
+  --color-brand-orange-hover: #BF5E23;
   --color-brand-gold: #D4AF37;
   --color-brand-gold-dark: #B89324;
-  --color-brand-cream: #FAF5EC;
-  --color-brand-charcoal: #2B1E17;
-  --color-brand-beige: #F3EFE7;
+  --color-brand-cream: #FCF9F2;
+  --color-brand-charcoal: #2A1E17;
+  --color-brand-beige: #EAE0D3;
   
   --font-serif: var(--font-playfair), Georgia, serif;
   --font-sans: var(--font-outfit), sans-serif;
@@ -60,6 +60,21 @@
   to {
     transform: translateX(0);
   }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 body {

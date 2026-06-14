@@ -6,7 +6,8 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { getProducts, Product, CATEGORIES } from "@/lib/mockData";
+import { Product, CATEGORIES } from "@/lib/types";
+import { fetchProducts } from "@/lib/supabaseClient";
 import { Search, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,113 +36,62 @@ const itemVariants = {
 
 const getCategoryBanner = (catId: string) => {
   switch (catId) {
-    case "traditional":
+    case "milk-sweets":
       return {
-        title: "Traditional Sweets",
-        description: "Experience the rich heritage of Indian sweets made from pure cow ghee, fresh milk solids, and premium dry fruits, crafted to perfection since 1972.",
-        bgClass: "from-[#800c0c] via-[#4d0707] to-[#240303]",
-        bgImage: "/assorted_sweets_1781172431124.png"
+        title: "Sweets of Pure Milk",
+        description: "Exquisite and rich delicacies prepared from fresh thickened milk solids (khoya), mawa, and pure malai, crafted to perfection since 1952.",
+        bgClass: "from-[#0a4d8c] via-[#05294c] to-[#020e1a]",
+        bgImage: "/mix_sweet_rolls_1781172915749.png"
       };
-    case "namkeen":
+    case "ghee-sweets":
       return {
-        title: "Tasty & Chat-Patta Farsan",
-        description: "Explore our collection of crispy, savory, and perfectly spiced Gujarati namkeens to accompany your teatime and gatherings.",
-        bgClass: "from-[#2c3e50] via-[#1a252f] to-[#0f171e]",
-        bgImage: "/namkeen_ganthia_1781172443622.png"
-      };
-    case "dryfruit":
-      return {
-        title: "Dry Fruit Sweets",
-        description: "Luxurious treats loaded with premium cashews, almonds, pistachios, figs, and dates. Naturally sweet and nutrient-rich.",
-        bgClass: "from-[#4d320c] via-[#2c1d07] to-[#120c03]",
-        bgImage: "/dry_fruit_kachori_1781172416985.png"
-      };
-    case "bengali":
-      return {
-        title: "Bengali Sweets",
-        description: "Soft, spongy cottage cheese (chhena) delicacies dipped in aromatic sugar syrups. Melt-in-your-mouth perfection.",
-        bgClass: "from-[#0c5959] via-[#063333] to-[#021818]",
+        title: "Sweets of Pure Ghee",
+        description: "Timeless traditional Gujarati sweets slow-cooked and fried in 100% pure premium desi cow ghee.",
+        bgClass: "from-[#5d4615] via-[#33260c] to-[#120e04]",
         bgImage: "/prod_ghari_1781172844424.png"
       };
     case "farsan":
       return {
-        title: "Premium Farsan",
-        description: "Freshly prepared traditional hot snacks, made daily with high-quality ingredients and regional spices.",
-        bgClass: "from-[#8a3305] via-[#4f1d03] to-[#240e01]",
-        bgImage: "/milkshake_mix_1781172899700.png"
-      };
-    case "gifts":
-      return {
-        title: "Gift Boxes & Hampers",
-        description: "Exquisite packaging combined with assortments of our finest sweets and namkeens. Perfect for festivals and corporate gifting.",
-        bgClass: "from-[#300c54] via-[#1b0730] to-[#0b0314]",
-        bgImage: "/mix_sweet_rolls_1781172915749.png"
-      };
-    case "specials":
-      return {
-        title: "Festival Specials",
-        description: "Limited-edition delicacies prepared strictly during festive celebrations, using authentic legacy recipes.",
-        bgClass: "from-[#7d0f3e] via-[#470823] to-[#1f030f]",
-        bgImage: "/hero_banner_1781172473450.png"
+        title: "Tasty & Chat-Patta Farsan",
+        description: "Crispy, savory Gujarati snacks, gathiyas, wafers, and dry kachoris prepared daily with authentic legacy spice blends.",
+        bgClass: "from-[#1a2e40] via-[#0d1721] to-[#05090d]",
+        bgImage: "/dry_fruit_kachori_1781172416985.png"
       };
     default:
       return {
         title: "Mehta Sweets & Namkeens",
-        description: "Explore our premium selection of authentic sweets, savory farsan, and premium gift boxes. Prepared fresh and packaged with care.",
-        bgClass: "from-[#a61c1c] via-[#610a0a] to-[#2c0404]",
-        bgImage: "/hero_banner_1781172473450.png"
+        description: "Explore our premium selection of authentic sweets, savory farsan, and premium gift boxes. Prepared fresh and packaged with care since 1952.",
+        bgClass: "from-[#0a4d8c] via-[#05294c] to-[#020e1a]",
+        bgImage: "/mix_sweet_rolls_1781172915749.png"
       };
   }
 };
 
 const getCategoryIcon = (id: string) => {
   switch (id) {
-    case "traditional":
+    case "milk-sweets":
       return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-7 h-7 mb-1.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4M4 19h4m10-16v4m-2-2h4m-3 10v4m-2-2h4" />
+        </svg>
+      );
+    case "ghee-sweets":
+      return (
+        <svg className="w-7 h-7 mb-1.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v8m-4-4h8" />
         </svg>
       );
-    case "dryfruit":
-      return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4M4 19h4m10-16v4m-2-2h4m-3 10v4m-2-2h4" />
-        </svg>
-      );
-    case "bengali":
-      return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
-      );
     case "farsan":
       return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-        </svg>
-      );
-    case "namkeen":
-      return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      );
-    case "gifts":
-      return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      );
-    case "specials":
-      return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.24.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.17 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118L2.05 10.1c-.773-.57-.375-1.81.588-1.81h4.906a1 1 0 00.95-.69l1.519-4.674z" />
+        <svg className="w-7 h-7 mb-1.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       );
     default:
       return (
-        <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-7 h-7 mb-1.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
       );
@@ -169,7 +119,11 @@ function ShopContent() {
 
   // Load products
   useEffect(() => {
-    setProducts(getProducts());
+    const loadProducts = async () => {
+      const allProducts = await fetchProducts();
+      setProducts(allProducts);
+    };
+    loadProducts();
   }, []);
 
   // Sync parameters from url if changed
@@ -460,7 +414,7 @@ function ShopContent() {
                         }`}
                       >
                         {getCategoryIcon(cat.id)}
-                        <span className="text-[0.62rem] leading-none uppercase tracking-wider mt-1">{cat.name.replace("Premium ", "").replace("Traditional ", "").replace("Crispy ", "")}</span>
+                        <span className="text-[0.62rem] leading-none uppercase tracking-wider mt-1">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
                       </motion.button>
                     );
                   })}
@@ -551,7 +505,7 @@ function ShopContent() {
                           }`}
                         >
                           {getCategoryIcon(cat.id)}
-                          <span className="text-[0.58rem] leading-none uppercase tracking-wider mt-0.5">{cat.name.replace("Premium ", "").replace("Traditional ", "").replace("Crispy ", "")}</span>
+                          <span className="text-[0.58rem] leading-none uppercase tracking-wider mt-0.5">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
                         </button>
                       );
                     })}

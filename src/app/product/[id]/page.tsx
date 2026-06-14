@@ -6,8 +6,9 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { getProducts, Product } from "@/lib/mockData";
-import { Heart, Check, Plus, Minus } from "lucide-react";
+import { Product } from "@/lib/types";
+import { fetchProducts } from "@/lib/supabaseClient";
+import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
 const getIngredients = (name: string, category: string) => {
@@ -24,7 +25,7 @@ const getIngredients = (name: string, category: string) => {
   if (n.includes("barfi")) {
     return "Milk Solids (Khoya), Sugar, Cardamom, Rose Water, Pistachios";
   }
-  if (category === "traditional") {
+  if (category === "milk-sweets" || category === "ghee-sweets") {
     return "Milk Solids (Khoya), Pure Cow Ghee, Sugar, Cardamom, Dry Fruits";
   }
   return "Gram Flour, Pure Edible Oil, Iodized Salt, Black Pepper, Spices and Condiments";
@@ -69,24 +70,27 @@ export default function ProductDetails() {
   const [addedFeedback, setAddedFeedback] = useState(false);
 
   useEffect(() => {
-    const allProducts = getProducts();
-    const found = allProducts.find(p => p.id === productId);
-    
-    if (found) {
-      setProduct(found);
-      setSelectedWeight(Object.keys(found.prices)[0]);
-      setQuantity(1);
+    const loadProduct = async () => {
+      const allProducts = await fetchProducts();
+      const found = allProducts.find(p => p.id === productId);
       
-      // Load related items (same category, excluding current)
-      const related = allProducts
-        .filter(p => p.category === found.category && p.id !== found.id)
-        .slice(0, 4);
-      setRelatedProducts(related);
+      if (found) {
+        setProduct(found);
+        setSelectedWeight(Object.keys(found.prices)[0]);
+        setQuantity(1);
+        
+        // Load related items (same category, excluding current)
+        const related = allProducts
+          .filter(p => p.category === found.category && p.id !== found.id)
+          .slice(0, 4);
+        setRelatedProducts(related);
 
-      // Wishlist check
-      const wishlist = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
-      setIsWishlisted(wishlist.includes(found.id));
-    }
+        // Wishlist check
+        const wishlist = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
+        setIsWishlisted(wishlist.includes(found.id));
+      }
+    };
+    loadProduct();
   }, [productId]);
 
   if (!product) {
@@ -106,7 +110,7 @@ export default function ProductDetails() {
   }
 
   const price = product.prices[selectedWeight] || Object.values(product.prices)[0];
-  const productLife = product.category === "traditional" ? "12 Days" : "30 Days";
+  const productLife = product.category === "farsan" ? "30 Days" : "12 Days";
 
   const handleAddToCart = () => {
     if (typeof window === "undefined") return;
@@ -172,7 +176,7 @@ export default function ProductDetails() {
             <span className="hover:text-brand-orange cursor-pointer transition-colors" onClick={() => router.push("/")}>Home</span>
             <span>/</span>
             <span className="hover:text-brand-orange cursor-pointer transition-colors" onClick={() => router.push(`/shop?category=${product.category}`)}>
-              {product.category === "traditional" ? "Sweets" : "Namkeen"}
+              {product.category === "milk-sweets" ? "Milk Sweets" : product.category === "ghee-sweets" ? "Ghee Sweets" : "Farsan"}
             </span>
             <span>/</span>
             <span className="text-brand-charcoal font-medium">{product.name}</span>
@@ -207,7 +211,7 @@ export default function ProductDetails() {
               {/* Product Title and Category */}
               <div>
                 <span className="text-[0.68rem] font-bold text-brand-gold uppercase tracking-widest mb-1.5 block">
-                  {product.category === "traditional" ? "Traditional Specialty" : "Premium Farsan & Namkeen"}
+                  {product.category === "milk-sweets" ? "Sweets of Pure Milk" : product.category === "ghee-sweets" ? "Sweets of Pure Ghee" : "Tasty & Chat-Patta Farsan"}
                 </span>
                 <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
                   {product.name}
@@ -216,7 +220,7 @@ export default function ProductDetails() {
 
               {/* Price Row */}
               <div className="flex items-center gap-4 border-b border-brand-beige pb-4">
-                <span className="font-serif text-3xl font-extrabold text-[#1abc9c]">
+                <span className="font-serif text-3xl font-extrabold text-[#0a4d8c]">
                   ₹{price.toFixed(2)}
                 </span>
                 <span className="text-[0.68rem] font-bold text-brand-charcoal uppercase bg-[#fdfaf2] px-3 py-1 rounded-full border border-[#e8dcc4]">
@@ -247,14 +251,14 @@ export default function ProductDetails() {
                         onClick={() => setSelectedWeight(w)}
                         className={`border px-4 py-2.5 text-xs font-bold transition-all text-left flex flex-col min-w-[150px] rounded-lg relative overflow-hidden ${
                           selectedWeight === w
-                            ? "border-[#1abc9c] bg-[#1abc9c]/5 text-[#1abc9c]"
-                            : "border-[#e0e0e0] hover:border-[#1abc9c] bg-white text-brand-charcoal"
+                            ? "border-[#0a4d8c] bg-[#0a4d8c]/5 text-[#0a4d8c]"
+                            : "border-[#e0e0e0] hover:border-[#0a4d8c] bg-white text-brand-charcoal"
                         }`}
                       >
                         {selectedWeight === w && (
                           <motion.span 
                             layoutId="activeWeightGlow"
-                            className="absolute inset-0 bg-[#1abc9c]/2 pointer-events-none"
+                            className="absolute inset-0 bg-[#0a4d8c]/2 pointer-events-none"
                             transition={{ type: "spring", stiffness: 150, damping: 20 }}
                           />
                         )}
@@ -292,16 +296,28 @@ export default function ProductDetails() {
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.04, boxShadow: "0 4px 12px rgba(26, 188, 156, 0.3)" }}
+                  whileHover={{ scale: 1.04, boxShadow: "0 4px 12px rgba(10, 77, 140, 0.3)" }}
                   whileTap={{ scale: 0.96 }}
                   onClick={handleAddToCart}
                   className={`flex-grow sm:flex-grow-0 rounded-lg px-8 py-3 text-xs font-bold text-white shadow-md transition-all uppercase tracking-wider ${
                     addedFeedback 
                       ? "bg-emerald-600 hover:bg-emerald-700" 
-                      : "bg-[#1abc9c] hover:bg-[#16a085]"
+                      : "bg-[#0a4d8c] hover:bg-[#073866]"
                   }`}
                 >
                   {addedFeedback ? "Added to Cart!" : "Add to Cart"}
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.04, boxShadow: "0 4px 12px rgba(37, 211, 102, 0.3)" }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => {
+                    const message = `Hello, I would like to order ${quantity}x ${product.name} (${selectedWeight}). Please let me know the process.`;
+                    window.open(`https://wa.me/919913252232?text=${encodeURIComponent(message)}`, '_blank');
+                  }}
+                  className="flex-grow sm:flex-grow-0 rounded-lg px-8 py-3 text-xs font-bold text-white shadow-md transition-all uppercase tracking-wider bg-[#25D366] hover:bg-[#1DA851] flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-4 h-4" /> Order on WhatsApp
                 </motion.button>
               </div>
 
@@ -381,16 +397,16 @@ export default function ProductDetails() {
             </p>
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-brand-charcoal">
               <div className="flex items-center gap-2">
-                <span className="text-[#1abc9c] font-bold">✔</span> 100% Vegetarian Sweets & Snacks
+                <span className="text-[#d4af37] font-bold">✔</span> 100% Vegetarian Sweets & Snacks
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#1abc9c] font-bold">✔</span> Prepared in Fully Hygienic Facilities
+                <span className="text-[#d4af37] font-bold">✔</span> Prepared in Fully Hygienic Facilities
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#1abc9c] font-bold">✔</span> Rich Traditional Heritage Recipes since 1972
+                <span className="text-[#d4af37] font-bold">✔</span> Rich Traditional Heritage Recipes since 1952
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#1abc9c] font-bold">✔</span> Premium Quality Sourced Ingredients
+                <span className="text-[#d4af37] font-bold">✔</span> Premium Quality Sourced Ingredients
               </div>
             </div>
           </div>
@@ -438,11 +454,11 @@ export default function ProductDetails() {
                         />
                       </div>
                       
-                      <h4 className="font-serif text-xs sm:text-sm font-bold text-brand-charcoal hover:text-[#1abc9c] transition-colors leading-tight mb-1 line-clamp-1 max-w-[180px]">
+                      <h4 className="font-serif text-xs sm:text-sm font-bold text-brand-charcoal hover:text-[#0a4d8c] transition-colors leading-tight mb-1 line-clamp-1 max-w-[180px]">
                         {p.name}
                       </h4>
                       
-                      <span className="text-xs font-bold text-[#1abc9c]">
+                      <span className="text-xs font-bold text-[#0a4d8c]">
                         ₹{firstPrice.toFixed(2)} - {labelWeight}
                       </span>
                     </Link>

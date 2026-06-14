@@ -19,17 +19,15 @@ import {
   ChevronDown
 } from "lucide-react";
 import { 
-  getOrders, 
-  getProfile, 
-  getCoupons, 
-  Coupon,
-  CATEGORIES
-} from "@/lib/mockData";
+  Coupon
+} from "@/lib/types";
+import { supabase, fetchCategories } from "@/lib/supabaseClient";
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
@@ -86,8 +84,8 @@ export default function Header() {
       const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
       setUserLoggedIn(isLoggedIn);
       if (isLoggedIn) {
-        const profile = getProfile();
-        setUserName(profile.name || "Aarya Mehta");
+        const name = localStorage.getItem("mehta_user_name");
+        setUserName(name || "Customer");
       }
 
       // Sync Wishlist
@@ -98,6 +96,12 @@ export default function Header() {
         setWishlistCount(0);
       }
     };
+
+    const loadData = async () => {
+      const cats = await fetchCategories();
+      setCategories(cats);
+    };
+    loadData();
 
     syncState();
     
@@ -122,25 +126,9 @@ export default function Header() {
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
-    const coupons = getCoupons();
-    const found = coupons.find(c => c.code.toUpperCase() === couponCode.toUpperCase().trim());
-
-    if (!found) {
-      setCouponError("Invalid coupon code.");
-      setAppliedCoupon(null);
-      return;
-    }
-
-    if (cartSubtotal < found.minOrderValue) {
-      setCouponError(`Minimum order value of ₹${found.minOrderValue} required.`);
-      setAppliedCoupon(null);
-      return;
-    }
-
-    setAppliedCoupon(found);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem("mehta_applied_coupon", JSON.stringify(found));
-    }
+    // TODO: implement real coupon logic from Supabase
+    setCouponError("Invalid coupon code.");
+    setAppliedCoupon(null);
   };
 
   const handleRemoveCoupon = () => {
@@ -282,7 +270,7 @@ export default function Header() {
                     />
                   )}
                   <div className="absolute left-0 top-full hidden group-hover:block w-52 rounded-xl border border-brand-beige bg-white p-2 shadow-xl z-50 animate-fade-in-up">
-                    {CATEGORIES.map(cat => (
+                    {categories.map((cat) => (
                       <Link 
                         key={cat.id} 
                         href={`/shop?category=${cat.id}`}
@@ -425,11 +413,11 @@ export default function Header() {
               </button>
 
               <button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 text-brand-charcoal hover:text-brand-orange transition-colors bg-white border border-brand-beige rounded-full shadow-sm"
                 aria-label="Toggle menu"
               >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
 
@@ -437,7 +425,7 @@ export default function Header() {
         
         {/* Mobile Menu Panel */}
         <AnimatePresence>
-          {mobileMenuOpen && (
+          {isMobileMenuOpen && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -445,17 +433,18 @@ export default function Header() {
               transition={{ duration: 0.2 }}
               className="lg:hidden border-t border-brand-beige bg-white/98 py-4 px-6 mt-4 shadow-md rounded-2xl mx-4 overflow-hidden"
             >
+              <div className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} onClick={() => setIsMobileMenuOpen(false)}></div>
               <nav className="flex flex-col gap-3.5">
               <Link 
                 href="/" 
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
               >
                 Home
               </Link>
               <Link 
                 href="/about" 
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
               >
                 About Us
@@ -464,11 +453,11 @@ export default function Header() {
               {/* Categories list inline on mobile */}
               <div className="flex flex-col gap-1.5 pl-3 border-l-2 border-brand-beige">
                 <span className="text-[0.62rem] font-bold text-muted-foreground uppercase tracking-widest">Shop Categories</span>
-                {CATEGORIES.map(cat => (
+                {categories.map((cat: any) => (
                   <Link 
                     key={cat.id} 
                     href={`/shop?category=${cat.id}`}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="text-[0.68rem] font-semibold text-brand-charcoal hover:text-brand-orange"
                   >
                     {cat.name}
@@ -478,21 +467,21 @@ export default function Header() {
 
               <Link 
                 href="/offers" 
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/offers" ? "text-brand-orange" : "text-brand-charcoal"}`}
               >
                 Offers
               </Link>
               <Link 
                 href="/blogs" 
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
               >
                 Blogs
               </Link>
               <Link 
                 href="/contact" 
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
               >
                 Contact Us
@@ -503,20 +492,20 @@ export default function Header() {
                 <>
                   <Link 
                     href="/account" 
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
                   >
                     My Account
                   </Link>
                   <Link 
                     href="/admin" 
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
                   >
                     Admin Console
                   </Link>
                   <button 
-                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
                     className="text-xs font-bold uppercase tracking-wider text-red-600 py-1 text-left flex items-center gap-2"
                   >
                     Logout
@@ -525,7 +514,7 @@ export default function Header() {
               ) : (
                 <Link 
                   href="/account" 
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
                 >
                   Login / Register
