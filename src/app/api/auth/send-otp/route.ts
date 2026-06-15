@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const templateId = process.env.MSG91_TEMPLATE_ID;
 
     // Simulated Fallback Mode
-    if (!authKey || !templateId) {
+    if (!authKey || authKey === 'your-msg91-auth-key-optional' || !templateId) {
       console.log(`[SIMULATED MSG91] Sending OTP to ${phone}`);
       return NextResponse.json({ 
         success: true, 

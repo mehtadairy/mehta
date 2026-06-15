@@ -5,16 +5,22 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get('phone');
+    const email = searchParams.get('email');
 
-    if (!phone) {
-      return NextResponse.json({ success: false, message: 'Phone is required' }, { status: 400 });
+    if (!phone && !email) {
+      return NextResponse.json({ success: false, message: 'Phone or Email is required' }, { status: 400 });
     }
 
-    const { data: profile, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('phone', phone)
-      .single();
+    let query = supabase.from('customers').select('*');
+    if (phone && phone !== 'null' && phone !== 'undefined') {
+      query = query.eq('phone', phone);
+    } else if (email) {
+      query = query.eq('email', email);
+    } else {
+      return NextResponse.json({ success: false, message: 'Valid Phone or Email is required' }, { status: 400 });
+    }
+
+    const { data: profile, error } = await query.single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -34,18 +40,24 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { phone, name, email } = await request.json();
+    const { phone, email, name, newPhone, newEmail } = await request.json();
 
-    if (!phone) {
-      return NextResponse.json({ success: false, message: 'Phone is required' }, { status: 400 });
+    if (!phone && !email) {
+      return NextResponse.json({ success: false, message: 'Phone or Email is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('customers')
-      .update({ name, email })
-      .eq('phone', phone)
-      .select()
-      .single();
+    const updatePayload: any = { name };
+    if (newPhone) updatePayload.phone = newPhone;
+    if (newEmail !== undefined) updatePayload.email = newEmail;
+
+    let query = supabase.from('customers').update(updatePayload);
+    if (email) {
+      query = query.eq('email', email);
+    } else {
+      query = query.eq('phone', phone);
+    }
+
+    const { data, error } = await query.select().single();
 
     if (error) {
       console.error('Supabase update error:', error);
@@ -59,3 +71,4 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
+

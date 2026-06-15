@@ -24,12 +24,14 @@ import AdminPayments from "@/components/AdminPayments";
 import AdminAnalytics from "@/components/AdminAnalytics";
 import AdminBackups from "@/components/AdminBackups";
 import AdminIngredients from "@/components/AdminIngredients";
+import AdminDeliveryZones from "@/components/AdminDeliveryZones";
 import { 
   LayoutDashboard, 
   Dessert, 
   ShoppingBag, 
   Users, 
   Tag, 
+  MapPin,
   Plus, 
   Trash2, 
   Edit, 
@@ -51,11 +53,12 @@ export default function AdminPanel() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients" | "zones">("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
+  const [dbCustomers, setDbCustomers] = useState<any[]>([]);
 
   // Product CRUD states
   const [showProductForm, setShowProductForm] = useState(false);
@@ -87,6 +90,62 @@ export default function AdminPanel() {
   const [prodDietaryTags, setProdDietaryTags] = useState<string[]>([]);
   const [prodHighlights, setProdHighlights] = useState<string[]>([]);
   const [newHighlight, setNewHighlight] = useState("");
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleGenerateAiDescription = async () => {
+    if (!prodName) {
+      alert("Please enter a product name first.");
+      return;
+    }
+    
+    setIsGeneratingAi(true);
+    try {
+      const selectedIngNames = allIngredients
+        .filter(ing => prodIngredients.includes(ing.id))
+        .map(ing => ing.name);
+
+      const weights = [];
+      if (prodPrice250) weights.push("250g");
+      if (prodPrice500) weights.push("500g");
+      if (prodPrice1kg) weights.push("1kg");
+      
+      const res = await fetch("/api/admin/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: prodName,
+          category: prodCat,
+          ingredients: selectedIngNames,
+          weight: weights.join(", "),
+          shelfLife: prodShelfLife,
+          storageInstructions: prodStorageInstructions
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const info = data.data;
+        // Autofill description (append Why Choose Mehta Dairy)
+        const combinedDesc = `${info.description}\n\nWhy Choose Mehta Dairy:\n${info.whyChoose}`;
+        setProdDesc(combinedDesc);
+        
+        // Autofill highlights (key features)
+        if (info.keyFeatures && info.keyFeatures.length > 0) {
+          setProdHighlights(info.keyFeatures);
+        }
+        
+        // Autofill shelf life & storage
+        if (info.shelfLife) setProdShelfLife(info.shelfLife.toString());
+        if (info.storageInstructions) setProdStorageInstructions(info.storageInstructions);
+      } else {
+        alert(data.error || "Failed to generate AI description.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error generating AI description.");
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
   
   // Load Admin Data
   useEffect(() => {
@@ -115,6 +174,7 @@ export default function AdminPanel() {
            paymentStatus: o.payment_status,
            userName: o.user_name,
            userPhone: o.user_phone,
+           userEmail: o.user_email,
            items: o.order_items ? o.order_items.map((i: any) => ({
               productId: i.product_id,
               productName: i.product_name,
@@ -135,6 +195,9 @@ export default function AdminPanel() {
 
       const { data: bans } = await supabase.from('banners').select('*').order('sort_order', { ascending: true });
       if (bans) setBanners(bans);
+
+      const { data: customerList } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+      if (customerList) setDbCustomers(customerList);
 
       const dbIngredients = await fetchIngredients();
       setAllIngredients(dbIngredients);
@@ -533,6 +596,12 @@ export default function AdminPanel() {
                 <Tag className="h-4 w-4" /> Ingredients Management
               </button>
               <button 
+                onClick={() => setActiveTab("zones")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "zones" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <MapPin className="h-4 w-4" /> Delivery Zones
+              </button>
+              <button 
                 onClick={() => setActiveTab("banners")}
                 className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "banners" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
               >
@@ -651,35 +720,17 @@ export default function AdminPanel() {
                           <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Description Details *</label>
                           <button
                             type="button"
-                            onClick={() => {
-                              if (!prodName) {
-                                alert("Please enter the product name first.");
-                                return;
-                              }
-                              const selectedIngNames = allIngredients
-                                .filter(ing => prodIngredients.includes(ing.id))
-                                .map(ing => ing.name);
-                              
-                              let ingStr = "";
-                              if (selectedIngNames.length > 0) {
-                                const namesCopy = [...selectedIngNames];
-                                if (namesCopy.length === 1) {
-                                  ingStr = ` prepared using premium ${namesCopy[0].toLowerCase()}`;
-                                } else {
-                                  const last = namesCopy.pop();
-                                  ingStr = ` prepared using premium ${namesCopy.map(n => n.toLowerCase()).join(", ")} and ${last?.toLowerCase()}`;
-                                }
-                              }
-
-                              const catObj = categories.find(c => c.slug === prodCat);
-                              const cleanCat = catObj ? catObj.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "").toLowerCase() : "item";
-                              
-                              const desc = `${prodName} is a traditional ${cleanCat}${ingStr}. Crafted with legacy methods, it delivers a rich flavor and premium texture. Best consumed within ${prodShelfLife} days and ${prodStorageInstructions.toLowerCase().replace(/\.$/, "")}.`;
-                              setProdDesc(desc);
-                            }}
-                            className="bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange px-2 py-0.5 text-[0.6rem] font-bold rounded transition-colors"
+                            onClick={handleGenerateAiDescription}
+                            disabled={isGeneratingAi}
+                            className="bg-brand-orange/15 hover:bg-brand-orange/25 text-brand-orange px-2.5 py-1 text-[0.65rem] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
                           >
-                            Generate Description
+                            {isGeneratingAi ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" /> Generating...
+                              </>
+                            ) : (
+                              "Generate with AI"
+                            )}
                           </button>
                         </div>
                         <textarea 
@@ -1177,7 +1228,7 @@ export default function AdminPanel() {
                     Customer Database Directory
                   </h3>
 
-                  {orders.length === 0 ? (
+                  {dbCustomers.length === 0 && orders.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-12">No registered customer transactions found.</p>
                   ) : (
                     <div className="overflow-x-auto">
@@ -1185,26 +1236,50 @@ export default function AdminPanel() {
                         <thead>
                           <tr className="border-b border-brand-beige text-muted-foreground font-semibold">
                             <th className="py-2.5">Customer Name</th>
+                            <th className="py-2.5">Email</th>
                             <th className="py-2.5">Mobile Phone</th>
                             <th className="py-2.5">Total Orders placed</th>
                             <th className="py-2.5 text-right">Lifetime purchase value</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {Array.from(new Set(orders.map(o => o.userName))).map((name, idx) => {
-                            const customerOrders = orders.filter(o => o.userName === name);
-                            const customerPhone = customerOrders[0]?.userPhone || "N/A";
-                            const lifetimeSpend = customerOrders.reduce((sum, o) => sum + o.total, 0);
+                          {dbCustomers.length > 0 ? (
+                            dbCustomers.map((customer, idx) => {
+                              const customerOrders = orders.filter(
+                                o => 
+                                  (customer.phone && o.userPhone === customer.phone) || 
+                                  (customer.email && o.userEmail === customer.email) ||
+                                  (o.userName && o.userName.toLowerCase() === customer.name.toLowerCase())
+                              );
+                              const lifetimeSpend = customerOrders.reduce((sum, o) => sum + o.total, 0);
 
-                            return (
-                              <tr key={idx} className="border-b border-brand-beige/50">
-                                <td className="py-3 font-bold text-brand-charcoal">{name}</td>
-                                <td className="py-3 font-semibold">{customerPhone}</td>
-                                <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>
-                                <td className="py-3 text-right font-serif font-bold text-brand-orange">₹{lifetimeSpend}</td>
-                              </tr>
-                            );
-                          })}
+                              return (
+                                <tr key={customer.id || idx} className="border-b border-brand-beige/50">
+                                  <td className="py-3 font-bold text-brand-charcoal">{customer.name || "N/A"}</td>
+                                  <td className="py-3 font-semibold text-muted-foreground">{customer.email || "N/A"}</td>
+                                  <td className="py-3 font-semibold">{customer.phone || "N/A"}</td>
+                                  <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>
+                                  <td className="py-3 text-right font-serif font-bold text-brand-orange">₹{lifetimeSpend}</td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            Array.from(new Set(orders.map(o => o.userName))).map((name, idx) => {
+                              const customerOrders = orders.filter(o => o.userName === name);
+                              const customerPhone = customerOrders[0]?.userPhone || "N/A";
+                              const lifetimeSpend = customerOrders.reduce((sum, o) => sum + o.total, 0);
+
+                              return (
+                                <tr key={idx} className="border-b border-brand-beige/50">
+                                  <td className="py-3 font-bold text-brand-charcoal">{name}</td>
+                                  <td className="py-3 font-semibold text-muted-foreground">N/A</td>
+                                  <td className="py-3 font-semibold">{customerPhone}</td>
+                                  <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>
+                                  <td className="py-3 text-right font-serif font-bold text-brand-orange">₹{lifetimeSpend}</td>
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1224,6 +1299,11 @@ export default function AdminPanel() {
               {/* ==================== TAB 8: INGREDIENTS ==================== */}
               {activeTab === "ingredients" && (
                 <AdminIngredients />
+              )}
+
+              {/* ==================== TAB 8.5: DELIVERY ZONES ==================== */}
+              {activeTab === "zones" && (
+                <AdminDeliveryZones />
               )}
 
               {/* ==================== TAB 9: NOTIFICATIONS ==================== */}

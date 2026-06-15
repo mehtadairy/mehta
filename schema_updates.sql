@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS public.banners (
 );
 
 -- 3. Create Customers Table
+DROP TABLE IF EXISTS public.addresses CASCADE;
+DROP TABLE IF EXISTS public.customers CASCADE;
 CREATE TABLE IF NOT EXISTS public.customers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     phone VARCHAR(20) UNIQUE NOT NULL,
@@ -47,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.addresses (
 );
 
 -- 5. Create Delivery Zones Table
+DROP TABLE IF EXISTS public.delivery_zones CASCADE;
 CREATE TABLE IF NOT EXISTS public.delivery_zones (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     pincode VARCHAR(20) UNIQUE NOT NULL,
@@ -78,32 +81,47 @@ ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
 -- CREATE RLS POLICIES
 
 -- Banners: Anyone can read active banners. Admins bypass via Service Role.
+DROP POLICY IF EXISTS "Enable read access for all users on active banners" ON public.banners;
 CREATE POLICY "Enable read access for all users on active banners" 
 ON public.banners FOR SELECT USING (true);
 
 -- Customers: For now, allow public select/insert so our anon-key API can work until proper Auth.
+DROP POLICY IF EXISTS "Enable public insert for customers" ON public.customers;
 CREATE POLICY "Enable public insert for customers" 
 ON public.customers FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Enable public select for customers" ON public.customers;
 CREATE POLICY "Enable public select for customers" 
 ON public.customers FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable public update for customers" ON public.customers;
 CREATE POLICY "Enable public update for customers" 
 ON public.customers FOR UPDATE USING (true);
 
 -- Addresses: Public access for now to support our custom OTP flow without Supabase Auth tokens.
+DROP POLICY IF EXISTS "Enable public insert for addresses" ON public.addresses;
 CREATE POLICY "Enable public insert for addresses" 
 ON public.addresses FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Enable public select for addresses" ON public.addresses;
 CREATE POLICY "Enable public select for addresses" 
 ON public.addresses FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable public update for addresses" ON public.addresses;
 CREATE POLICY "Enable public update for addresses" 
 ON public.addresses FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Enable public delete for addresses" ON public.addresses;
 CREATE POLICY "Enable public delete for addresses" 
 ON public.addresses FOR DELETE USING (true);
 
 -- Delivery Zones: Public read.
+DROP POLICY IF EXISTS "Enable read access for all users on delivery_zones" ON public.delivery_zones;
 CREATE POLICY "Enable read access for all users on delivery_zones" 
 ON public.delivery_zones FOR SELECT USING (true);
 
 -- CMS Pages: Public read.
+DROP POLICY IF EXISTS "Enable read access for all users on cms_pages" ON public.cms_pages;
 CREATE POLICY "Enable read access for all users on cms_pages" 
 ON public.cms_pages FOR SELECT USING (true);
 
@@ -136,6 +154,7 @@ CREATE TABLE IF NOT EXISTS public.email_templates (id UUID PRIMARY KEY DEFAULT u
 CREATE TABLE IF NOT EXISTS public.whatsapp_templates (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), event_type VARCHAR(100) UNIQUE NOT NULL, message_body TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.notification_logs (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), order_id VARCHAR(100), customer_phone VARCHAR(20), customer_email VARCHAR(255), type VARCHAR(50) CHECK (type IN ('email', 'whatsapp')), status VARCHAR(50) CHECK (status IN ('sent', 'failed', 'pending')), event_type VARCHAR(100), error_message TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
 -- Payments Tables
+DROP TABLE IF EXISTS public.payments;
 CREATE TABLE IF NOT EXISTS public.payments (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), order_id VARCHAR(100) NOT NULL, payment_id VARCHAR(100), razorpay_order_id VARCHAR(100), amount DECIMAL(10, 2) NOT NULL, method VARCHAR(50), status VARCHAR(50) DEFAULT 'pending', created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.refunds (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), order_id VARCHAR(100) NOT NULL, payment_id VARCHAR(100), refund_id VARCHAR(100), amount DECIMAL(10, 2) NOT NULL, status VARCHAR(50) DEFAULT 'processed', created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
 -- Backup Logs
@@ -211,11 +230,39 @@ ALTER TABLE public.ingredients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_ingredients ENABLE ROW LEVEL SECURITY;
 
 -- Create public access policies for ingredients and product_ingredients
+DROP POLICY IF EXISTS "Enable read access for all users on ingredients" ON public.ingredients;
 CREATE POLICY "Enable read access for all users on ingredients" ON public.ingredients FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable all access for all users on ingredients" ON public.ingredients;
 CREATE POLICY "Enable all access for all users on ingredients" ON public.ingredients FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Enable read access for all users on product_ingredients" ON public.product_ingredients;
 CREATE POLICY "Enable read access for all users on product_ingredients" ON public.product_ingredients FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable all access for all users on product_ingredients" ON public.product_ingredients;
 CREATE POLICY "Enable all access for all users on product_ingredients" ON public.product_ingredients FOR ALL USING (true) WITH CHECK (true);
+-- ==========================================================
+-- ECOMMERCE EXPANSION: GOOGLE AUTH & DELIVERY ZONES
+-- ==========================================================
 
+-- 1. Modify customers table to support OAuth signups (making phone optional initially)
+ALTER TABLE public.customers ALTER COLUMN phone DROP NOT NULL;
+ALTER TABLE public.customers ADD CONSTRAINT customers_email_key UNIQUE (email);
 
+-- 2. Modify delivery_zones table to support lists of pincodes
+ALTER TABLE public.delivery_zones DROP CONSTRAINT IF EXISTS delivery_zones_pincode_key;
+ALTER TABLE public.delivery_zones ALTER COLUMN pincode DROP NOT NULL;
+ALTER TABLE public.delivery_zones ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+ALTER TABLE public.delivery_zones ADD COLUMN IF NOT EXISTS pincodes TEXT;
+
+-- Update existing records to match the new zone model
+UPDATE public.delivery_zones 
+SET name = COALESCE(city, 'Zone - ' || pincode), 
+    pincodes = pincode 
+WHERE pincodes IS NULL AND pincode IS NOT NULL;
+
+-- Add write policy for admins on delivery_zones
+DROP POLICY IF EXISTS "Enable all access for admins on delivery_zones" ON public.delivery_zones;
+CREATE POLICY "Enable all access for admins on delivery_zones" 
+ON public.delivery_zones FOR ALL USING (true) WITH CHECK (true);
 

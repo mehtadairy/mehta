@@ -1,0 +1,58 @@
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
+
+export async function POST(request: Request) {
+  try {
+    const { orderPayload, orderItems } = await request.json();
+
+    if (!orderPayload || !orderItems || orderItems.length === 0) {
+      return NextResponse.json({ success: false, error: 'Missing order details or items' }, { status: 400 });
+    }
+
+    const finalOrderData = {
+      ...orderPayload,
+      payment_id: 'COD-' + Date.now(),
+      payment_status: 'Pending',
+      status: 'Processing'
+    };
+
+    console.log("Inserting COD order to DB:", finalOrderData.order_number);
+    const { error: orderError } = await supabase.from('orders').insert([finalOrderData]);
+    
+    if (orderError) {
+      console.error("Failed to insert COD order:", orderError);
+      return NextResponse.json({ success: false, error: 'Failed to save order to database' }, { status: 500 });
+    }
+
+    // Insert Order Items
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+    if (itemsError) {
+      console.error("Failed to insert COD order items:", itemsError);
+    }
+
+    // Insert Payment Log
+    const { error: paymentError } = await supabase.from('payments').insert([{
+      order_id: finalOrderData.id,
+      payment_id: finalOrderData.payment_id,
+      razorpay_order_id: null,
+      amount: orderPayload.total,
+      method: 'COD',
+      status: 'pending'
+    }]);
+
+    if (paymentError) {
+      console.error("Failed to insert COD payment log:", paymentError);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'COD Order created successfully',
+      orderNumber: finalOrderData.order_number,
+      paymentId: finalOrderData.payment_id
+    });
+
+  } catch (error) {
+    console.error('Error creating COD order:', error);
+    return NextResponse.json({ success: false, error: 'Failed to process COD order' }, { status: 500 });
+  }
+}

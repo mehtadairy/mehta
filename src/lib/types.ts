@@ -53,6 +53,7 @@ export interface Address {
   state: string;
   pincode: string;
   isDefault: boolean;
+  landmark?: string;
 }
 
 export interface OrderItem {
@@ -81,6 +82,7 @@ export interface Order {
   paymentId?: string;
   userName: string;
   userPhone: string;
+  userEmail?: string;
 }
 
 export interface UserProfile {
