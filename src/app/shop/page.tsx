@@ -113,6 +113,8 @@ function ShopContent() {
   const [maxPrice, setMaxPrice] = useState(1500);
   const [sortBy, setSortBy] = useState("relevance");
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+  // Loading indicator for category changes
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,8 +141,11 @@ function ShopContent() {
     setCurrentPage(1);
   }, [searchParams]);
 
-  // Apply filters & sorting
+  // Apply filters & sorting with loading feedback
   useEffect(() => {
+    // Start loading when filter computation begins
+    setCategoryLoading(true);
+
     let result = [...products];
 
     // Category filter
@@ -183,6 +188,8 @@ function ShopContent() {
 
     setFilteredProducts(result);
     setCurrentPage(1);
+    // Loading complete
+    setCategoryLoading(false);
   }, [products, selectedCategory, searchQuery, maxPrice, sortBy]);
 
   // Pagination variables
@@ -288,7 +295,17 @@ function ShopContent() {
               </div>
 
               {/* Grid content */}
-              {currentItems.length === 0 ? (
+              {categoryLoading ? (
+                 <div className="flex flex-col items-center justify-center py-20 text-center">
+                   <motion.div
+                     className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"
+                     initial={{ rotate: 0 }}
+                     animate={{ rotate: 360 }}
+                     transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                   />
+                   <p className="mt-4 text-sm text-muted-foreground">Loading products...</p>
+                 </div>
+               ) : currentItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-brand-beige rounded-2xl p-8">
                   <Search className="h-16 w-16 text-brand-beige mb-4" />
                   <h3 className="font-serif text-lg font-bold text-brand-charcoal">No Products Found</h3>

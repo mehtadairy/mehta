@@ -142,6 +142,8 @@ export default function ProductDetails() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [selectedWeight, setSelectedWeight] = useState("");
   const [quantity, setQuantity] = useState(1);
+  // Loading state for product fetch
+  const [loading, setLoading] = useState(true);
   
   // Wishlist state
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -169,10 +171,27 @@ export default function ProductDetails() {
         const wishlist = JSON.parse(localStorage.getItem("mehta_wishlist") || "[]");
         setIsWishlisted(wishlist.includes(found.id));
       }
+      // Loading finished irrespective of result
+      setLoading(false);
     };
     loadProduct();
   }, [productId]);
 
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="h-96 flex flex-col items-center justify-center text-center gap-4">
+          {/* Skeleton placeholders */}
+          <div className="w-24 h-24 rounded-full bg-gray-200 animate-pulse" />
+          <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+          <p className="mt-2 text-sm text-muted-foreground">Loading product...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
   if (!product) {
     return (
       <>
@@ -258,7 +277,11 @@ export default function ProductDetails() {
   };
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { duration: 0.6 } }}
+      className="min-h-screen flex flex-col"
+    >
       <Header />
       <WhatsAppFloat />
 
@@ -649,6 +672,6 @@ export default function ProductDetails() {
       )}
 
       <Footer />
-    </>
+    </motion.div>
   );
 }
