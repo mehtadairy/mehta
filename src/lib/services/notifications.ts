@@ -5,6 +5,22 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
 
 export async function sendEmail(to: string, subject: string, html: string, eventType: string, orderId?: string) {
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_mock_key') {
+    console.log(`[Email Mock Simulation] Sending to ${to}: Subject: ${subject}`);
+    
+    // Log success in simulation mode
+    await supabase.from('notification_logs').insert([{
+      order_id: orderId,
+      customer_email: to,
+      type: 'email',
+      status: 'sent',
+      event_type: eventType,
+      error_message: "[Simulated Mode] Email mock succeeded since RESEND_API_KEY is not configured."
+    }]);
+
+    return { success: true, data: { id: `mock_${Date.now()}` } };
+  }
+
   try {
     const data = await resend.emails.send({
       from: `Mehta Sweet Mart <${SENDER_EMAIL}>`,

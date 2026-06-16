@@ -272,3 +272,25 @@ DROP POLICY IF EXISTS "Enable all access for admins on delivery_zones" ON public
 CREATE POLICY "Enable all access for admins on delivery_zones" 
 ON public.delivery_zones FOR ALL USING (true) WITH CHECK (true);
 
+-- ECOMMERCE EXPANSION: ADD MISSING COLUMNS TO ORDERS TABLE
+ALTER TABLE public.orders
+ADD COLUMN IF NOT EXISTS user_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS user_phone VARCHAR(50),
+ADD COLUMN IF NOT EXISTS user_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(100),
+ADD COLUMN IF NOT EXISTS payment_id VARCHAR(100);
+
+-- Enable public select and insert policies for orders and order_items tables
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable public insert for orders" ON public.orders;
+CREATE POLICY "Enable public insert for orders" ON public.orders FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable public select for orders" ON public.orders;
+CREATE POLICY "Enable public select for orders" ON public.orders FOR SELECT USING (true);
+
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable public insert for order_items" ON public.order_items;
+CREATE POLICY "Enable public insert for order_items" ON public.order_items FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable public select for order_items" ON public.order_items;
+CREATE POLICY "Enable public select for order_items" ON public.order_items FOR SELECT USING (true);
+
+

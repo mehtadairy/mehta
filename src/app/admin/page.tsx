@@ -25,6 +25,8 @@ import AdminAnalytics from "@/components/AdminAnalytics";
 import AdminBackups from "@/components/AdminBackups";
 import AdminIngredients from "@/components/AdminIngredients";
 import AdminDeliveryZones from "@/components/AdminDeliveryZones";
+import AdminInvoices from "@/components/AdminInvoices";
+import AdminBlogs from "@/components/AdminBlogs";
 import { 
   LayoutDashboard, 
   Dessert, 
@@ -45,7 +47,8 @@ import {
   FileText,
   Bell,
   Database,
-  Search
+  Search,
+  PenTool
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -53,12 +56,16 @@ export default function AdminPanel() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients" | "zones">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "invoices" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients" | "zones" | "blogs">("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [dbCustomers, setDbCustomers] = useState<any[]>([]);
+
+  // Order sections state
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"All" | "Processing" | "Shipped" | "Delivered" | "Cancelled">("All");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
   // Product CRUD states
   const [showProductForm, setShowProductForm] = useState(false);
@@ -575,7 +582,19 @@ export default function AdminPanel() {
                 onClick={() => setActiveTab("orders")}
                 className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "orders" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
               >
-                <ShoppingBag className="h-4 w-4" /> Invoices Tracking ({orders.length})
+                <ShoppingBag className="h-4 w-4" /> Orders Tracking ({orders.length})
+              </button>
+              <button 
+                onClick={() => setActiveTab("invoices")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "invoices" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <FileText className="h-4 w-4" /> Invoice Management
+              </button>
+              <button 
+                onClick={() => setActiveTab("blogs")}
+                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "blogs" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
+              >
+                <PenTool className="h-4 w-4" /> Blog Articles CMS
               </button>
               <button 
                 onClick={() => setActiveTab("customers")}
@@ -1164,61 +1183,142 @@ export default function AdminPanel() {
               {/* ==================== TAB 3: INVOICES ==================== */}
               {activeTab === "orders" && (
                 <div className="flex flex-col gap-6 animate-fade-in">
-                  <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-beige pb-3">
-                    Order Invoices Management
-                  </h3>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-brand-beige pb-3 gap-3">
+                    <h3 className="font-serif text-lg font-bold text-brand-charcoal">
+                      Order Invoices Management
+                    </h3>
+                    
+                    {/* Search Bar */}
+                    <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-white px-3 py-1.5 focus-within:border-brand-orange transition-all">
+                      <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                      <input 
+                        type="text" 
+                        placeholder="Search Order, Buyer, Phone..."
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        className="w-full text-xs bg-transparent border-none outline-none text-brand-charcoal"
+                      />
+                      {orderSearchQuery && (
+                        <button onClick={() => setOrderSearchQuery("")} className="text-muted-foreground hover:text-brand-charcoal">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
+                  {/* Order sections (sub-tabs by Status) */}
+                  <div className="flex flex-wrap gap-1.5 border border-brand-beige bg-brand-cream/10 p-1 rounded-lg w-max">
+                    {(["All", "Processing", "Shipped", "Delivered", "Cancelled"] as const).map((status) => {
+                      const count = status === "All" 
+                        ? orders.length 
+                        : orders.filter(o => o.status === status).length;
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => setOrderStatusFilter(status)}
+                          className={`px-3 py-1.5 text-[0.68rem] font-bold rounded-md uppercase tracking-wider transition-colors ${
+                            orderStatusFilter === status 
+                              ? "bg-brand-orange text-white" 
+                              : "text-brand-charcoal hover:bg-brand-cream"
+                          }`}
+                        >
+                          {status} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Orders List */}
                   {orders.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-12">No orders recorded in system databases.</p>
                   ) : (
-                    <div className="flex flex-col gap-4">
-                      {orders.map((o) => (
-                        <div key={o.id} className="border border-brand-beige rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start gap-4 shadow-xs bg-brand-cream/10">
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-serif text-sm font-bold text-brand-charcoal">{o.orderNumber}</span>
-                              <span className="text-[0.68rem] text-muted-foreground">• {o.date}</span>
-                              <span className="text-[0.68rem] bg-emerald-50 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.2 font-semibold">
-                                {o.paymentStatus}
-                              </span>
-                            </div>
-                            
-                            <p className="text-xs text-brand-charcoal font-semibold mt-2.5">
-                              Buyer: {o.userName} ({o.userPhone})
-                            </p>
-                            
-                            <ul className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                              {o.items.map((item, idx) => (
-                                <li key={idx}>• {item.productName} ({item.weight}) x {item.quantity}</li>
-                              ))}
-                            </ul>
-                          </div>
+                    (() => {
+                      const filteredOrders = orders.filter((o) => {
+                        const matchesStatus = orderStatusFilter === "All" || o.status === orderStatusFilter;
+                        const query = orderSearchQuery.toLowerCase();
+                        const matchesSearch = 
+                          o.orderNumber.toLowerCase().includes(query) ||
+                          (o.userName && o.userName.toLowerCase().includes(query)) ||
+                          (o.userPhone && o.userPhone.includes(query)) ||
+                          (o.userEmail && o.userEmail.toLowerCase().includes(query));
+                        return matchesStatus && matchesSearch;
+                      });
 
-                          <div className="flex flex-col items-start sm:items-end gap-3.5 w-full sm:w-auto border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0">
-                            <span className="font-serif font-bold text-brand-orange text-base leading-none">
-                              Total: ₹{o.total}
-                            </span>
-                            
-                            {/* Status Changer */}
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[0.68rem] text-muted-foreground font-bold uppercase">Status:</span>
-                              <select 
-                                value={o.status}
-                                onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                                className="border border-brand-beige rounded-md px-2 py-1 text-xs bg-white text-brand-charcoal cursor-pointer font-bold"
-                              >
-                                <option value="Processing">Processing</option>
-                                <option value="Shipped">Shipped</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Cancelled">Cancelled</option>
-                              </select>
+                      if (filteredOrders.length === 0) {
+                        return (
+                          <p className="text-xs text-muted-foreground text-center py-12">
+                            No orders found matching the filter selection.
+                          </p>
+                        );
+                      }
+
+                      return (
+                        <div className="flex flex-col gap-4">
+                          {filteredOrders.map((o) => (
+                            <div key={o.id} className="border border-brand-beige rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start gap-4 shadow-xs bg-brand-cream/10">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-serif text-sm font-bold text-brand-charcoal">{o.orderNumber}</span>
+                                  <span className="text-[0.68rem] text-muted-foreground">• {o.date}</span>
+                                  <span className="text-[0.68rem] bg-emerald-50 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.2 font-semibold">
+                                    {o.paymentStatus}
+                                  </span>
+                                  {o.paymentMethod && (
+                                    <span className="text-[0.68rem] bg-brand-cream text-brand-gold border border-brand-beige rounded px-1.5 py-0.2 font-semibold">
+                                      {o.paymentMethod}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <p className="text-xs text-brand-charcoal font-semibold mt-2.5">
+                                  Buyer: {o.userName} ({o.userPhone})
+                                </p>
+                                
+                                <ul className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                                  {o.items.map((item, idx) => (
+                                    <li key={idx}>• {item.productName} ({item.weight}) x {item.quantity}</li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              <div className="flex flex-col items-start sm:items-end gap-3.5 w-full sm:w-auto border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0">
+                                <span className="font-serif font-bold text-brand-orange text-base leading-none">
+                                  Total: ₹{o.total}
+                                </span>
+                                
+                                {/* Status Changer */}
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[0.68rem] text-muted-foreground font-bold uppercase">Status:</span>
+                                  <select 
+                                    value={o.status}
+                                    onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
+                                    className="border border-brand-beige rounded-md px-2 py-1 text-xs bg-white text-brand-charcoal cursor-pointer font-bold"
+                                  >
+                                    <option value="Processing">Processing</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                  </select>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()
                   )}
                 </div>
+              )}
+
+              {/* ==================== TAB 3.5: INVOICES ==================== */}
+              {activeTab === "invoices" && (
+                <AdminInvoices />
+              )}
+
+              {/* ==================== TAB 3.6: BLOGS ==================== */}
+              {activeTab === "blogs" && (
+                <AdminBlogs />
               )}
 
               {/* ==================== TAB 4: CUSTOMERS ==================== */}

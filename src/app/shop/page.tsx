@@ -113,8 +113,9 @@ function ShopContent() {
   const [maxPrice, setMaxPrice] = useState(1500);
   const [sortBy, setSortBy] = useState("relevance");
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
-  // Loading indicator for category changes
-  const [categoryLoading, setCategoryLoading] = useState(false);
+  // Loading indicators
+  const [pageLoading, setPageLoading] = useState(true);
+  const [categoryLoading, setCategoryLoading] = useState(true);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,12 +124,19 @@ function ShopContent() {
   // Load products & categories
   useEffect(() => {
     const loadData = async () => {
-      const allProducts = await fetchProducts();
-      setProducts(allProducts);
-      
-      const cats = await fetchCategories();
-      if (cats && cats.length > 0) {
-        setCategories(cats);
+      try {
+        setPageLoading(true);
+        const allProducts = await fetchProducts();
+        setProducts(allProducts);
+        
+        const cats = await fetchCategories();
+        if (cats && cats.length > 0) {
+          setCategories(cats);
+        }
+      } catch (error) {
+        console.error("Failed to load shop data:", error);
+      } finally {
+        setPageLoading(false);
       }
     };
     loadData();
@@ -139,11 +147,19 @@ function ShopContent() {
     setSelectedCategory(searchParams.get("category") || "all");
     setSearchQuery(searchParams.get("search") || "");
     setCurrentPage(1);
+    setCategoryLoading(true);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
   }, [searchParams]);
 
   // Apply filters & sorting with loading feedback
   useEffect(() => {
-    // Start loading when filter computation begins
+    if (pageLoading) {
+      setCategoryLoading(true);
+      return;
+    }
+
     setCategoryLoading(true);
 
     let result = [...products];
@@ -188,9 +204,14 @@ function ShopContent() {
 
     setFilteredProducts(result);
     setCurrentPage(1);
-    // Loading complete
-    setCategoryLoading(false);
-  }, [products, selectedCategory, searchQuery, maxPrice, sortBy]);
+
+    // Smooth timeout to prevent flash of content
+    const timer = setTimeout(() => {
+      setCategoryLoading(false);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [products, selectedCategory, searchQuery, maxPrice, sortBy, pageLoading]);
 
   // Pagination variables
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -295,17 +316,22 @@ function ShopContent() {
               </div>
 
               {/* Grid content */}
-              {categoryLoading ? (
-                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                   <motion.div
-                     className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"
-                     initial={{ rotate: 0 }}
-                     animate={{ rotate: 360 }}
-                     transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                   />
-                   <p className="mt-4 text-sm text-muted-foreground">Loading products...</p>
-                 </div>
-               ) : currentItems.length === 0 ? (
+              {categoryLoading || pageLoading ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10 animate-pulse">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center text-center w-full">
+                      {/* Circular placeholder mimicking the product card platter */}
+                      <div className="aspect-square w-full rounded-full bg-brand-beige/20 border border-brand-beige/40 flex items-center justify-center p-4 relative shadow-2xs overflow-hidden mb-4">
+                        <div className="w-4/5 h-4/5 rounded-full bg-brand-cream/50"></div>
+                      </div>
+                      {/* Title placeholder */}
+                      <div className="h-4 w-32 bg-brand-beige/30 rounded mb-2"></div>
+                      {/* Price placeholder */}
+                      <div className="h-3.5 w-20 bg-brand-orange/15 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : currentItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-brand-beige rounded-2xl p-8">
                   <Search className="h-16 w-16 text-brand-beige mb-4" />
                   <h3 className="font-serif text-lg font-bold text-brand-charcoal">No Products Found</h3>

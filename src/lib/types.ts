@@ -83,6 +83,7 @@ export interface Order {
   userName: string;
   userPhone: string;
   userEmail?: string;
+  invoice?: any;
 }
 
 export interface UserProfile {

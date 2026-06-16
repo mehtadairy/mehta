@@ -123,6 +123,7 @@ function AccountContent() {
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+  const [emailSendingInvoiceId, setEmailSendingInvoiceId] = useState<string | null>(null);
   
   // Profile Update State
   const [editName, setEditName] = useState("");
@@ -235,7 +236,7 @@ function AccountContent() {
         if (phone && phone !== 'null') {
           const { data: userOrders, error: ordersError } = await supabase
             .from('orders')
-            .select('*, order_items(*)')
+            .select('*, order_items(*), invoices(*)')
             .eq('user_phone', phone)
             .order('created_at', { ascending: false });
 
@@ -246,6 +247,18 @@ function AccountContent() {
                date: new Date(o.created_at).toLocaleDateString(),
                status: o.status,
                total: o.total,
+               subtotal: o.subtotal,
+               discount: o.discount,
+               couponCode: o.coupon_code,
+               deliveryCharge: o.delivery_charge,
+               shippingAddress: o.shipping_address,
+               paymentMethod: o.payment_method,
+               paymentStatus: o.payment_status,
+               paymentId: o.payment_id,
+               userName: o.user_name,
+               userPhone: o.user_phone,
+               userEmail: o.user_email,
+               invoice: o.invoices && o.invoices.length > 0 ? o.invoices[0] : null,
                items: o.order_items ? o.order_items.map((i: any) => ({
                   productId: i.product_id,
                   productName: i.product_name,
@@ -835,9 +848,65 @@ function AccountContent() {
                               <div className="border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto text-xs text-brand-charcoal">
                                 <h4 className="font-serif font-bold text-[0.68rem] text-muted-foreground uppercase mb-1">Shipping Details</h4>
                                 <p className="leading-relaxed">
-                                  {order.shippingAddress.name}<br />
-                                  {order.shippingAddress.street}, {order.shippingAddress.city}
+                                  {order.shippingAddress?.name || "Customer"}<br />
+                                  {order.shippingAddress?.street || ""}{order.shippingAddress?.city ? `, ${order.shippingAddress.city}` : ""}
                                 </p>
+                              </div>
+
+                              {/* Customer Digital Invoice Actions section */}
+                              <div className="border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto text-xs text-brand-charcoal flex flex-col gap-2">
+                                <h4 className="font-serif font-bold text-[0.68rem] text-muted-foreground uppercase mb-1">Digital Invoice</h4>
+                                {order.invoice ? (
+                                  <div className="flex flex-col gap-1.5 min-w-[150px]">
+                                    <span className="text-[0.62rem] font-bold text-brand-gold bg-brand-cream/60 px-1.5 py-0.5 rounded border border-brand-beige text-center">
+                                      {order.invoice.invoice_number}
+                                    </span>
+                                    <a 
+                                      href={`/api/invoices/download?invoiceId=${order.invoice.id}`}
+                                      className="py-1.5 border border-brand-beige hover:border-brand-gold bg-white text-brand-charcoal text-center text-[0.7rem] font-bold rounded-lg transition-colors hover:bg-brand-cream"
+                                    >
+                                      Download Invoice
+                                    </a>
+                                    <button 
+                                      onClick={async () => {
+                                        setEmailSendingInvoiceId(order.invoice.id);
+                                        try {
+                                          const res = await fetch("/api/invoices/send", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ invoiceId: order.invoice.id })
+                                          });
+                                          const data = await res.json();
+                                          if (data.success) {
+                                            window.dispatchEvent(
+                                              new CustomEvent("showToast", {
+                                                detail: { message: "Invoice sent successfully to your email.", type: "success" }
+                                              })
+                                            );
+                                          } else {
+                                            throw new Error(data.error || "Failed to send email");
+                                          }
+                                        } catch (err: any) {
+                                          window.dispatchEvent(
+                                            new CustomEvent("showToast", {
+                                              detail: { message: err.message || "Failed to send email", type: "error" }
+                                            })
+                                          );
+                                        } finally {
+                                          setEmailSendingInvoiceId(null);
+                                        }
+                                      }}
+                                      disabled={emailSendingInvoiceId === order.invoice.id}
+                                      className="py-1.5 bg-brand-charcoal hover:bg-black text-white text-[0.7rem] font-bold rounded-lg transition-colors disabled:opacity-50 cursor-pointer text-center"
+                                    >
+                                      {emailSendingInvoiceId === order.invoice.id ? "Sending..." : "Email Invoice"}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-[0.68rem] text-muted-foreground animate-pulse leading-normal">
+                                    Preparing invoice...
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

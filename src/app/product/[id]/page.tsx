@@ -152,6 +152,12 @@ export default function ProductDetails() {
   const [addedFeedback, setAddedFeedback] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [productId]);
+
+  useEffect(() => {
     const loadProduct = async () => {
       const allProducts = await fetchProducts();
       const found = allProducts.find(p => p.id === productId);

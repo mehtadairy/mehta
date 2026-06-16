@@ -70,10 +70,7 @@ export default function Header() {
   const [userName, setUserName] = useState("Aarya Mehta");
   const [wishlistCount, setWishlistCount] = useState(0);
 
-  // Coupon state
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [couponError, setCouponError] = useState("");
+
 
   // Sync state on load and periodic storage check
   useEffect(() => {
@@ -143,30 +140,7 @@ export default function Header() {
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Apply Coupon
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCouponError("");
-    // TODO: implement real coupon logic from Supabase
-    setCouponError("Invalid coupon code.");
-    setAppliedCoupon(null);
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode("");
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem("mehta_applied_coupon");
-    }
-  };
-
-  const discountAmount = appliedCoupon 
-    ? (appliedCoupon.discountType === 'percentage' 
-        ? Math.floor((cartSubtotal * appliedCoupon.value) / 100) 
-        : appliedCoupon.value)
-    : 0;
-
-  const totalPayable = Math.max(0, cartSubtotal - discountAmount);
+  const totalPayable = Math.max(0, cartSubtotal);
 
   // Cart actions
   const updateQuantity = (productId: string, weight: string, delta: number) => {
@@ -187,15 +161,7 @@ export default function Header() {
     setCart(updated);
     localStorage.setItem("mehta_cart", JSON.stringify(updated));
     window.dispatchEvent(new Event("cartUpdated"));
-    
-    // Check if coupon is still valid
-    if (appliedCoupon) {
-      const newSubtotal = updated.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      if (newSubtotal < appliedCoupon.minOrderValue) {
-        setAppliedCoupon(null);
-        localStorage.removeItem("mehta_applied_coupon");
-      }
-    }
+
   };
 
   // Search logic
@@ -760,49 +726,6 @@ export default function Header() {
                     <span>Subtotal</span>
                     <span className="font-semibold">₹{cartSubtotal}</span>
                   </div>
-
-                  {/* Coupon Application Box */}
-                  {appliedCoupon ? (
-                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-xs text-emerald-800">
-                      <div>
-                        <span className="font-bold">{appliedCoupon.code}</span> applied! 
-                        <span className="block text-muted-foreground">{appliedCoupon.description}</span>
-                      </div>
-                      <button 
-                        onClick={handleRemoveCoupon}
-                        className="text-red-500 font-bold hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="Coupon Code"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="flex-grow border border-brand-beige rounded-lg px-3 py-1.5 text-xs bg-white uppercase font-bold"
-                      />
-                      <button 
-                        type="submit"
-                        className="bg-brand-gold hover:bg-brand-gold-dark text-brand-charcoal font-semibold rounded-lg px-4 py-1.5 text-xs transition-colors"
-                      >
-                        Apply
-                      </button>
-                    </form>
-                  )}
-                  {couponError && (
-                    <span className="text-[0.7rem] text-red-500 font-medium">{couponError}</span>
-                  )}
-
-                  {/* Discount */}
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-emerald-700">
-                      <span>Coupon Discount</span>
-                      <span>-₹{discountAmount}</span>
-                    </div>
-                  )}
 
                   <div className="h-px bg-brand-beige my-1"></div>
 

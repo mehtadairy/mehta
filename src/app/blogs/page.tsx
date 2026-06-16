@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { Calendar, User, Clock, ArrowRight, Search, Tag } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface BlogArticle {
   id: string;
@@ -73,12 +74,56 @@ export default function BlogsPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredArticles, setFilteredArticles] = useState<BlogArticle[]>([]);
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Reading progress scroll state
   const { scrollYProgress } = useScroll();
 
   useEffect(() => {
-    let result = BLOG_ARTICLES;
+    const fetchArticles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("blogs")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+
+        const formatted = (data || []).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          excerpt: b.excerpt,
+          content: b.content,
+          category: b.category,
+          image: b.image || "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80",
+          author: b.author,
+          date: new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          readTime: b.read_time,
+          featured: b.featured
+        }));
+        setArticles(formatted);
+      } catch (err) {
+        console.log("Supabase blogs fetch error, using local storage:", err);
+        const local = localStorage.getItem("mehta_blogs");
+        if (local) {
+          try {
+            setArticles(JSON.parse(local));
+          } catch (e) {
+            setArticles(BLOG_ARTICLES);
+          }
+        } else {
+          setArticles(BLOG_ARTICLES);
+          localStorage.setItem("mehta_blogs", JSON.stringify(BLOG_ARTICLES));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
+
+  useEffect(() => {
+    let result = articles;
 
     // Filter by Category
     if (activeCategory !== "all") {
@@ -97,9 +142,9 @@ export default function BlogsPage() {
     }
 
     setFilteredArticles(result);
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, articles]);
 
-  const featuredArticle = BLOG_ARTICLES.find(art => art.featured);
+  const featuredArticle = articles.find(art => art.featured);
   const regularArticles = filteredArticles.filter(art => !art.featured || activeCategory !== "all");
 
   const containerVariants = {

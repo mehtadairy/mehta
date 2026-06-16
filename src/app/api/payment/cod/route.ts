@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { createInvoice } from '@/lib/services/invoices';
 
 export async function POST(request: Request) {
   try {
@@ -42,6 +43,13 @@ export async function POST(request: Request) {
 
     if (paymentError) {
       console.error("Failed to insert COD payment log:", paymentError);
+    }
+
+    // Generate Invoice & send email confirmation
+    try {
+      await createInvoice(finalOrderData.id);
+    } catch (invoiceErr) {
+      console.error("Failed to generate invoice in COD payment route:", invoiceErr);
     }
 
     return NextResponse.json({ 

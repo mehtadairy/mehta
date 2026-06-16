@@ -11,11 +11,6 @@ import { ShoppingBasket, Trash2, Plus, Minus, ArrowLeft, ArrowRight, Tag } from 
 export default function Cart() {
   const [cart, setCart] = useState<any[]>([]);
   
-  // Coupon state
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [couponError, setCouponError] = useState("");
-
   // Sync state on load
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -23,47 +18,11 @@ export default function Cart() {
     // Sync cart
     const storedCart = localStorage.getItem("mehta_cart");
     if (storedCart) setCart(JSON.parse(storedCart));
-
-    // Sync applied coupon
-    const storedCoupon = localStorage.getItem("mehta_applied_coupon");
-    if (storedCoupon) {
-      setAppliedCoupon(JSON.parse(storedCoupon));
-      setCouponCode(JSON.parse(storedCoupon).code);
-    }
   }, []);
 
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Apply Coupon
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCouponError("");
-    const coupons = getCoupons();
-    const found = coupons.find(c => c.code.toUpperCase() === couponCode.toUpperCase().trim());
 
-    if (!found) {
-      setCouponError("Invalid coupon code.");
-      setAppliedCoupon(null);
-      localStorage.removeItem("mehta_applied_coupon");
-      return;
-    }
-
-    if (cartSubtotal < found.minOrderValue) {
-      setCouponError(`Minimum order value of ₹${found.minOrderValue} required.`);
-      setAppliedCoupon(null);
-      localStorage.removeItem("mehta_applied_coupon");
-      return;
-    }
-
-    setAppliedCoupon(found);
-    localStorage.setItem("mehta_applied_coupon", JSON.stringify(found));
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode("");
-    localStorage.removeItem("mehta_applied_coupon");
-  };
 
   // Cart actions
   const updateQuantity = (productId: string, weight: string, delta: number) => {
@@ -77,16 +36,6 @@ export default function Cart() {
     setCart(updated);
     localStorage.setItem("mehta_cart", JSON.stringify(updated));
     window.dispatchEvent(new Event("cartUpdated"));
-    
-    // Check coupon validity after quantity shift
-    if (appliedCoupon) {
-      const newSubtotal = updated.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      if (newSubtotal < appliedCoupon.minOrderValue) {
-        setAppliedCoupon(null);
-        localStorage.removeItem("mehta_applied_coupon");
-        setCouponError(`Coupon removed. Minimum order value of ₹${appliedCoupon.minOrderValue} required.`);
-      }
-    }
   };
 
   const removeItem = (productId: string, weight: string) => {
@@ -94,25 +43,10 @@ export default function Cart() {
     setCart(updated);
     localStorage.setItem("mehta_cart", JSON.stringify(updated));
     window.dispatchEvent(new Event("cartUpdated"));
-
-    // Check coupon validity after item deletion
-    if (appliedCoupon) {
-      const newSubtotal = updated.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      if (newSubtotal < appliedCoupon.minOrderValue) {
-        setAppliedCoupon(null);
-        localStorage.removeItem("mehta_applied_coupon");
-      }
-    }
   };
 
-  const discountAmount = appliedCoupon 
-    ? (appliedCoupon.discountType === 'percentage' 
-        ? Math.floor((cartSubtotal * appliedCoupon.value) / 100) 
-        : appliedCoupon.value)
-    : 0;
-
   const deliveryCharge = cartSubtotal > 0 ? (cartSubtotal >= 750 ? 0 : 60) : 0;
-  const totalPayable = Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
+  const totalPayable = Math.max(0, cartSubtotal + deliveryCharge);
 
   return (
     <>
@@ -126,7 +60,7 @@ export default function Cart() {
             Shopping Cart Summary
           </h2>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Review your sweets selection and apply eligible coupon offers before checking out.
+            Review your sweets selection before checking out.
           </p>
         </div>
       </section>
@@ -220,45 +154,9 @@ export default function Cart() {
                 </div>
               </div>
 
-              {/* Right Column: Order Summary & Coupon box */}
+              {/* Right Column: Order Summary */}
               <div className="lg:col-span-4 flex flex-col gap-6">
                 
-                {/* Coupon widget */}
-                <div className="bg-white border border-brand-beige rounded-2xl p-6 shadow-xs">
-                  <h3 className="font-serif text-sm font-bold text-brand-charcoal mb-4 flex items-center gap-1.5">
-                    <Tag className="h-4 w-4 text-brand-gold" /> Gifting Coupon Code
-                  </h3>
-                  
-                  {appliedCoupon ? (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col gap-2">
-                      <div className="flex items-center justify-between text-xs text-emerald-800">
-                        <span>Coupon <span className="font-bold">{appliedCoupon.code}</span> applied</span>
-                        <button onClick={handleRemoveCoupon} className="text-red-500 font-bold hover:underline">Remove</button>
-                      </div>
-                      <p className="text-[0.7rem] text-emerald-600 leading-normal font-medium">{appliedCoupon.description}</p>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="e.g. WELCOME50, FESTIVE15"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="flex-grow border border-brand-beige rounded-lg px-3 py-2 text-xs bg-brand-cream/35 focus:outline-none focus:bg-white uppercase font-bold"
-                      />
-                      <button 
-                        type="submit"
-                        className="bg-brand-gold hover:bg-brand-gold-dark text-brand-charcoal font-bold rounded-lg px-5 py-2 text-xs transition-colors"
-                      >
-                        Apply
-                      </button>
-                    </form>
-                  )}
-                  {couponError && (
-                    <span className="text-[0.7rem] text-red-500 font-semibold mt-1.5 block leading-normal">{couponError}</span>
-                  )}
-                </div>
-
                 {/* Summary totals details */}
                 <div className="bg-white border border-brand-beige rounded-2xl p-6 shadow-xs flex flex-col gap-4">
                   <h3 className="font-serif text-base font-bold text-brand-charcoal border-b border-brand-beige pb-3">
@@ -269,13 +167,6 @@ export default function Cart() {
                     <span>Sweets Subtotal</span>
                     <span className="font-bold text-brand-charcoal">₹{cartSubtotal}</span>
                   </div>
-
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-xs text-emerald-700">
-                      <span>Coupon Discount</span>
-                      <span>-₹{discountAmount}</span>
-                    </div>
-                  )}
 
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Delivery Charge</span>

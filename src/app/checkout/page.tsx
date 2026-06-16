@@ -124,6 +124,9 @@ export default function Checkout() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [receiptNumber, setReceiptNumber] = useState("");
   const [finalOrderNumber, setFinalOrderNumber] = useState("");
+  const [finalOrderId, setFinalOrderId] = useState("");
+  const [invoiceRecord, setInvoiceRecord] = useState<any>(null);
+  const [isEmailSending, setIsEmailSending] = useState(false);
 
   // Load state
   useEffect(() => {
@@ -190,6 +193,28 @@ export default function Checkout() {
     loadAddrs();
 
   }, [router]);
+
+  // Load invoice after order is placed successfully
+  useEffect(() => {
+    if (!finalOrderId) return;
+    const fetchInvoice = async () => {
+      // Retry loop to accommodate background generation delay
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase
+          .from("invoices")
+          .select("*")
+          .eq("order_id", finalOrderId)
+          .maybeSingle();
+
+        if (data) {
+          setInvoiceRecord(data);
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    };
+    fetchInvoice();
+  }, [finalOrderId]);
 
   // Calculations
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -367,7 +392,13 @@ export default function Checkout() {
       const userName = localStorage.getItem("mehta_user_name") || "Customer";
       const userPhone = localStorage.getItem("mehta_user_phone") || "";
       const userEmail = localStorage.getItem("mehta_user_email") || "";
-      const orderId = `ord_${Date.now()}`;
+      const orderId = typeof window !== "undefined" && window.crypto && window.crypto.randomUUID
+        ? window.crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
 
       const orderPayload = {
         id: orderId,
@@ -531,6 +562,7 @@ export default function Checkout() {
 
     setFinalOrderNumber(finalOrder.order_number);
     setReceiptNumber(paymentId || "COD-ORDER");
+    setFinalOrderId(finalOrder.id);
 
     localStorage.removeItem("mehta_cart");
     localStorage.removeItem("mehta_applied_coupon");
@@ -1138,6 +1170,56 @@ export default function Checkout() {
                       <span className="font-bold">{paymentOption === 'COD' ? 'Cash on Delivery' : 'Razorpay Secure'}</span>
                     </div>
                   </div>
+
+                  {/* Customer Invoice Download/Email Buttons */}
+                  {invoiceRecord ? (
+                    <div className="flex gap-2.5 w-full mt-1.5">
+                      <a 
+                        href={`/api/invoices/download?invoiceId=${invoiceRecord.id}`}
+                        className="flex-1 py-2.5 border border-brand-beige hover:border-brand-gold bg-white text-brand-charcoal text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs hover:bg-brand-cream"
+                      >
+                        Download Invoice
+                      </a>
+                      <button 
+                        onClick={async () => {
+                          setIsEmailSending(true);
+                          try {
+                            const res = await fetch("/api/invoices/send", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ invoiceId: invoiceRecord.id })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              window.dispatchEvent(
+                                new CustomEvent("showToast", {
+                                  detail: { message: "Invoice sent successfully to your email.", type: "success" }
+                                })
+                              );
+                            } else {
+                              throw new Error(data.error || "Failed to send email");
+                            }
+                          } catch (err: any) {
+                            window.dispatchEvent(
+                              new CustomEvent("showToast", {
+                                detail: { message: err.message || "Failed to send email", type: "error" }
+                              })
+                            );
+                          } finally {
+                            setIsEmailSending(false);
+                          }
+                        }}
+                        disabled={isEmailSending}
+                        className="flex-1 py-2.5 bg-brand-charcoal hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                      >
+                        {isEmailSending ? "Sending..." : "Email Invoice"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-[0.68rem] text-muted-foreground animate-pulse mt-1 w-full text-center">
+                      Preparing digital invoice receipt...
+                    </div>
+                  )}
 
                   <button 
                     onClick={closeReceiptModal}
