@@ -77,6 +77,21 @@
   animation-play-state: paused;
 }
 
+/* ── Shimmer skeleton ────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -230,4 +245,39 @@ button, a[role="button"] {
 /* ── Mobile safe area bottom spacing ─────────────────────────────── */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+/* ── Float keyframe for hero product image ───────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* ── Glass card utility ──────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(74,47,31,0.10);
+  border-radius: 1.25rem;
+}
+
+/* ── Brand gradient text ─────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #D46D2D 0%, #C9A227 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Hover card lift ─────────────────────────────────────────────── */
+.card-lift {
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(74,47,31,0.12);
 }

@@ -289,10 +289,37 @@ function ShopContent() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* --- PRODUCTS GRID PANEL (LEFT COLUMN) --- */}
-            <main ref={productsGridRef} className="lg:col-span-9 flex flex-col gap-8 scroll-mt-28">
-              
+            <main ref={productsGridRef} className="lg:col-span-9 flex flex-col gap-6 scroll-mt-28">
+
+              {/* ── MOBILE HORIZONTAL CATEGORY CHIPS (hidden on desktop) ── */}
+              <div className="lg:hidden flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-[0.68rem] font-bold border transition-all cursor-pointer ${
+                    selectedCategory === "all"
+                      ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
+                      : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
+                  }`}
+                >
+                  All Items
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.slug}
+                    onClick={() => setSelectedCategory(cat.slug)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-[0.68rem] font-bold border transition-all cursor-pointer ${
+                      selectedCategory === cat.slug
+                        ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
+                        : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
+                    }`}
+                  >
+                    {cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}
+                  </button>
+                ))}
+              </div>
+
               {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border border-brand-beige rounded-xl p-4 bg-white shadow-2xs">
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between border border-brand-beige rounded-xl p-3.5 bg-white shadow-2xs">
                 {/* Search bar */}
                 <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/20 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
                   <Search className="h-4.5 w-4.5 text-muted-foreground mr-2" />
@@ -339,7 +366,7 @@ function ShopContent() {
                 style={{ scrollMarginTop: "7rem" }}
               >
               {categoryLoading || pageLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10 animate-pulse">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-pulse">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="flex flex-col items-center text-center w-full">
                       {/* Circular placeholder mimicking the product card platter */}
@@ -373,7 +400,7 @@ function ShopContent() {
                   variants={containerVariants}
                   initial="hidden"
                   animate="show"
-                  className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10"
+                  className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
                 >
                   {currentItems.map((p) => (
                     <motion.div
@@ -496,89 +523,92 @@ function ShopContent() {
         </div>
       </section>
 
-      {/* --- MOBILE FILTERS PANEL MODAL --- */}
+      {/* ── MOBILE FILTERS BOTTOM SHEET ──────────────────────────── */}
       <AnimatePresence>
         {showFiltersMobile && (
-          <div className="fixed inset-0 z-50 flex lg:hidden">
-            <motion.div 
+          <div className="fixed inset-0 z-50 flex items-end lg:hidden">
+            {/* Backdrop */}
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowFiltersMobile(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-xs"
-            ></motion.div>
-            <motion.div 
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative z-10 w-full max-w-xs bg-white h-full shadow-xl flex flex-col p-6 ml-auto"
+              className="absolute inset-0 bg-[#2A1E17]/40 backdrop-blur-sm"
+            />
+
+            {/* Bottom Sheet */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="relative z-10 w-full bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85dvh]"
             >
-              <div className="flex items-center justify-between border-b border-brand-beige pb-4 mb-6">
-                <h3 className="font-serif text-base font-bold text-brand-charcoal">Catalog Filters</h3>
-                <button onClick={() => setShowFiltersMobile(false)} className="p-1 hover:bg-brand-cream rounded-full">
-                  <X className="h-5 w-5" />
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="h-1 w-10 rounded-full bg-[#EAE0D3]" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-3 border-b border-[#EAE0D3]">
+                <h3 className="font-serif text-base font-bold text-[#2A1E17]">Filters</h3>
+                <button
+                  onClick={() => setShowFiltersMobile(false)}
+                  className="p-1.5 hover:bg-[#FAF6EE] rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="h-4.5 w-4.5 text-[#7E6B5A]" />
                 </button>
               </div>
-              
-              <div className="flex-grow overflow-y-auto flex flex-col gap-6">
-                {/* Category selector grid */}
-                <div>
-                  <h4 className="font-serif text-sm font-bold text-brand-charcoal border-b border-brand-beige pb-2 mb-3">Categories</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => { setSelectedCategory("all"); setShowFiltersMobile(false); }}
-                      className={`flex flex-col items-center justify-center p-2.5 border rounded-lg transition-all aspect-square text-center ${
-                        selectedCategory === "all"
-                          ? "border-brand-orange bg-brand-orange/5 text-brand-orange font-bold"
-                          : "border-[#e8dcc4] bg-white text-brand-charcoal"
-                      }`}
-                    >
-                      <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      <span className="text-[0.58rem] leading-none uppercase tracking-wider">All Items</span>
-                    </button>
 
-                     {categories.map(cat => {
-                      const isActive = selectedCategory === cat.slug;
-                      return (
-                        <button
-                          key={cat.slug}
-                          onClick={() => { setSelectedCategory(cat.slug); setShowFiltersMobile(false); }}
-                          className={`flex flex-col items-center justify-center p-2.5 border rounded-lg transition-all aspect-square text-center ${
-                            isActive
-                              ? "border-brand-orange bg-brand-orange/5 text-brand-orange font-bold"
-                              : "border-[#e8dcc4] bg-white text-brand-charcoal"
-                          }`}
-                        >
-                          {getCategoryIcon(cat.slug)}
-                          <span className="text-[0.58rem] leading-none uppercase tracking-wider mt-0.5">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
-                        </button>
-                      );
-                    })}
+              {/* Scrollable content */}
+              <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-6">
+                {/* Categories */}
+                <div>
+                  <h4 className="text-[0.65rem] font-bold text-[#7E6B5A] uppercase tracking-widest mb-3">Category</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[{ slug: "all", name: "All Items" }, ...categories].map((cat: any) => (
+                      <button
+                        key={cat.slug}
+                        onClick={() => { setSelectedCategory(cat.slug); }}
+                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                          selectedCategory === cat.slug
+                            ? "bg-[#D46D2D] text-white border-[#D46D2D]"
+                            : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
+                        }`}
+                      >
+                        {cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Mobile price selector */}
+                {/* Price Range */}
                 <div>
-                  <h4 className="font-serif text-sm font-bold text-brand-charcoal border-b border-brand-beige pb-2 mb-3">Price Limit</h4>
-                  <div className="flex flex-col gap-3">
-                    <input 
-                      type="range" 
-                      min="50" 
-                      max="1500" 
-                      step="50"
-                      value={maxPrice}
-                      onChange={(e) => setMaxPrice(Number(e.target.value))}
-                      className="w-full h-1.5 bg-brand-beige rounded-lg appearance-none cursor-pointer accent-brand-orange"
-                    />
-                    <div className="flex justify-between text-xs font-semibold text-brand-charcoal">
-                      <span>Under ₹{maxPrice}</span>
-                      <span className="text-muted-foreground">Max ₹1500</span>
-                    </div>
+                  <h4 className="text-[0.65rem] font-bold text-[#7E6B5A] uppercase tracking-widest mb-3">Max Price</h4>
+                  <input
+                    type="range"
+                    min="50"
+                    max="1500"
+                    step="50"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#EAE0D3] rounded-lg appearance-none cursor-pointer accent-[#D46D2D]"
+                  />
+                  <div className="flex justify-between text-xs font-semibold text-[#2A1E17] mt-2">
+                    <span>Under ₹{maxPrice}</span>
+                    <span className="text-[#7E6B5A]">Max ₹1500</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Apply CTA */}
+              <div className="px-5 py-4 border-t border-[#EAE0D3] safe-bottom">
+                <button
+                  onClick={() => setShowFiltersMobile(false)}
+                  className="w-full bg-[#D46D2D] hover:bg-[#BF5E23] text-white font-bold text-sm rounded-2xl py-3.5 transition-colors cursor-pointer"
+                >
+                  Show Results
+                </button>
               </div>
             </motion.div>
           </div>

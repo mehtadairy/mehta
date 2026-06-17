@@ -563,25 +563,37 @@ export default function AdminPanel() {
 
   return (
     <>
-      <Header />
-      <WhatsAppFloat />
-
-      {/* --- PAGE HEADER --- */}
-      <section className="bg-brand-cream border-b border-brand-beige py-8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-2xl font-bold text-brand-charcoal text-center font-bold">
-            Mehta Sweet Mart Management Panel
-          </h2>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            Update inventory catalogs, check order invoices, view buyers directories, and configure marketing coupons.
-          </p>
+      {/* ── ADMIN PANEL TOPBAR ───────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-[#1A1310] border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-lg bg-[#D46D2D] flex items-center justify-center">
+              <span className="text-white text-[0.7rem] font-black">M</span>
+            </div>
+            <div>
+              <span className="text-xs font-bold text-white">Mehta Dairy</span>
+              <span className="text-[0.6rem] text-white/40 ml-2 uppercase tracking-widest">Admin Console</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:flex items-center gap-1.5 text-[0.62rem] text-white/50">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {products.length} products · {orders.length} orders
+            </span>
+            <button
+              onClick={() => { localStorage.removeItem("mehta_admin_auth"); setIsAdminAuth(false); }}
+              className="text-[0.65rem] font-bold text-white/60 hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
-      </section>
+      </header>
 
       {/* --- ADMIN SHELL WORKSPACE --- */}
-      <section className="py-12">
+      <section className="py-6 bg-[#F8F6F3] min-h-[calc(100vh-56px)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8 items-start w-full relative">
+          <div className="flex flex-col lg:flex-row gap-6 items-start w-full relative">
             
             {/* Mobile Header Horizontal Scrolling Menu */}
             <div className="lg:hidden w-full overflow-x-auto flex gap-2 pb-3 mb-4 scrollbar-none scroll-smooth">
@@ -630,7 +642,7 @@ export default function AdminPanel() {
               layout
               animate={{ width: isSidebarCollapsed ? "80px" : "280px" }}
               transition={{ type: "spring", stiffness: 200, damping: 25 }}
-              className="hidden lg:flex flex-col gap-1.5 bg-white/85 backdrop-blur-md border border-brand-beige p-4 rounded-2xl shadow-lg flex-shrink-0 relative sticky top-24"
+              className="hidden lg:flex flex-col gap-1.5 bg-white border border-[#EAE0D3] p-4 rounded-2xl shadow-sm flex-shrink-0 relative sticky top-20"
             >
               {/* Collapse toggle header button */}
               <div className="flex items-center justify-between border-b border-brand-beige/50 pb-2 mb-2">
