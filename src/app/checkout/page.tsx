@@ -132,6 +132,13 @@ export default function Checkout() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Check login state
+    const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
+    if (!isLoggedIn) {
+      router.push("/account?redirect=/checkout");
+      return;
+    }
+
     // Cart load
     const storedCart = localStorage.getItem("mehta_cart");
     if (storedCart) {

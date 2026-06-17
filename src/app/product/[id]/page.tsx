@@ -442,7 +442,12 @@ export default function ProductDetails() {
                   whileTap={{ scale: 0.99 }}
                   onClick={() => {
                     handleAddToCart();
-                    router.push("/checkout");
+                    const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
+                    if (!isLoggedIn) {
+                      router.push("/account?redirect=/checkout");
+                    } else {
+                      router.push("/checkout");
+                    }
                   }}
                   className="w-full inline-flex items-center justify-center rounded-lg border border-brand-orange py-3.5 text-xs font-bold text-brand-orange bg-white shadow-sm transition-all uppercase tracking-wider cursor-pointer hover:bg-brand-orange/5"
                 >

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -9,6 +10,7 @@ import { getCoupons, Coupon } from "@/lib/types";
 import { ShoppingBasket, Trash2, Plus, Minus, ArrowLeft, ArrowRight, Tag } from "lucide-react";
 
 export default function Cart() {
+  const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
   
   // Sync state on load
@@ -190,12 +192,19 @@ export default function Cart() {
                     <span className="font-serif text-lg text-brand-orange">₹{totalPayable}</span>
                   </div>
 
-                  <Link 
-                    href="/checkout"
-                    className="w-full inline-flex items-center justify-center rounded-xl bg-brand-orange py-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-orange-hover shadow-md mt-2"
+                  <button 
+                    onClick={() => {
+                      const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
+                      if (!isLoggedIn) {
+                        router.push("/account?redirect=/checkout");
+                      } else {
+                        router.push("/checkout");
+                      }
+                    }}
+                    className="w-full inline-flex items-center justify-center rounded-xl bg-brand-orange py-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-orange-hover shadow-md mt-2 cursor-pointer"
                   >
                     Proceed to Payment <ArrowRight className="ml-1.5 h-4.5 w-4.5" />
-                  </Link>
+                  </button>
                 </div>
 
               </div>

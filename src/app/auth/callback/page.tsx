@@ -104,8 +104,14 @@ export default function AuthCallback() {
       // 4. Trigger state update events across pages
       window.dispatchEvent(new Event("authUpdated"));
 
-      // 5. Redirect to account dashboard
-      router.push("/account");
+      // 5. Redirect to destination or account dashboard
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get("redirect");
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push("/account");
+      }
     };
 
     handleAuthCallback();

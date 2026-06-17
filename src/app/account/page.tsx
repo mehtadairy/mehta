@@ -116,10 +116,11 @@ function AccountContent() {
     setIsLoading(true);
     setOtpError("");
     try {
+      const redirectUrl = searchParams.get("redirect") || "/account";
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
       if (error) throw error;
@@ -371,6 +372,11 @@ function AccountContent() {
         setIsLoggedIn(true);
         setOtpError("");
         window.dispatchEvent(new Event("authUpdated"));
+        
+        const redirectUrl = searchParams.get("redirect");
+        if (redirectUrl) {
+          router.push(redirectUrl);
+        }
       } else {
         setOtpError(data.message || "Invalid OTP.");
       }
