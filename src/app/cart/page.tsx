@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { getCoupons, Coupon } from "@/lib/types";
 import { ShoppingBasket, Trash2, Plus, Minus, ArrowLeft, ArrowRight, Tag } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Cart() {
   const router = useRouter();
@@ -89,61 +90,68 @@ export default function Cart() {
               
               {/* Left Column: Cart Items Checklist */}
               <div className="lg:col-span-8 flex flex-col gap-4">
-                {cart.map((item, idx) => (
-                  <div 
-                    key={`${item.productId}-${item.weight}-${idx}`}
-                    className="bg-white rounded-2xl border border-brand-beige p-5 flex flex-col sm:flex-row items-center gap-5 shadow-xs"
-                  >
-                    <img 
-                      src={item.image} 
-                      alt={item.productName} 
-                      className="h-20 w-20 rounded-xl object-cover bg-brand-cream border border-brand-beige flex-shrink-0"
-                    />
-                    
-                    <div className="flex-grow text-center sm:text-left">
-                      <Link href={`/product/${item.productId}`}>
-                        <h4 className="font-serif text-base font-bold text-brand-charcoal hover:text-brand-orange transition-colors">
-                          {item.productName}
-                        </h4>
-                      </Link>
-                      <span className="text-[0.7rem] font-bold text-brand-gold uppercase tracking-wider block mt-1.5 mb-3">
-                        {item.weight} • ₹{item.price} each
-                      </span>
+                <AnimatePresence mode="popLayout">
+                  {cart.map((item, idx) => (
+                    <motion.div 
+                      key={`${item.productId}-${item.weight}`}
+                      layout
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -150 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      className="bg-white rounded-2xl border border-brand-beige p-5 flex flex-col sm:flex-row items-center gap-5 shadow-xs"
+                    >
+                      <img 
+                        src={item.image} 
+                        alt={item.productName} 
+                        className="h-20 w-20 rounded-xl object-cover bg-brand-cream border border-brand-beige flex-shrink-0"
+                      />
+                      
+                      <div className="flex-grow text-center sm:text-left">
+                        <Link href={`/product/${item.productId}`}>
+                          <h4 className="font-serif text-base font-bold text-brand-charcoal hover:text-brand-orange transition-colors">
+                            {item.productName}
+                          </h4>
+                        </Link>
+                        <span className="text-[0.7rem] font-bold text-brand-gold uppercase tracking-wider block mt-1.5 mb-3">
+                          {item.weight} • ₹{item.price} each
+                        </span>
 
-                      <div className="flex items-center justify-center sm:justify-start gap-6">
-                        {/* Quantity Counter */}
-                        <div className="flex items-center border border-brand-beige rounded-lg overflow-hidden bg-brand-cream h-8.5">
+                        <div className="flex items-center justify-center sm:justify-start gap-6">
+                          {/* Quantity Counter */}
+                          <div className="flex items-center border border-brand-beige rounded-lg overflow-hidden bg-brand-cream h-8.5">
+                            <button 
+                              onClick={() => updateQuantity(item.productId, item.weight, -1)}
+                              className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="px-3 text-xs font-bold">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(item.productId, item.weight, 1)}
+                              className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Remove item button */}
                           <button 
-                            onClick={() => updateQuantity(item.productId, item.weight, -1)}
-                            className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
+                            onClick={() => removeItem(item.productId, item.weight)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1 text-xs font-semibold hover:underline"
                           >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="px-3 text-xs font-bold">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(item.productId, item.weight, 1)}
-                            className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" /> Remove
                           </button>
                         </div>
-
-                        {/* Remove item button */}
-                        <button 
-                          onClick={() => removeItem(item.productId, item.weight)}
-                          className="text-red-500 hover:text-red-700 flex items-center gap-1 text-xs font-semibold hover:underline"
-                        >
-                          <Trash2 className="h-4 w-4" /> Remove
-                        </button>
                       </div>
-                    </div>
 
-                    {/* Dynamic line item total */}
-                    <div className="font-serif font-bold text-lg text-brand-charcoal min-w-[80px] text-center sm:text-right border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto">
-                      ₹{item.price * item.quantity}
-                    </div>
-                  </div>
-                ))}
+                      {/* Dynamic line item total */}
+                      <div className="font-serif font-bold text-lg text-brand-charcoal min-w-[80px] text-center sm:text-right border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto">
+                        ₹{item.price * item.quantity}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
 
                 {/* Back to shopping hook */}
                 <div className="mt-4">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchIngredients, addIngredient, deleteIngredient, supabase } from "@/lib/supabaseClient";
 import { Plus, Edit, Trash2, Search, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminIngredients() {
   const [ingredients, setIngredients] = useState<any[]>([]);
@@ -76,71 +77,92 @@ export default function AdminIngredients() {
   );
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-brand-beige pb-4 mb-6 gap-4">
+    <div className="flex flex-col gap-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-brand-beige pb-4 gap-4">
         <div>
           <h3 className="font-serif text-lg font-bold text-brand-charcoal">
             Ingredients Management
           </h3>
           <p className="text-xs text-muted-foreground">Manage reusable ingredients with names and icons across products.</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-brand-orange text-white px-4 py-2 text-xs font-bold rounded-lg shadow-sm hover:bg-brand-orange/90 flex items-center gap-1.5 transition-colors whitespace-nowrap self-stretch sm:self-auto justify-center"
-        >
-          <Plus className="w-4 h-4" /> Add Ingredient
-        </button>
+        {!showForm && (
+          <button 
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="bg-brand-orange text-white px-4 py-2 text-xs font-bold rounded-lg shadow-sm hover:bg-brand-orange/90 flex items-center gap-1.5 transition-colors whitespace-nowrap self-stretch sm:self-auto justify-center cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Add Ingredient
+          </button>
+        )}
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-8 border border-brand-beige bg-brand-cream/10 rounded-xl p-6">
-          <h4 className="font-bold text-brand-charcoal text-sm mb-4">
-            {editingId ? "Edit Ingredient" : "New Ingredient"}
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">Ingredient Name *</label>
-              <input 
-                type="text" 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
-                placeholder="e.g. Cardamom"
-                className="w-full border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white" 
-                required 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">Icon / Emoji *</label>
-              <select 
-                value={icon} 
-                onChange={e => setIcon(e.target.value)} 
-                className="w-full border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white cursor-pointer"
+      <AnimatePresence>
+        {showForm && (
+          <motion.form 
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ type: "spring", stiffness: 200, damping: 22 }}
+            onSubmit={handleSubmit} 
+            className="border border-brand-beige bg-brand-cream/10 rounded-2xl p-6 overflow-hidden shadow-xs flex flex-col gap-4"
+          >
+            <div className="flex items-center justify-between border-b border-brand-beige/50 pb-2">
+              <h4 className="font-bold text-brand-charcoal text-sm">
+                {editingId ? "Edit Ingredient" : "New Ingredient"}
+              </h4>
+              <button 
+                type="button"
+                onClick={resetForm}
+                className="p-1 hover:bg-brand-cream rounded-full cursor-pointer text-brand-charcoal/70"
               >
-                <option value="🥛">🥛 Milk / Dairy (🥛)</option>
-                <option value="🌾">🌾 Wheat / Besan (🌾)</option>
-                <option value="🌱">🌱 Cardamom / Herbs (🌱)</option>
-                <option value="🍂">🍂 Kesar / Saffron (🍂)</option>
-                <option value="🥜">🥜 Cashew / Pistachio / Almond (🥜)</option>
-                <option value="🥥">🥥 Coconut (🥥)</option>
-                <option value="🍌">🍌 Banana / Fruits (🍌)</option>
-                <option value="✨">✨ Silver Leaf / Varakh (✨)</option>
-                <option value="🧂">🧂 Salt (🧂)</option>
-                <option value="🍯">🍯 Honey (🍯)</option>
-                <option value="💧">💧 Rose Water (💧)</option>
-                <option value="🍬">🍬 Sugar / Sweets (🍬)</option>
-                <option value="🛢️">🛢️ Edible Oil / Ghee (🛢️)</option>
-              </select>
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-          <div className="mt-6 flex justify-end gap-3">
-            <button type="button" onClick={resetForm} className="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-brand-charcoal border border-brand-beige rounded-lg bg-white">Cancel</button>
-            <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-brand-charcoal hover:bg-black rounded-lg">Save Ingredient</button>
-          </div>
-        </form>
-      )}
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Ingredient Name *</label>
+                <input 
+                  type="text" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  placeholder="e.g. Cardamom"
+                  className="w-full border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange" 
+                  required 
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Icon / Emoji *</label>
+                <select 
+                  value={icon} 
+                  onChange={e => setIcon(e.target.value)} 
+                  className="w-full border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white cursor-pointer focus:outline-none focus:border-brand-orange"
+                >
+                  <option value="🥛">🥛 Milk / Dairy (🥛)</option>
+                  <option value="🌾">🌾 Wheat / Besan (🌾)</option>
+                  <option value="🌱">🌱 Cardamom / Herbs (🌱)</option>
+                  <option value="🍂">🍂 Kesar / Saffron (🍂)</option>
+                  <option value="🥜">🥜 Cashew / Pistachio / Almond (🥜)</option>
+                  <option value="🥥">🥥 Coconut (🥥)</option>
+                  <option value="🍌">🍌 Banana / Fruits (🍌)</option>
+                  <option value="✨">✨ Silver Leaf / Varakh (✨)</option>
+                  <option value="🧂">🧂 Salt (🧂)</option>
+                  <option value="🍯">🍯 Honey (🍯)</option>
+                  <option value="💧">💧 Rose Water (💧)</option>
+                  <option value="🍬">🍬 Sugar / Sweets (🍬)</option>
+                  <option value="🛢️">🛢️ Edible Oil / Ghee (🛢️)</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-end gap-3 border-t border-brand-beige/50 pt-4">
+              <button type="button" onClick={resetForm} className="px-4 py-2 text-xs font-bold text-brand-charcoal hover:bg-brand-cream border border-brand-beige rounded-lg bg-white cursor-pointer transition-colors">Cancel</button>
+              <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-brand-orange hover:bg-brand-orange-hover rounded-lg cursor-pointer transition-colors shadow-xs">Save Ingredient</button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
       {/* Search Bar */}
-      <div className="mb-4 relative max-w-md">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         <input 
           type="text" 
@@ -151,52 +173,72 @@ export default function AdminIngredients() {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-brand-beige bg-brand-cream/30">
-              <th className="py-3 px-4 font-bold text-brand-charcoal w-16">Icon</th>
-              <th className="py-3 px-4 font-bold text-brand-charcoal">Name</th>
-              <th className="py-3 px-4 font-bold text-brand-charcoal text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Modern Badge Layout with Drag & Stagger & spring-physics */}
+      <div className="border border-brand-beige/50 rounded-2xl bg-[#fbfbfb]/50 p-6">
+        <motion.div 
+          layout 
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+        >
+          <AnimatePresence mode="popLayout">
             {filteredIngredients.map((ing) => (
-              <tr key={ing.id} className="border-b border-brand-beige/50 hover:bg-brand-cream/10 transition-colors">
-                <td className="py-3 px-4 text-lg">{ing.icon}</td>
-                <td className="py-3 px-4 font-semibold text-brand-charcoal">{ing.name}</td>
-                <td className="py-3 px-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button 
-                      onClick={() => {
-                        setEditingId(ing.id);
-                        setName(ing.name);
-                        setIcon(ing.icon || "🥛");
-                        setShowForm(true);
-                      }}
-                      className="p-1.5 text-[#0a4d8c] bg-[#0a4d8c]/10 rounded hover:bg-[#0a4d8c]/20 transition-colors" title="Edit"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(ing.id)}
-                      className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors" title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              <motion.div
+                layout
+                key={ing.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                drag
+                dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                dragElastic={0.15}
+                className="bg-white/80 backdrop-blur-md border border-brand-beige rounded-2xl p-4 flex flex-col items-center justify-between gap-3 text-center shadow-xs hover:shadow-md hover:border-brand-orange/40 transition-all duration-300 relative overflow-hidden group cursor-grab active:cursor-grabbing min-h-[120px]"
+              >
+                {/* Drag Mesh Graphic Simulator */}
+                <div className="absolute inset-0 bg-radial-gradient from-brand-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                {/* Card action badges absolute */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={() => {
+                      setEditingId(ing.id);
+                      setName(ing.name);
+                      setIcon(ing.icon || "🥛");
+                      setShowForm(true);
+                    }}
+                    className="p-1 text-[#0a4d8c] bg-[#0a4d8c]/10 rounded hover:bg-[#0a4d8c]/20 transition-colors cursor-pointer"
+                    title="Edit"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(ing.id)}
+                    className="p-1 text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Emoji Icon Container */}
+                <div className="w-12 h-12 rounded-full bg-brand-cream border border-brand-beige flex items-center justify-center text-2xl select-none group-hover:scale-110 transition-transform duration-300 shadow-2xs">
+                  {ing.icon}
+                </div>
+
+                {/* Name */}
+                <div className="font-semibold text-brand-charcoal text-[0.75rem] select-none uppercase tracking-wider">
+                  {ing.name}
+                </div>
+              </motion.div>
             ))}
-            {filteredIngredients.length === 0 && (
-              <tr>
-                <td colSpan={3} className="py-8 text-center text-muted-foreground text-xs">
-                  No ingredients found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          </AnimatePresence>
+        </motion.div>
+
+        {filteredIngredients.length === 0 && (
+          <div className="py-12 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-2">
+            <span>No ingredients found.</span>
+          </div>
+        )}
       </div>
     </div>
   );

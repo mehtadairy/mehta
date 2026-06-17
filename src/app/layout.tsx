@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Outfit } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import MobileNavBar from "@/components/MobileNavBar";
 import ToastContainer from "@/components/Toast";
 import SplashLoader from "@/components/SplashLoader";
+import GlobalScrollManager from "@/components/ScrollToTop";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -63,7 +65,7 @@ export default function RootLayout({
       lang="en"
       className={`${playfair.variable} ${outfit.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans flex flex-col bg-background text-foreground animate-fade-in">
+      <body suppressHydrationWarning className="min-h-full font-sans flex flex-col bg-background text-foreground animate-fade-in">
         {/* Google Analytics - Replace G-XXXXXXX with actual ID */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
         <script
@@ -78,6 +80,10 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Global scroll restoration — instant on page nav, smooth on filter changes */}
+        <Suspense fallback={null}>
+          <GlobalScrollManager />
+        </Suspense>
         {children}
         <MobileNavBar />
         <ToastContainer />

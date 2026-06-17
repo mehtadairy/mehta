@@ -83,11 +83,20 @@ export default function Home() {
   // Hero Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Parallax effects
+  // Mobile viewport detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Parallax effects (disabled on mobile)
   const { scrollY } = useScroll();
-  const yBg = useTransform(scrollY, [0, 600], [0, 80]);
-  const yText = useTransform(scrollY, [0, 600], [0, -60]);
-  const yImage = useTransform(scrollY, [0, 600], [0, -20]);
+  const yBg = useTransform(scrollY, [0, 600], [0, isMobile ? 0 : 80]);
+  const yText = useTransform(scrollY, [0, 600], [0, isMobile ? 0 : -60]);
+  const yImage = useTransform(scrollY, [0, 600], [0, isMobile ? 0 : -20]);
 
   useEffect(() => {
     async function loadProducts() {
@@ -348,7 +357,8 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-4">
+                <div className="mt-6 flex flex-wrap gap-4 items-center">
+                  {/* Primary CTA — Shop Now */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -357,17 +367,19 @@ export default function Home() {
                       delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.3 + slides[currentSlide].descriptionLines.length * 0.15 + 0.1,
                       ease: [0.16, 1, 0.3, 1]
                     }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.05, boxShadow: "0 12px 32px rgba(74,47,31,0.30)" }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     <Link
                       href={slides[currentSlide].link}
-                      className="inline-flex items-center justify-center rounded-xl bg-[#4A2F1F] text-white hover:bg-[#4A2F1F]/90 px-7 py-3.5 text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4A2F1F] text-white hover:bg-[#4A2F1F]/90 px-7 py-3.5 text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer"
                     >
-                      Shop Now
+                      {slides[currentSlide].buttonText}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </motion.div>
                   
+                  {/* Premium Explore Collection CTA */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -376,14 +388,31 @@ export default function Home() {
                       delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.3 + slides[currentSlide].descriptionLines.length * 0.15 + 0.25,
                       ease: [0.16, 1, 0.3, 1]
                     }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.96 }}
+                    style={{ position: "relative" }}
                   >
                     <Link
                       href="/shop"
-                      className="inline-flex items-center justify-center rounded-xl border-2 border-[#4A2F1F] hover:bg-[#4A2F1F]/5 text-[#4A2F1F] px-7 py-3.2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                      className="group relative inline-flex items-center justify-center gap-2.5 rounded-full px-8 py-3.5 text-xs font-bold uppercase tracking-wider text-white overflow-hidden cursor-pointer animate-glow-pulse"
+                      style={{
+                        background: "linear-gradient(135deg, #D46D2D 0%, #D4AF37 100%)",
+                        boxShadow: "0 4px 24px rgba(212,109,45,0.35), 0 1px 4px rgba(0,0,0,0.1)"
+                      }}
                     >
-                      Explore Products
+                      {/* Shimmer overlay */}
+                      <span
+                        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none"
+                      />
+                      <span>Explore Collection</span>
+                      <motion.span
+                        className="flex items-center"
+                        initial={{ x: 0 }}
+                        whileHover={{ x: 4 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      >
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                      </motion.span>
                     </Link>
                   </motion.div>
                 </div>

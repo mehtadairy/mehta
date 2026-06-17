@@ -48,7 +48,9 @@ import {
   Bell,
   Database,
   Search,
-  PenTool
+  PenTool,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -57,6 +59,23 @@ export default function AdminPanel() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "invoices" | "customers" | "categories" | "banners" | "notifications" | "payments" | "backups" | "ingredients" | "zones" | "blogs">("dashboard");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const ADMIN_MENU_ITEMS = [
+    { id: "dashboard", label: "Overview", fullLabel: "Administrative Overview", icon: LayoutDashboard },
+    { id: "products", label: "Inventory", fullLabel: "Sweet Inventory", icon: Dessert, badgeKey: "products" },
+    { id: "orders", label: "Orders", fullLabel: "Orders Tracking", icon: ShoppingBag, badgeKey: "orders" },
+    { id: "invoices", label: "Invoices", fullLabel: "Invoice Management", icon: FileText },
+    { id: "blogs", label: "Blogs CMS", fullLabel: "Blog Articles CMS", icon: PenTool },
+    { id: "customers", label: "Customers", fullLabel: "Customers Directory", icon: Users },
+    { id: "categories", label: "Categories", fullLabel: "Category Management", icon: Dessert },
+    { id: "ingredients", label: "Ingredients", fullLabel: "Ingredients Management", icon: Tag },
+    { id: "zones", label: "Zones", fullLabel: "Delivery Zones", icon: MapPin },
+    { id: "banners", label: "Banners", fullLabel: "Homepage Banners", icon: UploadCloud },
+    { id: "notifications", label: "Notifications", fullLabel: "Notifications Logs", icon: Bell },
+    { id: "payments", label: "Payments", fullLabel: "Payments Analytics", icon: IndianRupee },
+    { id: "backups", label: "Backups", fullLabel: "Database Backups", icon: Database },
+  ];
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -562,101 +581,160 @@ export default function AdminPanel() {
       {/* --- ADMIN SHELL WORKSPACE --- */}
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-8 items-start w-full relative">
             
-            {/* Sidebar Navigation */}
-            <aside className="lg:col-span-3 flex flex-col gap-1.5 bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
-              <button 
-                onClick={() => setActiveTab("dashboard")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "dashboard" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <LayoutDashboard className="h-4 w-4" /> Administrative Overview
-              </button>
-              <button 
-                onClick={() => setActiveTab("products")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "products" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Dessert className="h-4 w-4" /> Sweet Inventory ({products.length})
-              </button>
-              <button 
-                onClick={() => setActiveTab("orders")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "orders" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <ShoppingBag className="h-4 w-4" /> Orders Tracking ({orders.length})
-              </button>
-              <button 
-                onClick={() => setActiveTab("invoices")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "invoices" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <FileText className="h-4 w-4" /> Invoice Management
-              </button>
-              <button 
-                onClick={() => setActiveTab("blogs")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "blogs" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <PenTool className="h-4 w-4" /> Blog Articles CMS
-              </button>
-              <button 
-                onClick={() => setActiveTab("customers")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "customers" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Users className="h-4 w-4" /> Customers Directory
-              </button>
-              <button 
-                onClick={() => setActiveTab("categories")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "categories" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Dessert className="h-4 w-4" /> Category Management
-              </button>
-              <button 
-                onClick={() => setActiveTab("ingredients")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "ingredients" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Tag className="h-4 w-4" /> Ingredients Management
-              </button>
-              <button 
-                onClick={() => setActiveTab("zones")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "zones" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <MapPin className="h-4 w-4" /> Delivery Zones
-              </button>
-              <button 
-                onClick={() => setActiveTab("banners")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "banners" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <UploadCloud className="h-4 w-4" /> Homepage Banners
-              </button>
-              <button 
-                onClick={() => setActiveTab("notifications")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "notifications" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Bell className="h-4 w-4" /> Notifications
-              </button>
-              <button 
-                onClick={() => setActiveTab("payments")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "payments" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <IndianRupee className="h-4 w-4" /> Payments
-              </button>
-              <button 
-                onClick={() => setActiveTab("backups")}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "backups" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-              >
-                <Database className="h-4 w-4" /> Backups
-              </button>
+            {/* Mobile Header Horizontal Scrolling Menu */}
+            <div className="lg:hidden w-full overflow-x-auto flex gap-2 pb-3 mb-4 scrollbar-none scroll-smooth">
+              {ADMIN_MENU_ITEMS.map((item) => {
+                const IconComponent = item.icon;
+                const isActive = activeTab === item.id;
+                let badgeVal = 0;
+                if (item.badgeKey === "products") badgeVal = products.length;
+                if (item.badgeKey === "orders") badgeVal = orders.length;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as any)}
+                    className={`px-4 py-2 text-xs font-bold rounded-full flex items-center gap-1.5 transition-all whitespace-nowrap relative ${
+                      isActive 
+                        ? "bg-brand-orange text-white shadow-sm" 
+                        : "bg-white text-brand-charcoal border border-brand-beige hover:border-brand-gold"
+                    }`}
+                  >
+                    <IconComponent className="h-3.5 w-3.5" />
+                    <span>{item.label}</span>
+                    {badgeVal > 0 && (
+                      <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full font-bold ${
+                        isActive ? "bg-white text-brand-orange" : "bg-brand-orange/15 text-brand-orange"
+                      }`}>
+                        {badgeVal}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
               <button 
                 onClick={() => {
                   localStorage.removeItem("mehta_admin_auth");
                   setIsAdminAuth(false);
                 }}
-                className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors text-red-500 hover:bg-red-50`}
+                className="px-4 py-2 text-xs font-bold rounded-full flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100 whitespace-nowrap"
               >
                 Logout
               </button>
-            </aside>
+            </div>
+
+            {/* Desktop Collapsible Floating Glassmorphic Sidebar */}
+            <motion.aside 
+              layout
+              animate={{ width: isSidebarCollapsed ? "80px" : "280px" }}
+              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              className="hidden lg:flex flex-col gap-1.5 bg-white/85 backdrop-blur-md border border-brand-beige p-4 rounded-2xl shadow-lg flex-shrink-0 relative sticky top-24"
+            >
+              {/* Collapse toggle header button */}
+              <div className="flex items-center justify-between border-b border-brand-beige/50 pb-2 mb-2">
+                {!isSidebarCollapsed && (
+                  <span className="text-[0.62rem] font-bold text-muted-foreground uppercase tracking-widest pl-2">SaaS Dashboard</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className={`p-1.5 hover:bg-brand-cream rounded-lg transition-colors border border-brand-beige text-brand-charcoal cursor-pointer ${isSidebarCollapsed ? "mx-auto" : "ml-auto"}`}
+                  title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                  {isSidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+
+              {/* Menu items */}
+              <div className="flex flex-col gap-1">
+                {ADMIN_MENU_ITEMS.map((item) => {
+                  const IconComponent = item.icon;
+                  const isActive = activeTab === item.id;
+                  let badgeVal = 0;
+                  if (item.badgeKey === "products") badgeVal = products.length;
+                  if (item.badgeKey === "orders") badgeVal = orders.length;
+
+                  return (
+                    <div key={item.id} className="relative group flex items-center">
+                      <button 
+                        type="button"
+                        onClick={() => setActiveTab(item.id as any)}
+                        className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-xl flex items-center transition-colors relative z-10 ${
+                          isActive 
+                            ? "text-brand-orange font-extrabold" 
+                            : "text-brand-charcoal hover:bg-brand-cream/60"
+                        } ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}
+                      >
+                        {isActive && (
+                          <motion.span 
+                            layoutId="activeAdminTabHighlight"
+                            className="absolute inset-0 bg-brand-orange/10 rounded-xl -z-10 border-l-3 border-brand-orange"
+                            transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                          />
+                        )}
+                        <IconComponent className="h-4.5 w-4.5 flex-shrink-0" />
+                        {!isSidebarCollapsed && (
+                          <span className="truncate">{item.fullLabel}</span>
+                        )}
+                        {!isSidebarCollapsed && badgeVal > 0 && (
+                          <span className="ml-auto text-[0.62rem] bg-brand-orange/15 text-brand-orange px-2 py-0.5 rounded-full font-bold">
+                            {badgeVal}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Tooltip on collapse */}
+                      {isSidebarCollapsed && (
+                        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-brand-charcoal text-white text-[0.62rem] font-bold rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 uppercase tracking-wider">
+                          {item.label}
+                          {badgeVal > 0 && ` (${badgeVal})`}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Logout Button */}
+              <div className="mt-auto border-t border-brand-beige/50 pt-2.5">
+                <div className="relative group flex items-center">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem("mehta_admin_auth");
+                      setIsAdminAuth(false);
+                    }}
+                    className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-xl flex items-center text-red-500 hover:bg-red-50 transition-colors ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}
+                  >
+                    <X className="h-4.5 w-4.5 flex-shrink-0" />
+                    {!isSidebarCollapsed && <span>Logout Panel</span>}
+                  </button>
+
+                  {/* Tooltip on collapse */}
+                  {isSidebarCollapsed && (
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-red-600 text-white text-[0.62rem] font-bold rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 uppercase tracking-wider">
+                      Logout Panel
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.aside>
 
             {/* Main Tabs Container */}
-            <main className="lg:col-span-9 bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-xs min-h-[450px]">
+            <motion.main 
+              layout
+              className="flex-grow flex-1 w-full bg-white/80 backdrop-blur-md border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-md min-h-[450px] overflow-hidden"
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
               
               {/* ==================== TAB 1: DASHBOARD ANALYTICS ==================== */}
               {activeTab === "dashboard" && (
@@ -1415,7 +1493,9 @@ export default function AdminPanel() {
               {/* ==================== TAB 11: BACKUPS ==================== */}
               {activeTab === "backups" && <AdminBackups />}
 
-            </main>
+                </motion.div>
+              </AnimatePresence>
+            </motion.main>
           </div>
         </div>
       </section>

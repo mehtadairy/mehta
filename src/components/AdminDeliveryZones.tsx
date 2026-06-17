@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { MapPin, Plus, Trash2, Edit, RefreshCw, X, Loader2, Info } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function AdminDeliveryZones() {
   const [zones, setZones] = useState<any[]>([]);
@@ -271,8 +272,7 @@ export default function AdminDeliveryZones() {
           </form>
         </div>
       )}
-
-      <div className="bg-white border border-brand-beige rounded-2xl shadow-sm overflow-hidden">
+      <div className="border border-brand-beige/50 rounded-2xl bg-[#fbfbfb]/50 p-2">
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
             <Loader2 className="w-6 h-6 text-brand-orange animate-spin" />
@@ -284,73 +284,106 @@ export default function AdminDeliveryZones() {
             No delivery zones configured yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead className="bg-brand-cream text-brand-charcoal text-xs uppercase tracking-wider">
-                <tr>
-                  <th className="px-6 py-3 font-semibold">Zone Details</th>
-                  <th className="px-6 py-3 font-semibold">Serviced Pincodes</th>
-                  <th className="px-6 py-3 font-semibold">Delivery Fee</th>
-                  <th className="px-6 py-3 font-semibold">Free Delivery Above</th>
-                  <th className="px-6 py-3 text-right font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-brand-beige text-xs">
-                {zones.map((zone) => {
-                  const pincodes = zone.pincodes || zone.pincode || "";
-                  const pincodeArray = pincodes.split(",").map((p: string) => p.trim()).filter(Boolean);
-                  
-                  return (
-                    <tr key={zone.id} className="hover:bg-brand-cream/30 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-brand-charcoal">{zone.name || "Unnamed Zone"}</span>
-                          <span className="text-[0.65rem] text-muted-foreground mt-0.5">ETA: {zone.estimated_days || "1-2 Days"}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 max-w-xs">
-                        <div className="flex flex-wrap gap-1 max-h-[64px] overflow-y-auto pr-1">
-                          {pincodeArray.map((pin: string, i: number) => (
-                            <span key={i} className="bg-brand-cream text-brand-charcoal border border-brand-beige rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold">
-                              {pin}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-bold text-brand-charcoal">
+          <motion.div 
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+            }}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4"
+          >
+            {zones.map((zone) => {
+              const pincodes = zone.pincodes || zone.pincode || "";
+              const pincodeArray = pincodes.split(",").map((p: string) => p.trim()).filter(Boolean);
+              
+              return (
+                <motion.div
+                  key={zone.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 15 },
+                    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 150, damping: 20 } }
+                  }}
+                  whileHover={{ y: -5 }}
+                  className="bg-white/80 backdrop-blur-md border border-brand-beige rounded-2xl p-5 flex flex-col gap-4 shadow-sm hover:shadow-md hover:border-brand-orange/40 transition-all duration-300 relative overflow-hidden group cursor-default"
+                >
+                  {/* Subtle map mesh graphic backdrop simulator */}
+                  <div className="absolute inset-0 bg-radial-gradient from-brand-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  {/* Header Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange flex items-center justify-center flex-shrink-0 group-hover:bg-brand-orange/20 group-hover:scale-105 transition-all duration-300">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <h4 className="font-serif text-sm font-bold text-brand-charcoal truncate max-w-[140px]">
+                          {zone.name || "Unnamed Zone"}
+                        </h4>
+                        <span className="text-[0.62rem] text-muted-foreground font-semibold uppercase tracking-wider">
+                          ⏱️ ETA: {zone.estimated_days || "1-2 Days"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions Panel */}
+                    <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleEditClick(zone)}
+                        className="h-7 w-7 rounded-lg border border-brand-beige bg-white hover:border-brand-gold flex items-center justify-center text-brand-charcoal hover:bg-brand-cream transition-colors cursor-pointer"
+                        title="Edit zone"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(zone.id)}
+                        className="h-7 w-7 rounded-lg border border-red-200 bg-white hover:border-red-500 flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete zone"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Serviced Pincodes Grid Box */}
+                  <div>
+                    <span className="text-[0.6rem] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5 font-sans">Served Regions:</span>
+                    <div className="flex flex-wrap gap-1 max-h-[72px] overflow-y-auto pr-1 bg-brand-cream/10 border border-brand-beige/50 rounded-xl p-2.5">
+                      {pincodeArray.map((pin: string, i: number) => (
+                        <span key={i} className="bg-brand-cream text-brand-charcoal border border-brand-beige rounded px-2 py-0.5 text-[0.62rem] font-bold">
+                          {pin}
+                        </span>
+                      ))}
+                      {pincodeArray.length === 0 && (
+                        <span className="text-[0.62rem] text-muted-foreground italic">No pincodes listed</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Pricing Footer */}
+                  <div className="flex items-center justify-between border-t border-brand-beige/50 pt-3.5 mt-auto text-xs font-sans">
+                    <div className="flex flex-col">
+                      <span className="text-[0.6rem] text-muted-foreground uppercase leading-none mb-0.5">Shipping Fee</span>
+                      <span className="font-bold text-brand-charcoal">
                         {zone.delivery_charge === 0 ? (
-                          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold uppercase text-[0.62rem]">Free</span>
+                          <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded font-bold uppercase text-[0.62rem]">Free</span>
                         ) : (
                           `₹${zone.delivery_charge}`
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-bold text-brand-charcoal">
-                        {zone.free_delivery_above ? `₹${zone.free_delivery_above}` : "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => handleEditClick(zone)}
-                            className="h-8 w-8 rounded-lg border border-brand-beige hover:border-brand-gold flex items-center justify-center text-brand-charcoal hover:bg-brand-cream transition-colors cursor-pointer"
-                            title="Edit details"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(zone.id)}
-                            className="h-8 w-8 rounded-lg border border-red-200 hover:border-red-500 flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Delete zone"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+
+                    {zone.free_delivery_above && (
+                      <div className="flex flex-col text-right">
+                        <span className="text-[0.6rem] text-muted-foreground uppercase leading-none mb-0.5">Free Shipping Above</span>
+                        <span className="font-bold text-brand-orange">₹{zone.free_delivery_above}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
         )}
       </div>
     </div>

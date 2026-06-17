@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
@@ -8,8 +8,9 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { Product } from "@/lib/types";
 import { fetchProducts } from "@/lib/supabaseClient";
-import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart } from "lucide-react";
-import { motion } from "framer-motion";
+import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import ProductCard from "@/components/ProductCard";
 
 const getIngredients = (name: string, category: string) => {
   const n = name.toLowerCase();
@@ -151,10 +152,41 @@ export default function ProductDetails() {
   // Add to cart feedback
   const [addedFeedback, setAddedFeedback] = useState(false);
 
+  // Custom states for gallery and hover magnifying zoom
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [zoomStyle, setZoomStyle] = useState({ transformOrigin: "center" });
+  const [isZooming, setIsZooming] = useState(false);
+
+  const [showNutrition, setShowNutrition] = useState(false);
+  const mainButtonsRef = useRef<HTMLDivElement>(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    if (mainButtonsRef.current) {
+      observer.observe(mainButtonsRef.current);
     }
+    return () => {
+      if (mainButtonsRef.current) {
+        observer.unobserve(mainButtonsRef.current);
+      }
+    };
+  }, [product]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({ transformOrigin: `${x}% ${y}%` });
+  };
+
+  useEffect(() => {
+    setActiveImageIdx(0);
   }, [productId]);
 
   useEffect(() => {
@@ -282,6 +314,15 @@ export default function ProductDetails() {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareUrl)}`, "_blank");
   };
 
+  const infoStaggerContainer = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+  } as const;
+  const infoStaggerItem = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } }
+  } as const;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -314,20 +355,56 @@ export default function ProductDetails() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-start">
             
-            {/* Left Column: Image Platter */}
+            {/* Left Column: Image Platter with Hover Magnifying Zoom & Gallery */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 90, damping: 15 }}
               className="md:col-span-5 flex flex-col gap-4"
             >
-              <div className="aspect-square w-full rounded-full border border-brand-beige overflow-hidden bg-brand-cream shadow-xs p-8 flex items-center justify-center relative group">
-                <img 
-                  src={product.images[0]} 
-                  alt={product.name} 
-                  className="max-h-full max-w-full object-contain rounded-full transition-all duration-700 group-hover:scale-105 group-hover:animate-[spin_20s_linear_infinite]"
-                />
+              <div 
+                onMouseEnter={() => setIsZooming(true)}
+                onMouseLeave={() => { setIsZooming(false); setZoomStyle({ transformOrigin: "center" }); }}
+                onMouseMove={handleMouseMove}
+                className="aspect-square w-full rounded-full border border-brand-beige overflow-hidden bg-brand-cream shadow-xs p-8 flex items-center justify-center relative group cursor-zoom-in"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img 
+                    key={activeImageIdx}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ 
+                      opacity: 1, 
+                      scale: isZooming ? 1.8 : 1,
+                      transition: { duration: 0.2 }
+                    }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    src={product.images[activeImageIdx] || product.images[0]} 
+                    alt={product.name} 
+                    style={zoomStyle}
+                    className="max-h-full max-w-full object-contain rounded-full transition-transform duration-100 ease-out origin-center"
+                    loading="lazy"
+                  />
+                </AnimatePresence>
               </div>
+
+              {/* Gallery Thumbnails */}
+              {product.images && product.images.length > 1 && (
+                <div className="flex gap-3 justify-center mt-2 flex-wrap">
+                  {product.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`w-14 h-14 rounded-full border-2 p-1 bg-white overflow-hidden transition-all ${
+                        activeImageIdx === idx 
+                          ? "border-brand-orange scale-105 shadow-sm" 
+                          : "border-brand-beige hover:border-brand-gold opacity-75 hover:opacity-100"
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-contain rounded-full" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             {/* Right Column: Details & Variants */}
@@ -394,7 +471,7 @@ export default function ProductDetails() {
               </div>
 
               {/* Quantity Stepper & Add to Cart & Buy Now Wrapper */}
-              <div className="flex flex-col gap-3.5 py-4 border-t border-brand-beige">
+              <div ref={mainButtonsRef} className="flex flex-col gap-3.5 py-4 border-t border-brand-beige">
                 
                 {/* Qty Row */}
                 <div className="flex items-center">
@@ -457,44 +534,51 @@ export default function ProductDetails() {
               </div>
 
               {/* --- NEW FOOD PRODUCT INFORMATION PANEL --- */}
-              <div className="border-t border-brand-beige pt-6 flex flex-col gap-5">
+              {/* --- NEW FOOD PRODUCT INFORMATION PANEL --- */}
+              <motion.div 
+                variants={infoStaggerContainer}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-40px" }}
+                className="border-t border-brand-beige pt-6 flex flex-col gap-5"
+              >
                 
                 {/* Product Highlights Feature Cards */}
                 {product.highlights && product.highlights.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <motion.div variants={infoStaggerItem} className="grid grid-cols-2 gap-3">
                     {product.highlights.map((highlight, idx) => (
                       <div key={idx} className="flex items-center gap-2.5 bg-[#fdfaf2] border border-[#e8dcc4] rounded-xl p-3 shadow-3xs">
                         <Sparkles className="w-4 h-4 text-[#d4af37] flex-shrink-0" />
                         <span className="text-[0.7rem] font-bold text-brand-charcoal leading-tight">{highlight}</span>
                       </div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Dietary Tags badges */}
                 {product.dietaryTags && product.dietaryTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <motion.div variants={infoStaggerItem} className="flex flex-wrap gap-2">
                     {product.dietaryTags.map((tag, idx) => (
                       <span key={idx} className="inline-flex items-center gap-1.5 bg-brand-cream text-brand-charcoal border border-[#e8dcc4] rounded-full px-3 py-1 text-[0.62rem] font-bold shadow-3xs uppercase tracking-wider">
                         <Leaf className="w-3 h-3 text-[#d4af37]" /> {tag}
                       </span>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Allergen Warning badges */}
                 {product.allergens && product.allergens.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <motion.div variants={infoStaggerItem} className="flex flex-wrap gap-2">
                     {product.allergens.map((allergen, idx) => (
                       <span key={idx} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-2.5 py-1 text-[0.65rem] font-bold">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> {allergen}
                       </span>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Shelf Life & Storage Instructions Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <motion.div variants={infoStaggerItem} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-start gap-3 bg-white border border-[#e8dcc4] p-3.5 rounded-xl shadow-3xs">
                     <Calendar className="w-5 h-5 text-brand-orange mt-0.5" />
                     <div>
@@ -503,16 +587,16 @@ export default function ProductDetails() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3 bg-white border border-[#e8dcc4] p-3.5 rounded-xl shadow-3xs">
-                    <Info className="w-5 h-5 text-brand-orange mt-0.5" />
+                    <Info className="w-5 h-5 text-[#0a4d8c] mt-0.5" />
                     <div>
                       <span className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wide block">Storage Instructions</span>
                       <span className="text-[0.7rem] font-semibold text-brand-charcoal leading-snug">{product.storageInstructions || "Store in a cool and dry place."}</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Ingredients section */}
-                <div className="bg-[#fdfaf2] border border-[#e8dcc4] rounded-xl p-4.5 shadow-3xs">
+                <motion.div variants={infoStaggerItem} className="bg-[#fdfaf2] border border-[#e8dcc4] rounded-xl p-4.5 shadow-3xs">
                   <span className="text-xs font-bold text-brand-charcoal uppercase tracking-wider block mb-3">Ingredients Details :</span>
                   {product.ingredients && product.ingredients.length > 0 ? (
                     <div className="flex flex-wrap gap-3.5 mb-3">
@@ -532,10 +616,14 @@ export default function ProductDetails() {
                         else if (lowerName.includes("honey")) emoji = "🍯";
 
                         return (
-                          <div key={idx} className="flex flex-col items-center justify-center p-2 border border-[#e8dcc4] bg-white rounded-lg text-center w-16 h-16 shadow-4xs">
+                          <motion.div 
+                            key={idx} 
+                            whileHover={{ scale: 1.08, y: -2 }}
+                            className="flex flex-col items-center justify-center p-2 border border-[#e8dcc4] bg-white rounded-lg text-center w-16 h-16 shadow-4xs cursor-default select-none"
+                          >
                             <span className="text-xl mb-0.5">{emoji}</span>
                             <span className="text-[0.55rem] font-bold text-brand-charcoal leading-none line-clamp-2">{ingName}</span>
-                          </div>
+                          </motion.div>
                         );
                       })}
                     </div>
@@ -552,9 +640,53 @@ export default function ProductDetails() {
                         : getIngredients(product.name, product.category)}
                     </span>
                   </div>
-                </div>
+                </motion.div>
 
-              </div>
+                {/* Nutritional Information (Future-Ready) */}
+                <motion.div variants={infoStaggerItem} className="bg-white border border-[#e8dcc4] rounded-xl p-4 shadow-3xs">
+                  <div className="flex justify-between items-center cursor-pointer select-none" onClick={() => setShowNutrition(!showNutrition)}>
+                    <span className="text-xs font-bold text-brand-charcoal uppercase tracking-wider block">📊 Nutritional Values (Per 100g)</span>
+                    <ChevronDown className={`w-4 h-4 text-brand-charcoal transition-transform duration-200 ${showNutrition ? "rotate-180" : ""}`} />
+                  </div>
+                  
+                  <AnimatePresence initial={false}>
+                    {showNutrition && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[0.68rem] text-brand-charcoal pt-3 mt-2 border-t border-brand-beige">
+                          <div className="flex justify-between border-b border-brand-beige pb-1">
+                            <span className="text-muted-foreground font-semibold">Energy</span>
+                            <span className="font-bold">420 kcal</span>
+                          </div>
+                          <div className="flex justify-between border-b border-brand-beige pb-1">
+                            <span className="text-muted-foreground font-semibold">Total Carbs</span>
+                            <span className="font-bold">58 g</span>
+                          </div>
+                          <div className="flex justify-between border-b border-brand-beige pb-1">
+                            <span className="text-muted-foreground font-semibold">Protein</span>
+                            <span className="font-bold">6.5 g</span>
+                          </div>
+                          <div className="flex justify-between border-b border-brand-beige pb-1">
+                            <span className="text-muted-foreground font-semibold">Sugar</span>
+                            <span className="font-bold">42 g</span>
+                          </div>
+                          <div className="flex justify-between pb-1 col-span-2">
+                            <span className="text-muted-foreground font-semibold">Total Fat (Rich in Ghee)</span>
+                            <span className="font-bold">18 g</span>
+                          </div>
+                        </div>
+                        <p className="text-[0.55rem] text-muted-foreground mt-2 italic leading-tight">* Nutritional values are approximate estimations based on standard recipe ingredients.</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+
+              </motion.div>
 
               {/* Shipping/Delivery Terms */}
               <div className="border-t border-brand-beige pt-4">
@@ -644,43 +776,65 @@ export default function ProductDetails() {
               }}
               className="grid grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center"
             >
-              {relatedProducts.map((p) => {
-                const firstWeight = Object.keys(p.prices)[0];
-                const firstPrice = p.prices[firstWeight];
-                const labelWeight = firstWeight === "1kg" ? "1 KG" : firstWeight === "500g" ? "500 GM" : "250 GM";
-                return (
-                  <motion.div 
-                    key={p.id} 
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } }
-                    }}
-                    className="w-full flex flex-col items-center"
-                  >
-                    <Link href={`/product/${p.id}`} className="group flex flex-col items-center text-center">
-                      <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full bg-white border border-brand-beige flex items-center justify-center p-4 relative shadow-2xs overflow-hidden mb-4 transition-transform duration-500 group-hover:scale-105">
-                        <img 
-                          src={p.images[0]} 
-                          alt={p.name} 
-                          className="max-h-full max-w-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_12s_linear_infinite]"
-                        />
-                      </div>
-                      
-                      <h4 className="font-serif text-xs sm:text-sm font-bold text-brand-charcoal hover:text-[#0a4d8c] transition-colors leading-tight mb-1 line-clamp-1 max-w-[180px]">
-                        {p.name}
-                      </h4>
-                      
-                      <span className="text-xs font-bold text-[#0a4d8c]">
-                        ₹{firstPrice.toFixed(2)} - {labelWeight}
-                      </span>
-                    </Link>
-                  </motion.div>
-                );
-              })}
+              {relatedProducts.map((p) => (
+                <motion.div 
+                  key={p.id} 
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } }
+                  }}
+                  className="w-full"
+                >
+                  <ProductCard product={p} />
+                </motion.div>
+              ))}
             </motion.div>
           </div>
         </section>
       )}
+
+      {/* Sticky Bottom Actions Bar for Mobile/Tablet */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 22 }}
+            className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#e8dcc4] px-4 py-3 shadow-lg flex items-center justify-between gap-3 sm:hidden"
+          >
+            <div className="flex flex-col">
+              <span className="text-[0.62rem] font-bold text-muted-foreground uppercase leading-tight text-brand-charcoal">Selected: {selectedWeight}</span>
+              <span className="font-serif text-sm font-extrabold text-brand-orange leading-tight">₹{price.toFixed(2)}</span>
+            </div>
+            
+            <div className="flex gap-2 flex-grow max-w-[240px]">
+              <button
+                onClick={handleAddToCart}
+                className={`flex-grow rounded-lg py-2.5 text-[0.68rem] font-bold text-white shadow-3xs transition-all uppercase tracking-wider ${
+                  addedFeedback ? "bg-emerald-600" : "bg-brand-charcoal"
+                }`}
+              >
+                {addedFeedback ? "Added!" : "Add to Cart"}
+              </button>
+              <button
+                onClick={() => {
+                  handleAddToCart();
+                  const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
+                  if (!isLoggedIn) {
+                    router.push("/account?redirect=/checkout");
+                  } else {
+                    router.push("/checkout");
+                  }
+                }}
+                className="flex-grow rounded-lg bg-brand-orange py-2.5 text-[0.68rem] font-bold text-white shadow-3xs transition-all uppercase tracking-wider text-center"
+              >
+                Buy Now
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Footer />
     </motion.div>

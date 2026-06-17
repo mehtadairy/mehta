@@ -5,6 +5,31 @@ import { supabase } from "@/lib/supabaseClient";
 import { TrendingUp, ShoppingBag, Users, IndianRupee, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import 'jspdf-autotable';
+import { motion } from "framer-motion";
+
+const AnimatedCounter = ({ value }: { value: number }) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (end === 0) {
+      setCount(0);
+      return;
+    }
+    const increment = Math.ceil(end / 40);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(start);
+      }
+    }, 20);
+    return () => clearInterval(timer);
+  }, [value]);
+  return <>{count}</>;
+};
 
 interface DailyRevenue {
   label: string;
@@ -224,43 +249,83 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div 
+        variants={{
+          hidden: { opacity: 0 },
+          show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+        }}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         {/* Metric 1 */}
-        <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 15 },
+            show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 150, damping: 20 } }
+          }}
+          className="bg-white/70 backdrop-blur-md border border-brand-beige p-5 rounded-2xl shadow-xs hover:shadow-lg hover:border-brand-orange/30 transition-all duration-300"
+        >
           <div className="flex items-center justify-between text-muted-foreground mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-            <IndianRupee className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">Total Revenue</span>
+            <IndianRupee className="w-4 h-4 text-brand-orange" />
           </div>
-          <span className="font-serif text-3xl font-black text-brand-charcoal">₹{stats.totalRevenue.toLocaleString()}</span>
-        </div>
+          <span className="font-serif text-3xl font-black text-brand-charcoal">
+            ₹<AnimatedCounter value={stats.totalRevenue} />
+          </span>
+        </motion.div>
 
         {/* Metric 2 */}
-        <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 15 },
+            show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 150, damping: 20 } }
+          }}
+          className="bg-white/70 backdrop-blur-md border border-brand-beige p-5 rounded-2xl shadow-xs hover:shadow-lg hover:border-brand-orange/30 transition-all duration-300"
+        >
           <div className="flex items-center justify-between text-muted-foreground mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider">Orders Today</span>
-            <ShoppingBag className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">Orders Today</span>
+            <ShoppingBag className="w-4 h-4 text-brand-orange" />
           </div>
-          <span className="font-serif text-3xl font-black text-brand-charcoal">{stats.ordersToday}</span>
-        </div>
+          <span className="font-serif text-3xl font-black text-brand-charcoal">
+            <AnimatedCounter value={stats.ordersToday} />
+          </span>
+        </motion.div>
 
         {/* Metric 3 */}
-        <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 15 },
+            show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 150, damping: 20 } }
+          }}
+          className="bg-white/70 backdrop-blur-md border border-brand-beige p-5 rounded-2xl shadow-xs hover:shadow-lg hover:border-brand-orange/30 transition-all duration-300"
+        >
           <div className="flex items-center justify-between text-muted-foreground mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider">Orders This Month</span>
-            <TrendingUp className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">Orders This Month</span>
+            <TrendingUp className="w-4 h-4 text-brand-orange" />
           </div>
-          <span className="font-serif text-3xl font-black text-brand-charcoal">{stats.ordersThisMonth}</span>
-        </div>
+          <span className="font-serif text-3xl font-black text-brand-charcoal">
+            <AnimatedCounter value={stats.ordersThisMonth} />
+          </span>
+        </motion.div>
 
         {/* Metric 4 */}
-        <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 15 },
+            show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 150, damping: 20 } }
+          }}
+          className="bg-white/70 backdrop-blur-md border border-brand-beige p-5 rounded-2xl shadow-xs hover:shadow-lg hover:border-brand-orange/30 transition-all duration-300"
+        >
           <div className="flex items-center justify-between text-muted-foreground mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Customers</span>
-            <Users className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">Total Customers</span>
+            <Users className="w-4 h-4 text-brand-orange" />
           </div>
-          <span className="font-serif text-3xl font-black text-brand-charcoal">{stats.totalCustomers}</span>
-        </div>
-      </div>
+          <span className="font-serif text-3xl font-black text-brand-charcoal">
+            <AnimatedCounter value={stats.totalCustomers} />
+          </span>
+        </motion.div>
+      </motion.div>
 
       {/* Analytics Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -339,12 +404,21 @@ export default function AdminAnalytics() {
 
                 {/* Area under the line */}
                 {areaPath && (
-                  <path d={areaPath} fill="url(#chartGradient)" />
+                  <motion.path 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.8 }}
+                    d={areaPath} 
+                    fill="url(#chartGradient)" 
+                  />
                 )}
 
                 {/* Line Path */}
                 {linePath && (
-                  <path 
+                  <motion.path 
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.4, ease: "easeInOut" }}
                     d={linePath} 
                     fill="none" 
                     stroke="#D46D2D" 
@@ -368,14 +442,17 @@ export default function AdminAnalytics() {
                       r="7" 
                       fill="transparent" 
                     />
-                    <circle 
+                    <motion.circle 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.1 * idx + 0.5, type: "spring", stiffness: 200 }}
                       cx={p.x} 
                       cy={p.y} 
                       r="4" 
                       fill="#D46D2D" 
                       stroke="#FFFFFF" 
                       strokeWidth="1.5" 
-                      className="transition-all duration-200 group-hover:scale-130 group-hover:fill-brand-charcoal"
+                      className="transition-all duration-200 group-hover:scale-150 group-hover:fill-brand-charcoal"
                     />
                   </g>
                 ))}
@@ -410,8 +487,11 @@ export default function AdminAnalytics() {
                     accumulatedPercent += percent;
                     
                     return (
-                      <circle
+                      <motion.circle
                         key={idx}
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
                         cx="60"
                         cy="60"
                         r={radius}

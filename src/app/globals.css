@@ -106,3 +106,128 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* ── Premium Button Utilities ─────────────────────────────────────── */
+
+/* Base touch target: 44px minimum for mobile */
+button, a[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Primary button (orange solid) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.75rem;
+  border-radius: 0.75rem;
+  background-color: #D46D2D;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 16px rgba(212,109,45,0.25);
+  transition: background-color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background-color: #BF5E23;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(212,109,45,0.35);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(212,109,45,0.2);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Secondary button (bordered) */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.75rem;
+  border-radius: 0.75rem;
+  border: 2px solid #D46D2D;
+  background-color: transparent;
+  color: #D46D2D;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background-color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background-color: #D46D2D;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(212,109,45,0.28);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+}
+.btn-secondary:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Ghost button (text only) */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 0.75rem;
+  background-color: transparent;
+  color: #2A1E17;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, color 150ms ease;
+  cursor: pointer;
+}
+.btn-ghost:hover {
+  background-color: #EAE0D3;
+  color: #D46D2D;
+}
+.btn-ghost:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ── Glow-pulse for Explore Collection button ─────────────────────── */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 4px 24px rgba(212,109,45,0.35), 0 1px 4px rgba(0,0,0,0.1); }
+  50%       { box-shadow: 0 4px 36px rgba(212,109,45,0.60), 0 1px 4px rgba(0,0,0,0.12); }
+}
+.animate-glow-pulse {
+  animation: glowPulse 2.8s ease-in-out infinite;
+}
+
+/* ── Loading spinner helper ────────────────────────────────────────── */
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Mobile safe area bottom spacing ─────────────────────────────── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}

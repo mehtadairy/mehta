@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.supabase.co',
       },
+      {
+        // Allow any https hostname — covers Supabase CDN, uploaded product images, etc.
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
   },
   turbopack: {},

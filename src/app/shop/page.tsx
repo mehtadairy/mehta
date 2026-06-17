@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
@@ -10,6 +10,7 @@ import { Product, CATEGORIES } from "@/lib/types";
 import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
 import { Search, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ProductCard from "@/components/ProductCard";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -117,6 +118,12 @@ function ShopContent() {
   const [pageLoading, setPageLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(true);
 
+  // Ref on the products grid section for scroll-into-view on filter change
+  const productsRef = useRef<HTMLDivElement>(null);
+
+  // Ref to scroll product grid into view on category/filter change
+  const productsGridRef = useRef<HTMLElement>(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
@@ -148,10 +155,18 @@ function ShopContent() {
     setSearchQuery(searchParams.get("search") || "");
     setCurrentPage(1);
     setCategoryLoading(true);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
+    // Scroll grid into view smoothly when URL params change
+    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [searchParams]);
+
+  // Scroll to products grid on every filter change (category, search, sort, price)
+  useEffect(() => {
+    // Small delay so the new products are rendered before we scroll
+    const t = setTimeout(() => {
+      productsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [selectedCategory, searchQuery, sortBy, maxPrice]);
 
   // Apply filters & sorting with loading feedback
   useEffect(() => {
@@ -221,7 +236,8 @@ function ShopContent() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 320, behavior: "smooth" });
+    // Scroll back to the top of the products grid (not the full page)
+    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const banner = getCategoryBanner(selectedCategory);
@@ -273,7 +289,7 @@ function ShopContent() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* --- PRODUCTS GRID PANEL (LEFT COLUMN) --- */}
-            <main className="lg:col-span-9 flex flex-col gap-8">
+            <main ref={productsGridRef} className="lg:col-span-9 flex flex-col gap-8 scroll-mt-28">
               
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border border-brand-beige rounded-xl p-4 bg-white shadow-2xs">
@@ -315,7 +331,13 @@ function ShopContent() {
                 </div>
               </div>
 
-              {/* Grid content */}
+              {/* Grid content — fade transition wrapper */}
+              <div
+                ref={productsRef}
+                key={`grid-${selectedCategory}-${sortBy}-${searchQuery}-${maxPrice}`}
+                className="transition-opacity duration-300"
+                style={{ scrollMarginTop: "7rem" }}
+              >
               {categoryLoading || pageLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10 animate-pulse">
                   {[...Array(6)].map((_, i) => (
@@ -353,43 +375,20 @@ function ShopContent() {
                   animate="show"
                   className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10"
                 >
-                  {currentItems.map((p) => {
-                    const firstWeight = Object.keys(p.prices)[0];
-                    const firstPrice = p.prices[firstWeight];
-                    const labelWeight = firstWeight === "1kg" ? "1 KG" : firstWeight === "500g" ? "500 GM" : "250 GM";
-                    return (
-                      <motion.div
-                        key={p.id}
-                        variants={itemVariants}
-                        layout
-                        className="w-full"
-                      >
-                        <Link href={`/product/${p.id}`} className="group flex flex-col items-center text-center">
-                          {/* Circular Platter container with Hover Circular Spin Animation */}
-                          <div className="aspect-square w-full rounded-full bg-white border border-brand-beige flex items-center justify-center p-4 relative shadow-2xs overflow-hidden mb-4 transition-transform duration-500 group-hover:scale-105">
-                            <img
-                              src={p.images[0]}
-                              alt={p.name}
-                              className="max-h-full max-w-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_12s_linear_infinite]"
-                              loading="lazy"
-                            />
-                          </div>
-
-                          {/* Title */}
-                          <h4 className="font-serif text-xs sm:text-sm font-bold text-brand-charcoal group-hover:text-brand-orange transition-colors leading-tight mb-1 line-clamp-1 max-w-[200px]">
-                            {p.name}
-                          </h4>
-
-                          {/* Price and Weight in Brand Orange */}
-                          <span className="text-xs font-bold text-brand-orange">
-                            ₹{firstPrice.toFixed(2)} - {labelWeight}
-                          </span>
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
+                  {currentItems.map((p) => (
+                    <motion.div
+                      key={p.id}
+                      variants={itemVariants}
+                      layout
+                      className="w-full"
+                    >
+                      <ProductCard product={p} />
+                    </motion.div>
+                  ))}
                 </motion.div>
               )}
+
+              </div>{/* end grid content fade wrapper */}
 
               {/* Pagination controls */}
               {totalPages > 1 && (

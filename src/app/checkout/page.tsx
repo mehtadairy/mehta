@@ -608,6 +608,51 @@ export default function Checkout() {
         </div>
       </section>
 
+      {/* --- STEPS PROGRESS BAR --- */}
+      <div className="bg-white border-b border-brand-beige py-6">
+        <div className="mx-auto max-w-xl px-6 flex items-center justify-between relative">
+          {/* Progress bar connector line */}
+          <div className="absolute left-10 right-10 top-4 h-0.5 bg-brand-cream -translate-y-1/2 -z-10">
+            <motion.div 
+              initial={{ width: "0%" }}
+              animate={{ 
+                width: deliveryMethod === 'Home' 
+                  ? (selectedAddressId ? "100%" : "50%") 
+                  : "100%" 
+              }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="h-full bg-brand-orange"
+            />
+          </div>
+
+          {/* Step 1 */}
+          <div className="flex flex-col items-center">
+            <div className="h-8 w-8 rounded-full bg-brand-orange text-white flex items-center justify-center text-xs font-bold shadow-md">1</div>
+            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Delivery</span>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex flex-col items-center">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+              deliveryMethod === 'Home' 
+                ? (selectedAddressId ? "bg-brand-orange text-white shadow-md" : "bg-brand-cream border border-brand-beige text-muted-foreground") 
+                : "bg-brand-orange text-white shadow-md animate-pulse"
+            }`}>2</div>
+            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Address</span>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex flex-col items-center">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+              deliveryMethod === 'Home' 
+                ? (selectedAddressId ? "bg-brand-orange text-white shadow-md" : "bg-brand-cream border border-brand-beige text-muted-foreground") 
+                : "bg-brand-orange text-white shadow-md"
+            }`}>3</div>
+            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Payment</span>
+          </div>
+        </div>
+      </div>
+
       {/* --- CHECKOUT CONTAINER --- */}
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -886,14 +931,19 @@ export default function Checkout() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {addresses.map((addr) => (
-                        <div 
+                        <motion.div 
                           key={addr.id}
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => setSelectedAddressId(addr.id)}
-                          className={`rounded-xl border-2 p-4 flex gap-3 cursor-pointer transition-all ${
-                            selectedAddressId === addr.id
-                              ? "border-brand-orange bg-brand-orange/5"
-                              : "border-brand-beige hover:border-brand-gold bg-white"
-                          }`}
+                          animate={selectedAddressId === addr.id ? { 
+                            boxShadow: "0 0 0 3px rgba(212, 109, 45, 0.25)",
+                            borderColor: "#D46D2D"
+                          } : {
+                            boxShadow: "none",
+                            borderColor: "#E8DCC4"
+                          }}
+                          className={`rounded-xl border-2 p-4 flex gap-3 cursor-pointer transition-all bg-white`}
                         >
                           <div className={`mt-1 h-4 w-4 rounded-full border flex items-center justify-center ${selectedAddressId === addr.id ? "border-brand-orange text-brand-orange" : "border-brand-beige"}`}>
                             {selectedAddressId === addr.id && <div className="h-2 w-2 rounded-full bg-brand-orange"></div>}
@@ -914,7 +964,7 @@ export default function Checkout() {
                               <Phone className="h-3 w-3 text-brand-gold" /> {addr.phone}
                             </span>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   )}
@@ -1145,11 +1195,18 @@ export default function Checkout() {
                 >
                   <motion.div 
                     initial={{ scale: 0 }}
-                    animate={{ scale: 1, rotate: 360 }}
+                    animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    className="h-16 w-16 bg-emerald-50 text-emerald-500 border-2 border-emerald-500 rounded-full flex items-center justify-center text-3xl font-bold"
+                    className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center border-2 border-emerald-500 relative"
                   >
-                    ✓
+                    <svg className="h-9 w-9 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <motion.path 
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.6, ease: "easeInOut", delay: 0.15 }}
+                        d="M20 6L9 17l-5-5"
+                      />
+                    </svg>
                   </motion.div>
                   <div>
                     <span className="text-[0.62rem] text-emerald-600 font-bold uppercase tracking-widest block mb-1">Payment Success</span>

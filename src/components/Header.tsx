@@ -35,6 +35,20 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  
+  // Custom states for premium navigation animations
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [isProductsHovered, setIsProductsHovered] = useState(false);
+  const [badgeAnimated, setBadgeAnimated] = useState(false);
+
+  useEffect(() => {
+    const handleBadgeAnimate = () => {
+      setBadgeAnimated(true);
+      setTimeout(() => setBadgeAnimated(false), 500);
+    };
+    window.addEventListener("cartBadgeAnimate", handleBadgeAnimate);
+    return () => window.removeEventListener("cartBadgeAnimate", handleBadgeAnimate);
+  }, []);
 
   useEffect(() => {
     if (searchOpen && allProducts.length === 0) {
@@ -212,7 +226,12 @@ export default function Header() {
             {/* Desktop Navigation Floating Capsule */}
             <div className="hidden lg:flex items-center gap-2 bg-white border border-brand-beige/50 rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300">
               <nav className="flex items-center gap-5 pr-4 border-r border-brand-beige">
-                <div className="relative py-1 flex items-center">
+                {/* Home Link */}
+                <div 
+                  className="relative py-1 flex items-center"
+                  onMouseEnter={() => setHoveredIndex(0)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
                   <Link 
                     href="/" 
                     className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
@@ -226,9 +245,21 @@ export default function Header() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
+                  {hoveredIndex === 0 && (
+                    <motion.div
+                      layoutId="hoverNavCapsule"
+                      className="absolute -inset-x-3 -inset-y-1 bg-brand-cream/60 rounded-full -z-10"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    />
+                  )}
                 </div>
 
-                <div className="relative py-1 flex items-center">
+                {/* About Link */}
+                <div 
+                  className="relative py-1 flex items-center"
+                  onMouseEnter={() => setHoveredIndex(1)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
                   <Link 
                     href="/about" 
                     className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
@@ -242,10 +273,21 @@ export default function Header() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
+                  {hoveredIndex === 1 && (
+                    <motion.div
+                      layoutId="hoverNavCapsule"
+                      className="absolute -inset-x-3 -inset-y-1 bg-brand-cream/60 rounded-full -z-10"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    />
+                  )}
                 </div>
                 
                 {/* Products dropdown */}
-                <div className="relative py-1 flex items-center group">
+                <div 
+                  className="relative py-1 flex items-center"
+                  onMouseEnter={() => { setHoveredIndex(2); setIsProductsHovered(true); }}
+                  onMouseLeave={() => { setHoveredIndex(null); setIsProductsHovered(false); }}
+                >
                   <button className="flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-wider text-brand-charcoal hover:text-brand-orange py-1 select-none">
                     Products <ChevronDown className="h-3 w-3" />
                   </button>
@@ -256,29 +298,49 @@ export default function Header() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <div className="absolute left-0 top-full hidden group-hover:block w-52 rounded-xl border border-brand-beige bg-white p-2 shadow-xl z-50 animate-fade-in-up">
-                    {categories.map((cat) => (
-                      <Link 
-                        key={cat.id} 
-                        href={`/shop?category=${cat.slug}`}
-                        className="block rounded-lg px-3 py-1.8 text-[0.68rem] font-bold text-brand-charcoal hover:bg-brand-cream hover:text-brand-orange uppercase tracking-wider transition-colors"
+                  {hoveredIndex === 2 && (
+                    <motion.div
+                      layoutId="hoverNavCapsule"
+                      className="absolute -inset-x-3 -inset-y-1 bg-brand-cream/60 rounded-full -z-10"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    />
+                  )}
+                  <AnimatePresence>
+                    {isProductsHovered && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute left-0 top-full w-52 rounded-xl border border-brand-beige bg-white p-2 shadow-xl z-50"
                       >
-                        {cat.name}
-                      </Link>
-                    ))}
-                    <div className="h-px bg-brand-beige my-1"></div>
-                    <Link 
-                      href="/shop"
-                      className="block rounded-lg px-3 py-1.8 text-[0.68rem] font-bold text-brand-orange hover:bg-brand-cream uppercase tracking-wider transition-colors"
-                    >
-                      All Products
-                    </Link>
-                  </div>
+                        {categories.map((cat) => (
+                          <Link 
+                            key={cat.id} 
+                            href={`/shop?category=${cat.slug}`}
+                            className="block rounded-lg px-3 py-1.8 text-[0.68rem] font-bold text-brand-charcoal hover:bg-brand-cream hover:text-brand-orange uppercase tracking-wider transition-colors"
+                          >
+                            {cat.name}
+                          </Link>
+                        ))}
+                        <div className="h-px bg-brand-beige my-1"></div>
+                        <Link 
+                          href="/shop"
+                          className="block rounded-lg px-3 py-1.8 text-[0.68rem] font-bold text-brand-orange hover:bg-brand-cream uppercase tracking-wider transition-colors"
+                        >
+                          All Products
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-
-
-                <div className="relative py-1 flex items-center">
+                {/* Blogs Link */}
+                <div 
+                  className="relative py-1 flex items-center"
+                  onMouseEnter={() => setHoveredIndex(3)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
                   <Link 
                     href="/blogs" 
                     className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
@@ -292,9 +354,21 @@ export default function Header() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
+                  {hoveredIndex === 3 && (
+                    <motion.div
+                      layoutId="hoverNavCapsule"
+                      className="absolute -inset-x-3 -inset-y-1 bg-brand-cream/60 rounded-full -z-10"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    />
+                  )}
                 </div>
 
-                <div className="relative py-1 flex items-center">
+                {/* Contact Us Link */}
+                <div 
+                  className="relative py-1 flex items-center"
+                  onMouseEnter={() => setHoveredIndex(4)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
                   <Link 
                     href="/contact" 
                     className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
@@ -306,6 +380,13 @@ export default function Header() {
                       layoutId="activeNavLine"
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  {hoveredIndex === 4 && (
+                    <motion.div
+                      layoutId="hoverNavCapsule"
+                      className="absolute -inset-x-3 -inset-y-1 bg-brand-cream/60 rounded-full -z-10"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
                     />
                   )}
                 </div>
@@ -324,13 +405,18 @@ export default function Header() {
                 <button 
                   onClick={() => setCartOpen(true)}
                   className="p-1.5 text-brand-charcoal hover:text-brand-orange transition-colors relative"
+                  id="header-cart-icon"
                   aria-label="Cart"
                 >
                   <ShoppingBasket className="h-4.5 w-4.5" />
                   {totalCartItems > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#2ecc71] text-white text-[0.55rem] font-bold">
+                    <motion.span 
+                      animate={badgeAnimated ? { scale: [1, 1.4, 1] } : {}}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#2ecc71] text-white text-[0.55rem] font-bold"
+                    >
                       {totalCartItems}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
 
@@ -400,105 +486,131 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Dark Modal Backdrop placed outside layout to prevent overlay interception */}
-              <div 
-                className="fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden" 
-                onClick={() => setIsMobileMenuOpen(false)}
-              ></div>
-
+              {/* Backdrop */}
               <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="lg:hidden border-t border-brand-beige bg-white py-4 px-6 mt-4 shadow-md rounded-2xl mx-4 overflow-hidden relative z-50"
-              >
-                <nav className="flex flex-col gap-3.5 relative z-50">
-              <Link 
-                href="/" 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
-              >
-                Home
-              </Link>
-              <Link 
-                href="/about" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
-              >
-                About Us
-              </Link>
-              
-              {/* Categories list inline on mobile */}
-              <div className="flex flex-col gap-1.5 pl-3 border-l-2 border-brand-beige">
-                <span className="text-[0.62rem] font-bold text-muted-foreground uppercase tracking-widest">Shop Categories</span>
-                {categories.map((cat: any) => (
-                  <Link 
-                    key={cat.id} 
-                    href={`/shop?category=${cat.slug}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-[0.68rem] font-semibold text-brand-charcoal hover:text-brand-orange"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </div>
+                className="fixed inset-0 z-40 bg-brand-charcoal/40 backdrop-blur-xs lg:hidden"
+              />
 
-
-              <Link 
-                href="/blogs" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
+              {/* Slide-over Drawer Panel */}
+              <motion.div 
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-white h-full shadow-2xl flex flex-col p-6 lg:hidden border-l border-brand-beige overflow-y-auto"
               >
-                Blogs
-              </Link>
-              <Link 
-                href="/contact" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
-              >
-                Contact Us
-              </Link>
-              
-              <div className="h-px bg-brand-beige my-1"></div>
-              {userLoggedIn ? (
-                <>
-                  <Link 
-                    href="/account" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
-                  >
-                    My Account
-                  </Link>
-                  <Link 
-                    href="/admin" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
-                  >
-                    Admin Console
-                  </Link>
+                <div className="flex items-center justify-between border-b border-brand-beige pb-4 mb-5">
+                  <div className="flex items-center">
+                    <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#0a4d8c] border border-[#d4af37] text-center flex-col p-0.5 leading-none select-none">
+                      <span className="font-serif text-[0.45rem] font-black text-[#f3efe7] tracking-wider">MEHTA</span>
+                      <span className="text-[0.22rem] font-bold text-[#d4af37] uppercase tracking-[0.02em]">Sweet Mart</span>
+                    </div>
+                    <span className="ml-2 font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">Catalog Menu</span>
+                  </div>
                   <button 
-                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                    className="text-xs font-bold uppercase tracking-wider text-red-600 py-1 text-left flex items-center gap-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1.5 hover:bg-brand-cream rounded-full transition-colors text-muted-foreground hover:text-brand-charcoal"
                   >
-                    Logout
+                    <X className="h-5 w-5" />
                   </button>
-                </>
-              ) : (
-                <Link 
-                  href="/account" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
-                >
-                  Login / Register
-                </Link>
-              )}
-            </nav>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  </motion.header>
+                </div>
+
+                <nav className="flex flex-col gap-4">
+                  <Link 
+                    href="/" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
+                  >
+                    Home
+                  </Link>
+                  <Link 
+                    href="/about" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
+                  >
+                    About Us
+                  </Link>
+                  
+                  {/* Categories list inline on mobile */}
+                  <div className="flex flex-col gap-2 pl-3 border-l border-brand-beige">
+                    <span className="text-[0.62rem] font-bold text-brand-gold uppercase tracking-widest mb-1">Shop Categories</span>
+                    {categories.map((cat: any) => (
+                      <Link 
+                        key={cat.id} 
+                        href={`/shop?category=${cat.slug}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="text-[0.72rem] font-bold text-brand-charcoal hover:text-brand-orange uppercase tracking-wider"
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
+                    <Link 
+                      href="/shop"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-[0.72rem] font-bold text-brand-orange hover:text-brand-orange-hover uppercase tracking-wider mt-1"
+                    >
+                      All Products
+                    </Link>
+                  </div>
+
+                  <Link 
+                    href="/blogs" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
+                  >
+                    Blogs
+                  </Link>
+                  <Link 
+                    href="/contact" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
+                  >
+                    Contact Us
+                  </Link>
+                  
+                  <div className="h-px bg-brand-beige my-2"></div>
+                  {userLoggedIn ? (
+                    <>
+                      <Link 
+                        href="/account" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                      >
+                        My Account
+                      </Link>
+                      <Link 
+                        href="/admin" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                      >
+                        Admin Console
+                      </Link>
+                      <button 
+                        onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                        className="text-xs font-bold uppercase tracking-wider text-red-600 py-1 text-left flex items-center gap-2"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <Link 
+                      href="/account" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                    >
+                      Login / Register
+                    </Link>
+                  )}
+                </nav>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </motion.header>
 
       {/* --- COLLAPSIBLE FULL-WIDTH SEARCH OVERLAY --- */}
       <AnimatePresence>
