@@ -10,19 +10,12 @@ export default function SplashLoader() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check if intro has already been shown in this session
-    const hasShown = sessionStorage.getItem("mehta_splash_shown") === "true";
-    if (hasShown) {
-      setIsVisible(false);
-      return;
-    }
-
-    // Show splash
+    // Show splash on every page load/refresh as requested
     setIsVisible(true);
     document.body.style.overflow = "hidden";
 
     // Progress bar animation
-    const duration = 2000; // 2 seconds
+    const duration = 2200; // 2.2 seconds for full animation
     const intervalTime = 30;
     const steps = duration / intervalTime;
     let currentStep = 0;
@@ -37,7 +30,6 @@ export default function SplashLoader() {
         setTimeout(() => {
           setIsVisible(false);
           document.body.style.overflow = "";
-          sessionStorage.setItem("mehta_splash_shown", "true");
         }, 300);
       }
     }, intervalTime);
@@ -47,6 +39,32 @@ export default function SplashLoader() {
       document.body.style.overflow = "";
     };
   }, []);
+
+  // Framer Motion Variants for Staggered Letter Entrance
+  const textContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.15,
+      },
+    },
+  };
+
+  const letterVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.5 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring" as const,
+        damping: 10,
+        stiffness: 150,
+      },
+    },
+  };
 
   return (
     <AnimatePresence>
@@ -59,63 +77,145 @@ export default function SplashLoader() {
             scale: 1.05,
             transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } 
           }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#2A1E17] text-[#FCF9F2]"
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#FCF9F2] overflow-hidden select-none"
         >
+          {/* Load external Google Font Pacifico self-contained */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+          `}} />
+
           {/* Shimmering Gold Radial Background */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.15)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,155,60,0.08)_0%,rgba(0,0,0,0)_75%)] pointer-events-none" />
 
-          {/* Luxury Circular Logo Animation */}
+          {/* Luxury Floating Decorative Stars */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[
+              { top: "25%", left: "15%", delay: 0.3, size: 12 },
+              { top: "20%", left: "80%", delay: 0.6, size: 16 },
+              { top: "72%", left: "22%", delay: 0.9, size: 14 },
+              { top: "65%", left: "75%", delay: 0.5, size: 18 },
+              { top: "35%", left: "85%", delay: 1.1, size: 10 },
+            ].map((star, idx) => (
+              <motion.span
+                key={idx}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ 
+                  opacity: [0, 0.5, 0], 
+                  scale: [0, 1.2, 0],
+                  y: [0, -20, 0] 
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  delay: star.delay,
+                  ease: "easeInOut"
+                }}
+                className="absolute text-brand-gold font-bold"
+                style={{
+                  top: star.top,
+                  left: star.left,
+                  fontSize: `${star.size}px`
+                }}
+              >
+                ★
+              </motion.span>
+            ))}
+          </div>
+
           <div className="relative flex flex-col items-center z-10">
-            {/* Pulsing Outer Ring */}
+            {/* Animated Cursive Brand Logo (Mehta Dairy) with thick outline */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ 
-                scale: [0.95, 1.05, 0.95],
-                opacity: [0.2, 0.5, 0.2]
-              }}
-              transition={{ 
-                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-              }}
-              className="absolute h-36 w-36 sm:h-44 sm:w-44 rounded-full border border-[#d4af37]/30"
-            />
-
-            {/* Main Circular Badge */}
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0, rotate: -15 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 70, 
-                damping: 15,
-                delay: 0.1 
-              }}
-              className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-full bg-[#0a4d8c] border-3 border-[#d4af37] shadow-[0_0_35px_rgba(212,175,55,0.4)] text-center flex-col p-2 select-none"
+              variants={textContainer}
+              initial="hidden"
+              animate="visible"
+              className="flex items-center justify-center flex-wrap"
             >
-              <motion.span 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-[0.45rem] sm:text-[0.55rem] font-bold text-white tracking-[0.15em] uppercase"
-              >
-                Since 1952
-              </motion.span>
-              <motion.span 
-                initial={{ letterSpacing: "0.05em", opacity: 0 }}
-                animate={{ letterSpacing: "0.15em", opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
-                className="font-serif text-sm sm:text-lg font-black text-[#f3efe7] tracking-widest my-1 sm:my-1.5"
-              >
-                MEHTA
-              </motion.span>
-              <motion.span 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="text-[0.4rem] sm:text-[0.45rem] font-bold text-[#d4af37] uppercase tracking-[0.08em] leading-tight"
-              >
-                Sweet Mart
-              </motion.span>
+              {/* "Mehta" */}
+              <div className="flex">
+                {"Mehta".split("").map((char, idx) => (
+                  <motion.span
+                    key={`mehta-${idx}`}
+                    variants={letterVariants}
+                    className="inline-block text-5xl sm:text-7xl md:text-8xl text-white font-bold tracking-tight"
+                    style={{
+                      fontFamily: "'Pacifico', cursive",
+                      textShadow: `
+                        -3px -3px 0 #5A3E2B,
+                         3px -3px 0 #5A3E2B,
+                        -3px  3px 0 #5A3E2B,
+                         3px  3px 0 #5A3E2B,
+                        -4px  0px 0 #5A3E2B,
+                         4px  0px 0 #5A3E2B,
+                         0px -4px 0 #5A3E2B,
+                         0px  4px 0 #5A3E2B,
+                         0px  8px 16px rgba(0,0,0,0.15)
+                      `,
+                    }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+
+              {/* Spacing between words */}
+              <span className="w-4 sm:w-6" />
+
+              {/* "Dairy" with dotless 'i' and custom star dot */}
+              <div className="flex">
+                {"Dairy".split("").map((char, idx) => {
+                  const isI = char.toLowerCase() === "i";
+                  return (
+                    <motion.span
+                      key={`dairy-${idx}`}
+                      variants={letterVariants}
+                      className="inline-block text-5xl sm:text-7xl md:text-8xl text-white font-bold tracking-tight"
+                      style={{
+                        fontFamily: "'Pacifico', cursive",
+                        textShadow: `
+                          -3px -3px 0 #5A3E2B,
+                           3px -3px 0 #5A3E2B,
+                          -3px  3px 0 #5A3E2B,
+                           3px  3px 0 #5A3E2B,
+                          -4px  0px 0 #5A3E2B,
+                           4px  0px 0 #5A3E2B,
+                           0px -4px 0 #5A3E2B,
+                           0px  4px 0 #5A3E2B,
+                           0px  8px 16px rgba(0,0,0,0.15)
+                        `,
+                      }}
+                    >
+                      {isI ? (
+                        <span className="relative inline-block">
+                          ı
+                          <motion.span
+                            initial={{ scale: 0, rotate: -45, y: -10, opacity: 0 }}
+                            animate={{ scale: 1, rotate: 15, y: 0, opacity: 1 }}
+                            transition={{ 
+                              delay: 1.1, 
+                              type: "spring", 
+                              stiffness: 250,
+                              damping: 10
+                            }}
+                            className="absolute -top-3 sm:-top-4 left-[2px] text-white"
+                            style={{
+                              textShadow: `
+                                -2px -2px 0 #5A3E2B,
+                                 2px -2px 0 #5A3E2B,
+                                -2px  2px 0 #5A3E2B,
+                                 2px  2px 0 #5A3E2B
+                              `,
+                            }}
+                          >
+                            ★
+                          </motion.span>
+                        </span>
+                      ) : (
+                        char
+                      )}
+                    </motion.span>
+                  );
+                })}
+              </div>
             </motion.div>
 
             {/* Glowing Brand Tagline */}
@@ -123,25 +223,25 @@ export default function SplashLoader() {
               <motion.h2
                 initial={{ y: 15, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
-                className="text-[0.62rem] sm:text-[0.68rem] tracking-[0.25em] font-bold text-[#d4af37] uppercase mb-1"
+                transition={{ delay: 1.2, duration: 0.6 }}
+                className="text-[0.62rem] sm:text-[0.68rem] tracking-[0.25em] font-bold text-[#C89B3C] uppercase mb-1"
               >
-                Crafting Luxury Delicacies
+                Since 1972 • Premium Heritage
               </motion.h2>
               <motion.p
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 0.6 }}
-                transition={{ delay: 1.0, duration: 0.5 }}
-                className="text-[0.55rem] sm:text-[0.6rem] tracking-widest text-[#FCF9F2]/75 uppercase"
+                transition={{ delay: 1.4, duration: 0.5 }}
+                className="text-[0.55rem] sm:text-[0.6rem] tracking-widest text-[#5A3E2B] uppercase font-bold"
               >
                 A Legacy of Pure Taste & Heritage
               </motion.p>
             </div>
 
             {/* Minimalist Shimmering Loading bar */}
-            <div className="mt-10 w-48 sm:w-56 h-[2px] bg-[#FCF9F2]/10 rounded-full overflow-hidden relative">
+            <div className="mt-12 w-48 sm:w-56 h-[3px] bg-[#5A3E2B]/10 rounded-full overflow-hidden relative">
               <motion.div
-                className="h-full bg-[linear-gradient(90deg,#d4af37,#e8cc74,#d4af37)]"
+                className="h-full bg-[linear-gradient(90deg,#5A3E2B,#C89B3C,#5A3E2B)]"
                 style={{ width: `${progress}%` }}
                 transition={{ ease: "easeInOut" }}
               />
@@ -150,8 +250,8 @@ export default function SplashLoader() {
             {/* Loading text percentage */}
             <motion.span 
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              className="text-[0.55rem] font-mono mt-2 tracking-widest text-[#FCF9F2]"
+              animate={{ opacity: 0.6 }}
+              className="text-[0.6rem] font-mono mt-3 tracking-widest text-[#5A3E2B] font-bold"
             >
               {progress}%
             </motion.span>

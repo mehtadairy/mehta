@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
 import { Product } from "@/lib/types";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
 import {
   Sparkles,
   Award,
@@ -31,6 +31,38 @@ import {
   MessageSquare
 } from "lucide-react";
 
+// Count-up counter component for trust strip
+const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    if (isInView) {
+      const duration = 1500; // 1.5 seconds
+      const end = value;
+      const startTime = performance.now();
+
+      const updateCount = (now: number) => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = progress * (2 - progress); // Ease out quad
+        const currentCount = Math.floor(easeProgress * end);
+        setCount(currentCount);
+
+        if (progress < 1) {
+          requestAnimationFrame(updateCount);
+        } else {
+          setCount(end);
+        }
+      };
+
+      requestAnimationFrame(updateCount);
+    }
+  }, [isInView, value]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+};
+
 const getCategoryFallbackImage = (slug: string) => {
   if (slug === "milk-sweets") return "/mix_sweet_rolls_1781172915749.png";
   if (slug === "ghee-sweets") return "/prod_ghari_1781172844424.png";
@@ -50,6 +82,12 @@ export default function Home() {
 
   // Hero Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Parallax effects
+  const { scrollY } = useScroll();
+  const yBg = useTransform(scrollY, [0, 600], [0, 80]);
+  const yText = useTransform(scrollY, [0, 600], [0, -60]);
+  const yImage = useTransform(scrollY, [0, 600], [0, -20]);
 
   useEffect(() => {
     async function loadProducts() {
@@ -84,7 +122,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide(prev => (prev === 0 ? 1 : 0));
-    }, 7000);
+    }, 8000); // 8 seconds for a more cinematic feel
     return () => clearInterval(timer);
   }, []);
 
@@ -95,7 +133,11 @@ export default function Home() {
       title: "Handcrafted Luxury",
       boldTitle: "Dryfruit Kachori",
       subtitle: "AUTHENTIC PALITANA HERITAGE SINCE 1972",
-      description: "Our legendary crisp pastry stuffed with select almonds, cashews, pistachios, and saffron, slow-fried in 100% pure cow ghee. An unforgettable taste enjoyed for generations.",
+      descriptionLines: [
+        "Our legendary crisp pastry stuffed with select almonds, cashews, pistachios,",
+        "and saffron, slow-fried in 100% pure cow ghee.",
+        "An unforgettable taste enjoyed for generations."
+      ],
       image: "/hero_kachori_bowl_1781172813990.png",
       link: "/shop?category=dryfruit",
       buttonText: "Shop Kachori Special"
@@ -105,7 +147,11 @@ export default function Home() {
       title: "Melt-In-Your-Mouth Fudge",
       boldTitle: "Premium Kaju Katli",
       subtitle: "100% PURE INGREDIENTS GUARANTEE",
-      description: "Crafted using premium California cashews and clean sugar, finished with delicate traditional silver leaf. Pure, fresh, and exceptionally delicious.",
+      descriptionLines: [
+        "Crafted using premium California cashews and clean sugar,",
+        "finished with delicate traditional silver leaf.",
+        "Pure, fresh, and exceptionally delicious."
+      ],
       image: "/prod_kaju_katli_1781172877393.png",
       link: "/product/t1",
       buttonText: "Order Kaju Katli"
@@ -198,72 +244,174 @@ export default function Home() {
 
       {/* --- 1. HERO SECTION (Warm Ivory, Deep Brown, & Gold Aesthetic) --- */}
       <section className="relative overflow-hidden bg-[#FAF6EE] min-h-[580px] lg:min-h-[700px] flex items-center pt-24 pb-12">
+        {/* Background Image: smooth fade-in and scale-down (1.05 to 1.0) over 1.2s */}
+        <motion.div
+          key={`hero-bg-${currentSlide}`}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 0.35, scale: 1 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ y: yBg }}
+          className="absolute inset-0 bg-[url('/hero_background_texture.png')] bg-cover bg-center pointer-events-none"
+        />
         <div className="absolute inset-0 bg-[radial-gradient(#C9A22712_1.5px,transparent_1.5px)] [background-size:32px_32px] pointer-events-none"></div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
             >
               {/* Left Side Details */}
-              <div className="lg:col-span-6 flex flex-col gap-4 text-left select-none">
-                <span className="inline-flex max-w-fit items-center gap-1.5 rounded-full bg-[#4A2F1F]/5 border border-[#4A2F1F]/15 px-3.5 py-1 text-[0.68rem] font-bold text-[#4A2F1F] uppercase tracking-widest">
+              <motion.div
+                style={{ y: yText }}
+                className="lg:col-span-6 flex flex-col gap-4 text-left select-none"
+              >
+                <motion.span
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="inline-flex max-w-fit items-center gap-1.5 rounded-full bg-[#4A2F1F]/5 border border-[#4A2F1F]/15 px-3.5 py-1 text-[0.68rem] font-bold text-[#4A2F1F] uppercase tracking-widest"
+                >
                   <Sparkles className="h-3.5 w-3.5 text-[#C9A227]" /> Since 1972 Legacy
-                </span>
+                </motion.span>
                 
                 <h1 className="leading-tight">
-                  <span className="block font-serif text-3xl sm:text-4xl md:text-5xl font-light italic tracking-wide text-[#C9A227]">
-                    {slides[currentSlide].title}
+                  <span className="block font-serif text-3xl sm:text-4xl md:text-5xl font-light italic tracking-wide text-[#C9A227] overflow-hidden py-1">
+                    {slides[currentSlide].title.split(" ").map((word, i) => (
+                      <motion.span
+                        key={`title-word-${i}`}
+                        className="inline-block mr-3"
+                        initial={{ opacity: 0, y: 25, letterSpacing: "0.15em" }}
+                        animate={{ opacity: 1, y: 0, letterSpacing: "0.02em" }}
+                        transition={{
+                          duration: 0.8,
+                          delay: 0.3 + i * 0.15,
+                          ease: [0.16, 1, 0.3, 1]
+                        }}
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
                   </span>
-                  <span className="block font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mt-1 text-[#4A2F1F]">
-                    {slides[currentSlide].boldTitle}
+                  <span className="block font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mt-1 text-[#4A2F1F] overflow-hidden py-1">
+                    {slides[currentSlide].boldTitle.split(" ").map((word, i) => (
+                      <motion.span
+                        key={`bold-word-${i}`}
+                        className="inline-block mr-4"
+                        initial={{ opacity: 0, y: 40, letterSpacing: "0.1em" }}
+                        animate={{ opacity: 1, y: 0, letterSpacing: "0.01em" }}
+                        transition={{
+                          duration: 0.9,
+                          delay: 0.3 + (slides[currentSlide].title.split(" ").length * 0.15) + i * 0.18,
+                          ease: [0.16, 1, 0.3, 1]
+                        }}
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
                   </span>
                 </h1>
 
-                <p className="text-sm font-semibold text-[#D97706] uppercase tracking-[0.2em] mt-1">
+                <motion.p
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.1,
+                    ease: [0.16, 1, 0.3, 1]
+                  }}
+                  className="text-sm font-semibold text-[#D97706] uppercase tracking-[0.2em] mt-1"
+                >
                   {slides[currentSlide].subtitle}
-                </p>
+                </motion.p>
 
-                <p className="text-xs sm:text-sm text-[#555] leading-relaxed max-w-lg mt-1">
-                  {slides[currentSlide].description}
-                </p>
+                <div className="flex flex-col gap-1.5 mt-1">
+                  {slides[currentSlide].descriptionLines.map((line, i) => (
+                    <div key={`desc-line-${i}`} className="overflow-hidden">
+                      <motion.p
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.5,
+                          delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.3 + i * 0.15,
+                          ease: [0.16, 1, 0.3, 1]
+                        }}
+                        className="text-xs sm:text-sm text-[#555] leading-relaxed max-w-lg"
+                      >
+                        {line}
+                      </motion.p>
+                    </div>
+                  ))}
+                </div>
 
                 <div className="mt-6 flex flex-wrap gap-4">
-                  <Link
-                    href={slides[currentSlide].link}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#4A2F1F] text-white hover:bg-[#4A2F1F]/90 px-7 py-3.5 text-xs font-bold uppercase tracking-wider shadow-md hover:-translate-y-0.5 transition-all"
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.3 + slides[currentSlide].descriptionLines.length * 0.15 + 0.1,
+                      ease: [0.16, 1, 0.3, 1]
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    Shop Now
-                  </Link>
-                  <Link
-                    href="/shop"
-                    className="inline-flex items-center justify-center rounded-xl border-2 border-[#4A2F1F] hover:bg-[#4A2F1F]/5 text-[#4A2F1F] px-7 py-3.2 text-xs font-bold uppercase tracking-wider transition-all"
+                    <Link
+                      href={slides[currentSlide].link}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#4A2F1F] text-white hover:bg-[#4A2F1F]/90 px-7 py-3.5 text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                    >
+                      Shop Now
+                    </Link>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.3 + (slides[currentSlide].title.split(" ").length + slides[currentSlide].boldTitle.split(" ").length) * 0.18 + 0.3 + slides[currentSlide].descriptionLines.length * 0.15 + 0.25,
+                      ease: [0.16, 1, 0.3, 1]
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    Explore Products
-                  </Link>
+                    <Link
+                      href="/shop"
+                      className="inline-flex items-center justify-center rounded-xl border-2 border-[#4A2F1F] hover:bg-[#4A2F1F]/5 text-[#4A2F1F] px-7 py-3.2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      Explore Products
+                    </Link>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Right Side Platter Image */}
-              <div className="lg:col-span-6 flex justify-center lg:justify-end">
-                <div className="relative w-64 h-64 sm:w-96 sm:h-96 md:w-[440px] md:h-[440px] flex items-center justify-center">
+              <motion.div
+                style={{ y: yImage }}
+                className="lg:col-span-6 flex justify-center lg:justify-end"
+              >
+                <motion.div
+                  initial={{ opacity: 0, x: 100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                  className="relative w-64 h-64 sm:w-96 sm:h-96 md:w-[440px] md:h-[440px] flex items-center justify-center"
+                >
                   {/* Rotating Gold Accent Ring */}
                   <div className="absolute inset-0 rounded-full border border-[#C9A227]/20 animate-[spin_40s_linear_infinite]"></div>
                   
                   <motion.img
-                    animate={{ scale: [1, 1.02, 1] }}
+                    animate={{ y: [-8, 8, -8] }}
                     transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
                     src={slides[currentSlide].image}
                     alt={slides[currentSlide].boldTitle}
                     className="w-full h-full object-contain filter drop-shadow-xl select-none relative z-10"
                   />
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -292,27 +440,37 @@ export default function Home() {
             
             <div className="flex flex-col items-center justify-center gap-1.5 px-2 group">
               <Award className="h-5 w-5 text-[#D97706] group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">50+ Years of Trust</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">
+                <AnimatedNumber value={50} suffix="+" /> Years of Trust
+              </span>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-1.5 px-2 group">
               <Clock className="h-5 w-5 text-[#C9A227] group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">Fresh Daily Production</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">
+                <AnimatedNumber value={100} suffix="%" /> Fresh Daily
+              </span>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-1.5 px-2 group">
               <Sparkles className="h-5 w-5 text-[#D97706] group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">Premium Ingredients</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">
+                <AnimatedNumber value={100} suffix="%" /> Pure Ingredients
+              </span>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-1.5 px-2 group">
               <ShieldCheck className="h-5 w-5 text-[#C9A227] group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">Secure Payments</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">
+                <AnimatedNumber value={100} suffix="%" /> Secure Payments
+              </span>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-1.5 px-2 group col-span-2 md:col-span-1">
               <Truck className="h-5 w-5 text-[#D97706] group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">Pan India Delivery</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4A2F1F]">
+                <AnimatedNumber value={25} suffix="K+" /> Deliveries
+              </span>
             </div>
 
           </div>
@@ -328,13 +486,36 @@ export default function Home() {
             <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-center max-w-4xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.15
+                }
+              }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-center max-w-4xl mx-auto"
+          >
             {categories.map((cat) => (
-              <Link
+              <motion.div
                 key={cat.id}
-                href={`/shop?category=${cat.slug}`}
-                className="group relative overflow-hidden rounded-2xl aspect-[4/5] bg-[#4A2F1F] shadow-md transition-all duration-500 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-end p-5"
+                variants={{
+                  hidden: { opacity: 0, y: 40 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+                }}
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.3 }}
+                className="w-full aspect-[4/5] relative overflow-hidden rounded-2xl bg-[#4A2F1F] shadow-md flex flex-col justify-end p-5 group"
               >
+                <Link
+                  href={`/shop?category=${cat.slug}`}
+                  className="absolute inset-0 z-20"
+                  aria-label={`Explore ${cat.name}`}
+                />
                 <img
                   src={cat.image_url || getCategoryFallbackImage(cat.slug)}
                   alt={cat.name}
@@ -351,23 +532,48 @@ export default function Home() {
                     Explore <ChevronRight className="h-3 w-3" />
                   </span>
                 </div>
-              </Link>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* --- 4. BEST SELLERS (Conversion-focused Grid) --- */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-xl mx-auto mb-14">
+      <section className="py-20 bg-white overflow-hidden">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: {},
+            visible: {
+              transition: {
+                staggerChildren: 0.15
+              }
+            }
+          }}
+          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+        >
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+            }}
+            className="text-center max-w-xl mx-auto mb-14"
+          >
             <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Customer Favorites</span>
             <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Our Best Sellers</h2>
             <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
-          </div>
+          </motion.div>
 
           {/* Continuous infinite marquee container */}
-          <div className="relative w-full overflow-hidden pb-6 pt-2">
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 40 },
+              visible: { opacity: 1, y: 0, transition: { duration: 1.0, ease: [0.16, 1, 0.3, 1] } }
+            }}
+            className="relative w-full overflow-hidden pb-6 pt-2"
+          >
             {/* Fade overlays for soft edges */}
             <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
             <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
@@ -561,41 +767,23 @@ export default function Home() {
                 );
               })}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* --- 5. SINCE 1972 HERITAGE SECTION (Split Layout) --- */}
-      <section className="py-24 bg-[#FAF6EE] border-t border-b border-[#4A2F1F]/10">
+      <section className="py-24 bg-[#FAF6EE] border-t border-b border-[#4A2F1F]/10 overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left: Images side-by-side representing growth */}
-            <div className="lg:col-span-6 grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-4">
-                <div className="rounded-2xl overflow-hidden aspect-square border border-[#4A2F1F]/10 bg-white p-2">
-                  <img
-                    src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&auto=format&fit=crop&q=80"
-                    alt="Mehta Dairy Old Sweet Shop Crafting"
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                </div>
-                <span className="text-[0.62rem] font-bold text-center uppercase tracking-widest text-[#4A2F1F]">Palitana Origins</span>
-              </div>
-              <div className="flex flex-col gap-4 mt-6">
-                <div className="rounded-2xl overflow-hidden aspect-square border border-[#4A2F1F]/10 bg-white p-2">
-                  <img
-                    src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&auto=format&fit=crop&q=80"
-                    alt="Modern Mehta Dairy Showcase"
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                </div>
-                <span className="text-[0.62rem] font-bold text-center uppercase tracking-widest text-[#4A2F1F]">Modern Flagship</span>
-              </div>
-            </div>
-
-            {/* Right: Concise Story */}
-            <div className="lg:col-span-6 flex flex-col gap-5">
+            {/* Left: Concise Story (Entering from Left) */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-150px" }}
+              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-6 flex flex-col gap-5 lg:order-first"
+            >
               <span className="text-[0.68rem] font-bold text-[#D97706] uppercase tracking-[0.25em]">Our Story</span>
               <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] leading-tight">
                 Established In 1972, Famous In Palitana & Navrangpura
@@ -617,73 +805,158 @@ export default function Home() {
                   Our Detailed Journey <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
-            </div>
+            </motion.div>
+
+            {/* Right: Images side-by-side representing growth (Entering from Right) */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-150px" }}
+              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-6 grid grid-cols-2 gap-4 lg:order-last"
+            >
+              <div className="flex flex-col gap-4">
+                <div className="rounded-2xl overflow-hidden aspect-square border border-[#4A2F1F]/10 bg-white p-2">
+                  <img
+                    src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&auto=format&fit=crop&q=80"
+                    alt="Mehta Dairy Old Sweet Shop Crafting"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                </div>
+                <span className="text-[0.62rem] font-bold text-center uppercase tracking-widest text-[#4A2F1F]">Palitana Origins</span>
+              </div>
+              <div className="flex flex-col gap-4 mt-6">
+                <div className="rounded-2xl overflow-hidden aspect-square border border-[#4A2F1F]/10 bg-white p-2">
+                  <img
+                    src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&auto=format&fit=crop&q=80"
+                    alt="Modern Mehta Dairy Showcase"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                </div>
+                <span className="text-[0.62rem] font-bold text-center uppercase tracking-widest text-[#4A2F1F]">Modern Flagship</span>
+              </div>
+            </motion.div>
 
           </div>
         </div>
       </section>
 
       {/* --- 6. WHY CHOOSE MEHTA DAIRY (Modern Grid) --- */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-xl mx-auto mb-16">
+      <section className="py-20 bg-white overflow-hidden">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: {},
+            visible: {
+              transition: {
+                staggerChildren: 0.08
+              }
+            }
+          }}
+          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+        >
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+            }}
+            className="text-center max-w-xl mx-auto mb-16"
+          >
             <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Why Shop With Us</span>
             <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Uncompromising Standards</h2>
             <div className="h-0.5 w-16 bg-[#C9A227] mx-auto mt-3"></div>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#D97706] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Since 1972 Legacy</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Over 50 years of family-owned recipes passed down through master karigars.</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Trusted by Thousands</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Delivering joy and sweet memories to thousands of regular households in India & overseas.</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#D97706] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Fresh Daily Production</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Every sweet is slow-churned and made in small batches daily to ensure freshness.</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Secure Online Payments</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Fully encrypted checkout integrated with Razorpay for worry-free card & UPI transactions.</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#D97706] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Quality Ingredients</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Premium dryfruits, fresh direct cow milk, and authentic Kashmiri saffron only.</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors">
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="flex gap-4 p-5 rounded-xl hover:bg-[#FAF6EE]/50 transition-colors"
+            >
               <CheckCircle className="h-6 w-6 text-[#C9A227] flex-shrink-0" />
               <div>
                 <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1">Fast Delivery</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">Express courier shipping with moisture-lock vacuum sealed packing.</p>
               </div>
-            </div>
+            </motion.div>
 
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* --- 7. FEATURED PRODUCTS (Secondary Grid) --- */}
@@ -697,15 +970,32 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
             {featuredProducts.map((product) => {
               const weights = Object.keys(product.prices);
               const currentWeight = selectedWeights[product.id] || weights[0];
               const currentPrice = product.prices[currentWeight];
 
               return (
-                <div
+                <motion.div
                   key={product.id}
+                  variants={{
+                    hidden: { opacity: 0, scale: 0.95 },
+                    visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                  }}
                   className="bg-white border border-[#4A2F1F]/10 rounded-2xl p-5 flex gap-4.5 items-center hover:shadow-md transition-shadow relative group"
                 >
                   <Link href={`/product/${product.id}`} className="h-20 w-20 bg-[#FAF6EE] rounded-lg overflow-hidden flex-shrink-0 relative p-1">
@@ -742,10 +1032,10 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
 

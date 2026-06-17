@@ -59,10 +59,10 @@ export default function Footer() {
               Policies
             </h4>
             <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
-              <li><a href="/about" className="hover:text-brand-orange transition-colors">Refund Policy</a></li>
-              <li><a href="/about" className="hover:text-brand-orange transition-colors">Privacy Policy</a></li>
-              <li><a href="/about" className="hover:text-brand-orange transition-colors">Terms</a></li>
-              <li><a href="/about" className="hover:text-brand-orange transition-colors">Online Payment</a></li>
+              <li><Link href="/policy/refund" className="hover:text-brand-orange transition-colors">Refund Policy</Link></li>
+              <li><Link href="/policy/privacy" className="hover:text-brand-orange transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/policy/terms" className="hover:text-brand-orange transition-colors">Terms</Link></li>
+              <li><Link href="/policy/payment" className="hover:text-brand-orange transition-colors">Online Payment</Link></li>
             </ul>
           </div>
 
@@ -72,13 +72,18 @@ export default function Footer() {
               Contact
             </h4>
             <div className="flex flex-col gap-3 text-xs text-muted-foreground">
-              <p className="leading-relaxed">
+              <a 
+                href="https://share.google/5x2FPvCFeEAeFtI3N" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="leading-relaxed hover:text-brand-orange transition-colors"
+              >
                 Near Stadium Circle, Off CG Road, Navrangpura, Ahmedabad-380009, Gujarat, India.
-              </p>
+              </a>
               <div>
                 <span className="block font-bold text-brand-charcoal text-[0.7rem] uppercase mt-1">Customer Care</span>
-                <span className="block text-brand-orange font-bold mt-0.5">+91 79 2640 1952</span>
-                <span className="block text-brand-orange font-bold">+91 98989 81952</span>
+                <a href="tel:+919913252232" className="block text-brand-orange font-bold mt-0.5 hover:underline">+91 99132 52232</a>
+                <span className="block text-brand-orange font-bold">+91 79 2640 1952</span>
               </div>
             </div>
           </div>
