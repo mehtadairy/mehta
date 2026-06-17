@@ -1185,7 +1185,7 @@ export default function AdminPanel() {
                 <div className="flex flex-col gap-6 animate-fade-in">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-brand-beige pb-3 gap-3">
                     <h3 className="font-serif text-lg font-bold text-brand-charcoal">
-                      Order Invoices Management
+                      Orders Tracking
                     </h3>
                     
                     {/* Search Bar */}

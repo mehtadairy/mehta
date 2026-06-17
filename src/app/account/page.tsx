@@ -82,13 +82,24 @@ import {
   Trash2, 
   LogOut, 
   Check, 
-  AlertCircle 
+  AlertCircle,
+  Bell,
+  Shield,
+  Star,
+  Award,
+  TrendingUp,
+  Clock,
+  ArrowRight,
+  ChevronRight,
+  LayoutDashboard,
+  Crown,
+  Gift
 } from "lucide-react";
 
 function AccountContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialTab = searchParams.get("tab") || "profile";
+  const initialTab = searchParams.get("tab") || "dashboard";
 
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -124,6 +135,11 @@ function AccountContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const [emailSendingInvoiceId, setEmailSendingInvoiceId] = useState<string | null>(null);
+  
+  // New State variables for the redesign
+  const [loyaltyPoints, setLoyaltyPoints] = useState(1250);
+  const [loyaltyTier, setLoyaltyTier] = useState("Gold");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Profile Update State
   const [editName, setEditName] = useState("");
@@ -646,55 +662,84 @@ function AccountContent() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* Account Sidebar Navigation */}
-              <aside className="lg:col-span-3 flex flex-col gap-2 bg-white border border-brand-beige p-5 rounded-2xl shadow-xs">
-                <div className="flex items-center gap-3 border-b border-brand-beige pb-4 mb-3">
-                  <div className="h-10 w-10 bg-brand-orange/10 rounded-full flex items-center justify-center text-brand-orange text-lg font-bold">
+              {/* Account Sidebar & Horizontal Mobile Navigation */}
+              <aside className="col-span-12 lg:col-span-3 flex flex-col gap-2 bg-white border border-brand-beige/50 p-4 lg:p-6 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange to-brand-gold"></div>
+                
+                <div className="hidden lg:flex items-center gap-4 border-b border-brand-beige/50 pb-5 mb-4 mt-2">
+                  <div className="h-12 w-12 bg-gradient-to-br from-brand-orange to-brand-gold rounded-full flex items-center justify-center text-white text-xl font-black shadow-inner shadow-black/10 flex-shrink-0 relative">
                     {profile?.name ? profile.name[0].toUpperCase() : "U"}
+                    {isLoggedIn && (
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 border-2 border-white rounded-full"></span>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="font-serif text-sm font-bold text-brand-charcoal line-clamp-1">{profile?.name}</h3>
-                    <span className="text-[0.65rem] text-muted-foreground">{profile?.email}</span>
+                  <div className="flex flex-col">
+                    <h3 className="font-serif text-sm font-bold text-brand-charcoal line-clamp-1">{profile?.name || "Guest User"}</h3>
+                    <span className="text-[0.65rem] text-muted-foreground/80 font-medium truncate">{profile?.email || "No email set"}</span>
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => setActiveTab("profile")}
-                  className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "profile" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-                >
-                  <User className="h-4 w-4" /> Edit Profile Details
-                </button>
-                <button 
-                  onClick={() => setActiveTab("orders")}
-                  className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "orders" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-                >
-                  <ShoppingBag className="h-4 w-4" /> Order History ({orders.length})
-                </button>
-                <button 
-                  onClick={() => setActiveTab("addresses")}
-                  className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "addresses" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-                >
-                  <MapPin className="h-4 w-4" /> Saved Address Book
-                </button>
-                <button 
-                  onClick={() => setActiveTab("wishlist")}
-                  className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${activeTab === "wishlist" ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}
-                >
-                  <Heart className="h-4 w-4" /> Gifting Wishlist ({wishlistItems.length})
-                </button>
+                <nav className="flex flex-row lg:flex-col gap-2 lg:gap-1.5 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-none w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {[
+                    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                    { id: 'profile', label: 'Profile', icon: User },
+                    { id: 'orders', label: 'Orders', icon: ShoppingBag, count: orders.length },
+                    { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
+                    { id: 'wishlist', label: 'Wishlist', icon: Heart, count: wishlistItems.length },
+                    { id: 'notifications', label: 'Notifications', icon: Bell },
+                    { id: 'security', label: 'Security', icon: Shield },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button 
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`relative text-left text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-300 overflow-hidden group flex-shrink-0 lg:flex-shrink-1 lg:w-full ${
+                          isActive 
+                            ? "text-brand-orange shadow-sm border border-brand-orange/20 bg-brand-orange/5" 
+                            : "text-brand-charcoal hover:bg-brand-cream/50 border border-transparent"
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.div 
+                            layoutId="activeTabIndicator" 
+                            className="absolute left-0 right-0 bottom-0 h-1 lg:h-auto lg:top-0 lg:bottom-0 lg:left-0 lg:w-1 bg-brand-orange" 
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          />
+                        )}
+                        <Icon className={`h-4 w-4 ${isActive ? "text-brand-orange" : "text-muted-foreground group-hover:text-brand-charcoal transition-colors"}`} /> 
+                        <span className="flex-grow">{item.label}</span>
+                        {item.count !== undefined && item.count > 0 && (
+                          <span className={`px-1.5 py-0.5 rounded-md text-[0.6rem] font-black ${isActive ? "bg-brand-orange text-white" : "bg-brand-beige/50 text-brand-charcoal"}`}>
+                            {item.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Mobile Logout Button (Inline) */}
+                  <button 
+                    onClick={handleLogout}
+                    className="flex lg:hidden flex-shrink-0 text-left text-xs font-semibold px-4 py-3 rounded-xl items-center gap-3 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100"
+                  >
+                    <LogOut className="h-4 w-4" /> Logout
+                  </button>
+                </nav>
 
-                <div className="h-px bg-brand-beige my-2"></div>
+                <div className="hidden lg:block h-px bg-brand-beige/50 my-4"></div>
 
                 <button 
                   onClick={handleLogout}
-                  className="w-full text-left text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 text-red-600 hover:bg-red-50 transition-colors"
+                  className="hidden lg:flex w-full text-left text-xs font-semibold px-4 py-3 rounded-xl items-center gap-3 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100"
                 >
-                  <LogOut className="h-4 w-4" /> Logout Account
+                  <LogOut className="h-4 w-4" /> Logout
                 </button>
               </aside>
 
               {/* Main Content Pane */}
-              <main className="lg:col-span-9 bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-xs min-h-[400px]">
+              <main className="col-span-12 lg:col-span-9 bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-xs min-h-[400px]">
                 
                 {/* Missing Phone Number Alert */}
                 {isLoggedIn && profile && !profile.phone && (
@@ -709,58 +754,184 @@ function AccountContent() {
                   </div>
                 )}
 
+                {/* --- TAB 0: DASHBOARD --- */}
+                {activeTab === "dashboard" && (
+                  <div className="flex flex-col gap-8 animate-fade-in">
+                    <div className="bg-gradient-to-r from-brand-cream/50 to-transparent p-6 rounded-2xl border border-brand-beige/50">
+                      <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
+                        Welcome back, {profile?.name ? profile.name.split(" ")[0] : "Guest"} 👋
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Here's an overview of your account and recent activities.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {[
+                        { title: "Total Orders", value: orders.length, icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+                        { title: "Wishlist Items", value: wishlistItems.length, icon: Heart, color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-100" },
+                        { title: "Saved Addresses", value: profile?.saved_addresses?.length || 0, icon: MapPin, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-100" },
+                      ].map((stat, idx) => (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          key={idx} 
+                          className={`p-5 rounded-2xl border ${stat.border} bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group`}
+                        >
+                          <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${stat.bg} opacity-50 group-hover:scale-150 transition-transform duration-500`}></div>
+                          <div className={`h-10 w-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center relative z-10`}>
+                            <stat.icon className="h-5 w-5" />
+                          </div>
+                          <div className="relative z-10">
+                            <h4 className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wider mb-1">{stat.title}</h4>
+                            <span className="font-serif text-2xl font-bold text-brand-charcoal">{stat.value}</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {/* Recent Activity Mini-Card */}
+                      <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="font-serif text-lg font-bold text-brand-charcoal">Recent Activity</h3>
+                          <button onClick={() => setActiveTab("orders")} className="text-xs text-brand-orange hover:text-brand-orange-hover font-bold flex items-center gap-1">
+                            View All <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {orders.length > 0 ? (
+                          <div className="flex flex-col gap-4">
+                            {orders.slice(0, 3).map(o => (
+                              <div key={o.id} className="flex items-center gap-4 border-b border-brand-beige/30 pb-4 last:border-0 last:pb-0">
+                                <div className="h-10 w-10 rounded-lg bg-brand-cream/50 flex items-center justify-center text-brand-orange flex-shrink-0">
+                                  <ShoppingBag className="h-5 w-5" />
+                                  {o.status === "Delivered" && <Check className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 text-white rounded-full p-[1px]" />}
+                                </div>
+                                <div className="flex-grow">
+                                  <h4 className="text-xs font-bold text-brand-charcoal">Order #{o.orderNumber}</h4>
+                                  <span className="text-[0.65rem] text-muted-foreground">{o.date} • {o.items.length} items</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="block text-xs font-bold text-brand-charcoal">₹{o.total}</span>
+                                  <span className="text-[0.6rem] font-bold text-brand-orange uppercase">{o.status}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Clock className="h-8 w-8 text-brand-beige mx-auto mb-2" />
+                            <p className="text-xs text-muted-foreground">No recent activity.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
+                        <h3 className="font-serif text-lg font-bold text-brand-charcoal mb-6">Quick Actions</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <button onClick={() => setActiveTab("profile")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                            <User className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                            <span className="text-xs font-bold text-brand-charcoal">Edit Profile</span>
+                          </button>
+                          <button onClick={() => setActiveTab("addresses")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                            <MapPin className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                            <span className="text-xs font-bold text-brand-charcoal">Add Address</span>
+                          </button>
+                          <Link href="/shop" className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                            <Gift className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                            <span className="text-xs font-bold text-brand-charcoal">Shop Sweets</span>
+                          </Link>
+                          <button onClick={() => setActiveTab("security")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                            <Shield className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                            <span className="text-xs font-bold text-brand-charcoal">Security</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* --- TAB 1: PROFILE DETAILS --- */}
                 {activeTab === "profile" && (
-                  <div className="flex flex-col gap-6 animate-fade-in">
-                    <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-beige pb-3">
-                      Edit Profile Details
-                    </h3>
+                  <div className="flex flex-col gap-8 animate-fade-in">
+                    <div>
+                      <h3 className="font-serif text-2xl font-bold text-brand-charcoal mb-2">
+                        Personal Information
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Update your personal details and how we can reach you.
+                      </p>
+                    </div>
                     
-                    <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4 max-w-md">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Full Name</label>
-                        <input 
-                          type="text" 
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                          required
-                        />
+                    <form onSubmit={handleUpdateProfile} className="flex flex-col gap-6 max-w-xl bg-white border border-brand-beige/50 rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+                      {/* Decorative accent */}
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange to-brand-gold"></div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider">Full Name</label>
+                        <div className="relative flex items-center">
+                          <User className="absolute left-3.5 h-4 w-4 text-muted-foreground/70" />
+                          <input 
+                            type="text" 
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10"
+                            required
+                          />
+                        </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address (Optional)</label>
-                        <input 
-                          type="email" 
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                          placeholder="Add your email"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider">Email Address</label>
+                          <div className="relative flex items-center">
+                            <Mail className="absolute left-3.5 h-4 w-4 text-muted-foreground/70" />
+                            <input 
+                              type="email" 
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              className="w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10"
+                              placeholder="Add your email"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider">Phone Number</label>
+                          <div className="relative flex items-center">
+                            <Phone className="absolute left-3.5 h-4 w-4 text-muted-foreground/70" />
+                            <input 
+                              type="tel" 
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                              className="w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10"
+                              required
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Phone Number</label>
-                        <input 
-                          type="tel" 
-                          value={editPhone}
-                          onChange={(e) => setEditPhone(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
-                          required
-                        />
+                      <div className="mt-4 flex items-center justify-between border-t border-brand-beige/50 pt-6">
+                        <div className="min-h-[24px]">
+                          {profileSuccess && (
+                            <motion.span 
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-100"
+                            >
+                              <Check className="h-3.5 w-3.5" /> Saved successfully
+                            </motion.span>
+                          )}
+                        </div>
+                        <button 
+                          type="submit"
+                          className="rounded-xl bg-brand-orange hover:bg-brand-orange-hover px-6 py-3 text-xs font-bold text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                          Save Changes
+                        </button>
                       </div>
-
-                      <button 
-                        type="submit"
-                        className="rounded-lg bg-brand-orange hover:bg-brand-orange-hover py-2.5 text-xs font-bold text-white transition-colors mt-2 max-w-xs shadow-sm"
-                      >
-                        Save Profile Changes
-                      </button>
-                      {profileSuccess && (
-                        <span className="text-[0.7rem] text-emerald-600 font-semibold flex items-center gap-1 mt-1 animate-pulse">
-                          <Check className="h-4 w-4" /> Profile details saved successfully.
-                        </span>
-                      )}
                     </form>
                   </div>
                 )}
@@ -1209,6 +1380,72 @@ function AccountContent() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* --- TAB 5: NOTIFICATIONS --- */}
+                {activeTab === "notifications" && (
+                  <div className="flex flex-col gap-6 animate-fade-in">
+                    <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-beige pb-3">
+                      Notifications
+                    </h3>
+                    <div className="flex flex-col gap-4">
+                      {orders.length > 0 ? (
+                        <div className="border border-brand-beige rounded-2xl p-5 bg-white shadow-sm flex gap-4 items-start hover:border-brand-orange/30 transition-colors cursor-pointer group">
+                          <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <ShoppingBag className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-brand-charcoal">Order #{orders[0].orderNumber} Update</h4>
+                            <p className="text-[0.65rem] text-muted-foreground mt-1">Your order is currently <strong>{orders[0].status}</strong>. Thank you for shopping with Mehta Dairy!</p>
+                            <span className="text-[0.55rem] text-muted-foreground/60 mt-2 block font-bold tracking-wider uppercase">Just Now</span>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="border border-brand-beige rounded-2xl p-5 bg-brand-cream/20 shadow-sm flex gap-4 items-start hover:border-brand-orange/30 transition-colors cursor-pointer group">
+                        <div className="h-10 w-10 rounded-full bg-brand-orange/10 text-brand-orange flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <Star className="h-5 w-5 fill-brand-orange/20" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-brand-charcoal">Welcome to Mehta Dairy Premium</h4>
+                          <p className="text-[0.65rem] text-muted-foreground mt-1">Explore our latest collection of luxury Indian sweets, carefully crafted since 1972.</p>
+                          <span className="text-[0.55rem] text-muted-foreground/60 mt-2 block font-bold tracking-wider uppercase">2 Days Ago</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* --- TAB 6: SECURITY --- */}
+                {activeTab === "security" && (
+                  <div className="flex flex-col gap-8 animate-fade-in">
+                    <div>
+                      <h3 className="font-serif text-2xl font-bold text-brand-charcoal mb-2">
+                        Account Security
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Manage your connected accounts and active sessions.
+                      </p>
+                    </div>
+
+                    <div className="bg-white border border-brand-beige/50 rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                      <h4 className="text-sm font-bold text-brand-charcoal mb-4 flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-emerald-600" /> Authentication Methods
+                      </h4>
+                      
+                      <div className="border border-brand-beige rounded-xl p-4 flex justify-between items-center bg-brand-cream/10">
+                        <div className="flex items-center gap-4">
+                          <img src="https://www.google.com/favicon.ico" alt="Google" className="h-8 w-8" />
+                          <div>
+                            <span className="block text-xs font-bold text-brand-charcoal">Google Account Connected</span>
+                            <span className="text-[0.65rem] text-muted-foreground">{profile?.email || "Signed in via Google"}</span>
+                          </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[0.6rem] font-bold text-emerald-600 uppercase">
+                          <Check className="h-3 w-3" /> Verified
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
 

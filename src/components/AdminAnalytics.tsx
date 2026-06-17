@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { TrendingUp, ShoppingBag, Users, IndianRupee, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import 'jspdf-autotable';
 
 interface DailyRevenue {
   label: string;
@@ -168,7 +168,7 @@ export default function AdminAnalytics() {
     });
 
     // Fix prototype autoTable call to direct function invocation
-    autoTable(doc, {
+    (doc as any).autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: 75,
