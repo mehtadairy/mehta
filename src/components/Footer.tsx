@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Send, ChevronUp } from "lucide-react";
+import { Mail, Phone, MapPin, Send, ChevronUp, Award, Heart, Droplet, ShieldCheck, Truck } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -70,6 +70,35 @@ export default function Footer() {
 
   return (
     <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden">
+      {/* TRUST STRIP */}
+      <div className="bg-white border-b border-brand-beige py-6 relative z-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-8 divide-x-0 sm:divide-x divide-brand-beige/50">
+            {[
+              { icon: Award, text: "Since 1972" },
+              { icon: Heart, text: "50+ Years Of Trust" },
+              { icon: Droplet, text: "100% Pure Ingredients" },
+              { icon: ShieldCheck, text: "Secure Payments" },
+              { icon: Truck, text: "Fast Delivery" }
+            ].map((item, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                className="flex items-center justify-center gap-3 py-2 group"
+              >
+                <div className="h-10 w-10 rounded-full bg-[#FAF6EE] border border-brand-beige flex items-center justify-center group-hover:bg-brand-orange/5 group-hover:border-brand-orange/20 transition-colors flex-shrink-0">
+                  <item.icon className="h-5 w-5 text-brand-orange" strokeWidth={1.5} />
+                </div>
+                <span className="text-xs font-bold text-brand-charcoal uppercase tracking-wider">{item.text}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Upper Footer: Cream background */}
       <motion.div
         initial="hidden"

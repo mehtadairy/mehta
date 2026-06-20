@@ -709,8 +709,20 @@ export default function Header() {
                 </div>
 
                 {searchQuery.trim().length === 0 ? (
-                  <div className="py-8 text-center text-xs font-bold text-muted-foreground/60 tracking-wider">
-                    KEEP TYPING TO SEE RESULTS...
+                  <div className="py-4">
+                    <h4 className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-widest mb-3">Popular Searches</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {["Kaju Katli", "Ghevar", "Dry Fruit Kachori", "Milk Cake", "Sugar Free", "Namkeen"].map((term) => (
+                        <button
+                          key={term}
+                          onClick={() => setSearchQuery(term)}
+                          className="px-3 py-1.5 rounded-full border border-brand-beige text-xs font-bold text-brand-charcoal hover:border-brand-orange hover:text-brand-orange hover:bg-[#FAF6EE] transition-all cursor-pointer"
+                        >
+                          <Search className="w-3 h-3 inline-block mr-1.5 opacity-50" />
+                          {term}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (() => {
                   const filtered = allProducts.filter(prod => 

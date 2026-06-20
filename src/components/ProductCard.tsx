@@ -112,17 +112,24 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Subtle glow on hover */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-b from-[#D46D2D]/4 to-transparent" />
 
-        {/* Badge */}
-        {product.popular && (
-          <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-[#D4AF37] px-2 py-0.5 text-[0.62rem] font-bold text-[#2A1E17] uppercase tracking-wider shadow-sm">
-            Best Seller
-          </span>
-        )}
-        {product.festivalSpecial && !product.popular && (
-          <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-[#D46D2D] px-2 py-0.5 text-[0.62rem] font-bold text-white uppercase tracking-wider shadow-sm animate-pulse">
-            Festive
-          </span>
-        )}
+        {/* Badges Stack */}
+        <div className="absolute left-2.5 top-2.5 z-10 flex flex-col gap-1.5 items-start">
+          {product.popular && (
+            <span className="rounded-md bg-[#D4AF37] px-2 py-0.5 text-[0.62rem] font-bold text-[#2A1E17] uppercase tracking-wider shadow-sm">
+              Best Seller
+            </span>
+          )}
+          {product.festivalSpecial && !product.popular && (
+            <span className="rounded-md bg-[#D46D2D] px-2 py-0.5 text-[0.62rem] font-bold text-white uppercase tracking-wider shadow-sm animate-pulse">
+              Festive
+            </span>
+          )}
+          {product.badges && product.badges.map((badge, idx) => (
+            <span key={idx} className="rounded-md bg-brand-charcoal px-2 py-0.5 text-[0.62rem] font-bold text-white uppercase tracking-wider shadow-sm">
+              {badge}
+            </span>
+          ))}
+        </div>
 
         {/* Wishlist */}
         <button

@@ -50,7 +50,7 @@ export default function MobileNavBar() {
   const isProfileActive = pathname.startsWith("/account") || pathname.startsWith("/admin");
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-[#e8dcc4]/60 shadow-[0_10px_30px_rgba(0,0,0,0.08)] h-16 rounded-full flex items-center justify-around md:hidden px-2">
+    <div className="fixed bottom-4 left-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-[#e8dcc4]/60 shadow-[0_10px_30px_rgba(0,0,0,0.08)] h-[60px] rounded-full flex items-center justify-around md:hidden px-2">
       {/* Home Tab */}
       <Link 
         href="/" 
@@ -120,7 +120,7 @@ export default function MobileNavBar() {
         </div>
         <span className={`text-[0.58rem] font-bold tracking-wider uppercase mt-0.5 ${
           isProfileActive ? "text-brand-orange" : "text-brand-charcoal/60"
-        }`}>Profile</span>
+        }`}>Account</span>
       </Link>
     </div>
   );

@@ -60,6 +60,7 @@ const DEFAULT_CITIES = [
 ];
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import ProductCard from "@/components/ProductCard";
 import { 
   getProfile, 
@@ -93,7 +94,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   Crown,
-  Gift
+  Gift,
+  Settings
 } from "lucide-react";
 
 const AnimatedCounter = ({ value }: { value: number }) => {
@@ -882,7 +884,7 @@ function AccountContent() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
               {/* Account Sidebar & Horizontal Mobile Navigation */}
-              <aside className="col-span-12 lg:col-span-3 flex flex-col gap-2 bg-white border border-brand-beige/50 p-4 lg:p-6 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+              <aside className="hidden lg:flex col-span-12 lg:col-span-3 flex-col gap-2 bg-white border border-brand-beige/50 p-4 lg:p-6 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange to-brand-gold"></div>
                 
                 <div className="hidden lg:flex items-center gap-4 border-b border-brand-beige/50 pb-5 mb-4 mt-2">
@@ -905,7 +907,7 @@ function AccountContent() {
                 <nav className="flex flex-row lg:flex-col gap-2 lg:gap-1.5 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-none w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                    { id: 'profile', label: 'Profile', icon: User },
+                    { id: 'settings', label: 'Settings', icon: Settings },
                     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: orders.length },
                     { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
                     { id: 'wishlist', label: 'Wishlist', icon: Heart, count: wishlistItems.length },
@@ -962,7 +964,17 @@ function AccountContent() {
               </aside>
 
               {/* Main Content Pane */}
-              <main className="col-span-12 lg:col-span-9 bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 shadow-xs min-h-[400px]">
+              <main className="col-span-12 lg:col-span-9 bg-white lg:border lg:border-brand-beige lg:rounded-2xl lg:p-8 lg:shadow-xs min-h-[400px] pb-24 lg:pb-8">
+                
+                {/* Universal Mobile Back Button for Sub-Views */}
+                {activeTab !== "dashboard" && (
+                  <button 
+                    onClick={() => setActiveTab("dashboard")} 
+                    className="flex lg:hidden items-center gap-1.5 text-xs font-bold text-brand-orange hover:text-brand-orange-hover mb-6 px-1"
+                  >
+                    <ChevronRight className="w-4 h-4 rotate-180" /> Back to Account
+                  </button>
+                )}
                 
                 {/* Missing Phone Number Alert */}
                 {isLoggedIn && profile && !profile.phone && (
@@ -979,12 +991,14 @@ function AccountContent() {
 
                 {/* --- TAB 0: DASHBOARD --- */}
                 {activeTab === "dashboard" && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="flex flex-col gap-8"
-                  >
+                  <>
+                    {/* DESKTOP VIEW */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="hidden lg:flex flex-col gap-8"
+                    >
                     <div className="bg-gradient-to-r from-brand-cream/60 to-transparent p-6 rounded-2xl border border-brand-beige/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div>
                         <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
@@ -1083,10 +1097,111 @@ function AccountContent() {
                       </div>
                     </div>
                   </motion.div>
+
+                  {/* MOBILE VIEW - NEW ACCOUNT DESIGN */}
+                  <div className="flex lg:hidden flex-col gap-6 w-full max-w-md mx-auto animate-fade-in-up pb-8">
+                    {/* Profile Header Card */}
+                    <div className="bg-[#FAF6EE] rounded-[20px] p-5 flex flex-col justify-center shadow-sm relative overflow-hidden min-h-[90px]">
+                      <div className="absolute top-0 right-0 p-3 opacity-10">
+                        <Crown className="w-24 h-24" />
+                      </div>
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-white shadow-md relative bg-brand-cream flex items-center justify-center text-brand-charcoal text-xl font-black shrink-0">
+                          {profileAvatar ? (
+                            <img src={profileAvatar} alt="Profile Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            profile?.name ? profile.name[0].toUpperCase() : "U"
+                          )}
+                        </div>
+                        <div>
+                          {profile?.name ? (
+                            <>
+                              <h3 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">{profile.name}</h3>
+                              <span className="text-[0.65rem] text-[#D97706] font-bold block truncate max-w-[200px] mb-1">{profile.email || profile.phone}</span>
+                              <span className="text-[0.6rem] text-muted-foreground/80 font-bold uppercase tracking-wider block">Member Since {new Date().getFullYear()}</span>
+                            </>
+                          ) : (
+                            <>
+                              <h3 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">Guest User</h3>
+                              <span className="text-[0.65rem] text-[#D97706] font-bold block mb-1">Welcome to Mehta Dairy</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => setActiveTab("orders")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
+                        <ShoppingBag className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold text-[#4A2F1F]">My Orders</span>
+                      </button>
+                      <button onClick={() => setActiveTab("addresses")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
+                        <MapPin className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold text-[#4A2F1F]">Addresses</span>
+                      </button>
+                      <button onClick={() => setActiveTab("wishlist")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
+                        <Heart className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold text-[#4A2F1F]">Wishlist</span>
+                      </button>
+                      <Link href="/contact" className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
+                        <Phone className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold text-[#4A2F1F]">Support</span>
+                      </Link>
+                    </div>
+
+                    {/* Account Section List */}
+                    <div className="bg-white border border-[#EAE0D3] rounded-[20px] overflow-hidden shadow-sm flex flex-col mt-2">
+                      <button onClick={() => setActiveTab("settings")} className="flex items-center gap-3 p-4 border-b border-[#EAE0D3]/60 active:bg-[#FAF6EE] transition-colors text-left">
+                        <div className="w-8 h-8 rounded-full bg-[#FAF6EE] flex items-center justify-center text-[#4A2F1F]"><Settings className="w-4 h-4" /></div>
+                        <span className="text-sm font-bold text-[#4A2F1F] flex-grow">Account Settings</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/60" />
+                      </button>
+                      <button onClick={() => {
+                          if (window.confirm("Are you sure you want to log out?")) {
+                            handleLogout();
+                          }
+                        }} className="flex items-center gap-3 p-4 active:bg-red-50 transition-colors text-left text-red-600">
+                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600"><LogOut className="w-4 h-4" /></div>
+                        <span className="text-sm font-bold flex-grow">Logout</span>
+                        <ChevronRight className="w-4 h-4 text-red-300" />
+                      </button>
+                    </div>
+
+                    {/* Recent Orders Snippet */}
+                    <div className="mt-4">
+                      <div className="flex justify-between items-center mb-4 px-1">
+                        <h3 className="font-serif text-lg font-bold text-[#4A2F1F]">Recent Orders</h3>
+                        <button onClick={() => setActiveTab("orders")} className="text-xs text-[#D97706] font-bold">View All</button>
+                      </div>
+                      {orders.length > 0 ? (
+                        <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-none pl-1 pr-4">
+                          {orders.slice(0, 3).map(o => (
+                            <div key={o.id} onClick={() => setActiveTab("orders")} className="bg-white border border-[#EAE0D3] rounded-2xl p-4 flex-shrink-0 w-64 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-xs font-bold text-[#4A2F1F]">Order #{o.orderNumber}</span>
+                                <span className={`text-[0.65rem] font-bold uppercase px-2 py-0.5 rounded-full ${o.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                  {o.status}
+                                </span>
+                              </div>
+                              <span className="text-[0.65rem] text-muted-foreground block mb-2">{o.date} • {o.items.length} items</span>
+                              <span className="text-sm font-bold text-[#D97706]">₹{o.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 bg-white border border-[#EAE0D3] rounded-2xl">
+                          <p className="text-xs text-muted-foreground">No recent orders found.</p>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </>
                 )}
 
-                {/* --- TAB 1: PROFILE DETAILS --- */}
-                {activeTab === "profile" && (
+                {/* --- TAB 1: SETTINGS DETAILS --- */}
+                {activeTab === "settings" && (
                   <motion.div 
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1232,10 +1347,19 @@ function AccountContent() {
                     </h3>
 
                     {orders.length === 0 ? (
-                      <div className="text-center py-12">
-                        <ShoppingBag className="h-12 w-12 text-brand-beige mb-3 mx-auto" />
-                        <p className="text-xs text-muted-foreground">You haven't placed any orders yet.</p>
-                        <Link href="/shop" className="mt-4 inline-flex rounded-lg bg-brand-orange px-5 py-2 text-xs font-bold text-white hover:bg-brand-orange-hover transition-all">Shop Sweets</Link>
+                      <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white border border-[#EAE0D3] rounded-3xl shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-brand-orange/5 rounded-full blur-3xl" />
+                        
+                        <div className="w-20 h-20 bg-[#FAF6EE] rounded-full flex items-center justify-center mb-5 shadow-inner border border-[#EAE0D3]">
+                          <ShoppingBag className="h-8 w-8 text-brand-orange" />
+                        </div>
+                        <h4 className="font-serif text-xl font-bold text-brand-charcoal">No Orders Yet</h4>
+                        <p className="text-sm text-muted-foreground mt-2 mb-6 max-w-xs">
+                          You haven't placed any orders yet. Discover our premium sweets and make your first order!
+                        </p>
+                        <Link href="/shop" className="inline-flex items-center justify-center rounded-xl bg-brand-charcoal px-6 py-3 text-sm font-bold text-white hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-md">
+                          Explore Sweets
+                        </Link>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-6">
@@ -1243,32 +1367,34 @@ function AccountContent() {
                           const isExpanded = expandedOrderId === order.id;
                           return (
                             <div key={order.id} className="border border-brand-beige rounded-xl overflow-hidden shadow-xs bg-white">
-                              {/* Order mini banner */}
-                              <div 
-                                onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                                className="bg-brand-cream/40 p-4 border-b border-brand-beige flex flex-wrap gap-4 justify-between items-center text-xs text-brand-charcoal font-semibold cursor-pointer hover:bg-brand-cream/70 transition-colors select-none"
-                              >
-                                <div className="flex gap-4">
+                              {/* Order Card Header (Mobile Optimized) */}
+                              <div className="bg-white p-5 border-b border-[#EAE0D3] flex flex-col gap-3 relative">
+                                <div className="flex justify-between items-start">
                                   <div>
-                                    <span className="text-[0.62rem] text-muted-foreground block font-bold">ORDER PLACED</span>
-                                    <span>{order.date}</span>
+                                    <h4 className="font-serif text-base font-bold text-[#4A2F1F] leading-tight max-w-[200px] truncate">
+                                      {order.items.length > 0 ? order.items[0].productName : "Mehta Dairy Order"}
+                                      {order.items.length > 1 ? ` +${order.items.length - 1} items` : ""}
+                                    </h4>
+                                    <span className="text-[0.65rem] text-muted-foreground font-bold">Order #{order.orderNumber}</span>
                                   </div>
-                                  <div>
-                                    <span className="text-[0.62rem] text-muted-foreground block font-bold">TOTAL VALUE</span>
-                                    <span>₹{order.total}</span>
-                                  </div>
+                                  <span className={`text-[0.6rem] font-bold uppercase px-2.5 py-1 rounded-md tracking-wide ${
+                                    order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                                    order.status === 'Processing' ? 'bg-orange-100 text-orange-700' :
+                                    order.status === 'Shipped' ? 'bg-blue-100 text-blue-700' :
+                                    order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    Status: {order.status}
+                                  </span>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                  <div className="text-right">
-                                    <span className="text-[0.62rem] text-muted-foreground block font-bold">ORDER ID</span>
-                                    <span>{order.orderNumber}</span>
-                                  </div>
-                                  <motion.div
-                                    animate={{ rotate: isExpanded ? 90 : 0 }}
-                                    transition={{ duration: 0.2 }}
+                                <div className="flex justify-between items-center mt-2">
+                                  <span className="text-lg font-black text-[#D97706]">₹{order.total}</span>
+                                  <button 
+                                    onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                    className="bg-white border border-[#EAE0D3] text-[#4A2F1F] hover:bg-[#FAF6EE] text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm active:scale-95"
                                   >
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  </motion.div>
+                                    {isExpanded ? "Hide Details" : "View Details"}
+                                  </button>
                                 </div>
                               </div>
 
@@ -1635,36 +1761,63 @@ function AccountContent() {
                     {!profile?.saved_addresses || profile.saved_addresses.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-6">No saved addresses found. Please add a billing/shipping address.</p>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-20 lg:pb-0">
                         {profile?.saved_addresses?.map((addr: any) => (
-                          <div key={addr.id} className="rounded-xl border border-brand-beige p-4 flex justify-between items-start bg-brand-cream/10">
-                            <div>
-                              <h4 className="font-serif text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
-                                {addr.name}
-                                {addr.isDefault && (
-                                  <span className="text-[0.55rem] font-bold uppercase tracking-wider bg-brand-beige px-1.5 py-0.5 rounded text-brand-gold">Default</span>
-                                )}
-                              </h4>
-                              <p className="text-[0.7rem] text-muted-foreground mt-2 leading-relaxed">
-                                {addr.street},<br />
-                                {addr.landmark ? `Landmark: ${addr.landmark}, ` : ''}
-                                {addr.city}, {addr.state} - {addr.pincode}
+                          <div key={addr.id} className="rounded-2xl border border-[#EAE0D3] p-5 flex flex-col gap-3 bg-white shadow-sm relative">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-[#D97706]" />
+                                <span className="text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">{addr.isDefault ? 'Home' : 'Other'}</span>
+                              </div>
+                              {addr.isDefault && (
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <h4 className="font-serif text-base font-bold text-[#4A2F1F]">{addr.name}</h4>
+                              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                                {addr.street}{addr.landmark ? `, ${addr.landmark}` : ''}<br />
+                                {addr.city}, {addr.state} {addr.pincode}
                               </p>
-                              <span className="text-[0.7rem] text-brand-charcoal font-semibold mt-2 block">
-                                📞 {addr.phone}
+                              <span className="text-sm font-bold text-[#D97706] mt-2 block">
+                                {addr.phone}
                               </span>
                             </div>
-                            
-                            <button 
-                              onClick={() => handleDeleteAddress(addr.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors p-1"
-                              aria-label="Delete Address"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex gap-3 border-t border-[#EAE0D3] pt-3 mt-1">
+                              <button 
+                                onClick={() => handleDeleteAddress(addr.id) /* Note: Edit functionality can be added later */}
+                                className="text-xs font-bold text-[#4A2F1F] hover:text-[#D97706] transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <span className="text-[#EAE0D3]">|</span>
+                              <button 
+                                onClick={() => handleDeleteAddress(addr.id)}
+                                className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
+                    )}
+
+                    {/* Floating Add Address Button (Mobile) */}
+                    {!showAddressForm && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="fixed bottom-[4.5rem] left-0 right-0 p-4 flex justify-center pointer-events-none lg:hidden z-30"
+                      >
+                        <button 
+                          onClick={handleOpenAddressForm}
+                          className="pointer-events-auto flex items-center justify-center gap-2 bg-[#4A2F1F] text-white rounded-full px-6 py-3.5 shadow-lg active:scale-95 transition-transform"
+                        >
+                          <Plus className="w-5 h-5" />
+                          <span className="text-sm font-bold tracking-wide">Add Address</span>
+                        </button>
+                      </motion.div>
                     )}
                   </div>
                 )}
@@ -1677,10 +1830,19 @@ function AccountContent() {
                     </h3>
 
                     {wishlistItems.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Heart className="h-12 w-12 text-brand-beige mb-3 mx-auto" />
-                        <p className="text-xs text-muted-foreground">Your wishlist is currently empty.</p>
-                        <Link href="/shop" className="mt-4 inline-flex rounded-lg bg-brand-orange px-5 py-2 text-xs font-bold text-white hover:bg-brand-orange-hover transition-all">Start Adding Items</Link>
+                      <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white border border-[#EAE0D3] rounded-3xl shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-48 h-48 bg-brand-gold/5 rounded-full blur-3xl" />
+                        
+                        <div className="w-20 h-20 bg-[#FAF6EE] rounded-full flex items-center justify-center mb-5 shadow-inner border border-[#EAE0D3]">
+                          <Heart className="h-8 w-8 text-brand-orange" />
+                        </div>
+                        <h4 className="font-serif text-xl font-bold text-brand-charcoal">Wishlist is Empty</h4>
+                        <p className="text-sm text-muted-foreground mt-2 mb-6 max-w-xs">
+                          Save your favorite sweets here to order them later.
+                        </p>
+                        <Link href="/shop" className="inline-flex items-center justify-center rounded-xl bg-brand-charcoal px-6 py-3 text-sm font-bold text-white hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-md">
+                          Discover Best Sellers
+                        </Link>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

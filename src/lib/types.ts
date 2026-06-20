@@ -17,6 +17,7 @@ export interface Product {
   allergens?: string[];
   dietaryTags?: string[];
   highlights?: string[];
+  badges?: string[];
 }
 
 export interface Category {

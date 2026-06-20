@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, Send, MessageSquare, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -294,15 +295,10 @@ export default function Contact() {
               </div>
 
               {/* WhatsApp instant CTA */}
-              <motion.button
-                whileHover={{ scale: 1.02, boxShadow: "0 8px 30px rgba(37,211,102,0.25)" }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleWhatsApp}
-                className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#1EBE57] text-white font-bold text-sm rounded-2xl py-4 shadow-md transition-colors cursor-pointer"
-              >
-                <MessageSquare className="h-5 w-5 fill-white" />
-                Chat Instantly on WhatsApp
-              </motion.button>
+              <WhatsAppOrderBtn 
+                messagePrefix="Hello Mehta Dairy, I have a general inquiry."
+                className="w-full text-sm py-4 rounded-2xl shadow-md"
+              />
 
               {/* Map embed placeholder */}
               <motion.div

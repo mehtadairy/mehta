@@ -6,8 +6,19 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { getCoupons, Coupon } from "@/lib/types";
-import { ShoppingBasket, Trash2, Plus, Minus, ArrowLeft, ArrowRight, Tag } from "lucide-react";
+import { 
+  ShoppingBasket, 
+  Trash2, 
+  Plus, 
+  Minus, 
+  ArrowLeft, 
+  ArrowRight, 
+  Tag, 
+  ShoppingBag, 
+  CreditCard 
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Cart() {
@@ -72,18 +83,25 @@ export default function Cart() {
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-brand-beige rounded-2xl p-8 max-w-md mx-auto">
-              <ShoppingBasket className="h-16 w-16 text-brand-beige mb-4" />
-              <h3 className="font-serif text-lg font-bold text-brand-charcoal">Your Cart is Empty</h3>
-              <p className="text-xs text-muted-foreground mt-2 max-w-xs">
-                Looks like you haven't added any sweet delicacies or savory farsan to your basket yet.
-              </p>
-              <Link 
-                href="/shop"
-                className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-orange px-6 py-3 min-h-[44px] text-xs font-bold text-white transition-colors hover:bg-brand-orange-hover shadow-sm"
-              >
-                Go to Shop Catalog
-              </Link>
+            <div className="flex flex-col items-center justify-center py-24 text-center bg-white border border-[#EAE0D3] rounded-3xl p-8 max-w-lg mx-auto shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-brand-orange/5 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-gold/5 rounded-full blur-3xl" />
+              
+              <div className="relative z-10">
+                <div className="w-24 h-24 bg-[#FAF6EE] rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-[#EAE0D3]">
+                  <ShoppingBag className="h-10 w-10 text-brand-orange" />
+                </div>
+                <h3 className="font-serif text-2xl font-bold text-brand-charcoal">Your Cart is Empty</h3>
+                <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto leading-relaxed">
+                  Looks like you haven't added any sweet delicacies or savory farsan to your basket yet.
+                </p>
+                <Link 
+                  href="/shop"
+                  className="mt-8 inline-flex items-center justify-center rounded-xl bg-brand-charcoal px-8 py-4 min-h-[44px] text-sm font-bold text-white transition-all hover:bg-black hover:scale-105 active:scale-95 shadow-md"
+                >
+                  Explore Our Best Sellers
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -214,6 +232,17 @@ export default function Cart() {
                   >
                     Proceed to Payment <ArrowRight className="ml-1.5 h-4.5 w-4.5" />
                   </button>
+
+                  <div className="relative flex items-center my-1">
+                    <div className="flex-grow h-px bg-brand-beige"></div>
+                    <span className="flex-shrink-0 mx-3 text-[0.62rem] font-bold text-muted-foreground uppercase tracking-wider">or</span>
+                    <div className="flex-grow h-px bg-brand-beige"></div>
+                  </div>
+
+                  <WhatsAppOrderBtn 
+                    messagePrefix={`Hello Mehta Dairy,\n\nI want to place an order for the items in my cart.\nCart Total: ₹${totalPayable}`}
+                    className="w-full text-sm py-3.5"
+                  />
                 </div>
 
               </div>

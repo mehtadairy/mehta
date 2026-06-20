@@ -6,6 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { Product } from "@/lib/types";
 import { fetchProducts } from "@/lib/supabaseClient";
 import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart, Eye } from "lucide-react";
@@ -415,6 +416,25 @@ export default function ProductDetails() {
                 <span className="text-[0.68rem] font-bold text-brand-gold uppercase tracking-widest mb-1.5 block">
                   {product.category === "milk-sweets" ? "Sweets of Pure Milk" : product.category === "ghee-sweets" ? "Sweets of Pure Ghee" : "Tasty & Chat-Patta Farsan"}
                 </span>
+                
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {product.popular && (
+                    <span className="rounded-md bg-brand-gold px-2 py-0.5 text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider shadow-sm">
+                      Best Seller
+                    </span>
+                  )}
+                  {product.festivalSpecial && (
+                    <span className="rounded-md bg-brand-orange px-2 py-0.5 text-[0.65rem] font-bold text-white uppercase tracking-wider shadow-sm">
+                      Festive Special
+                    </span>
+                  )}
+                  {product.badges && product.badges.map((badge, idx) => (
+                    <span key={idx} className="rounded-md bg-brand-charcoal px-2 py-0.5 text-[0.65rem] font-bold text-white uppercase tracking-wider shadow-sm">
+                      {badge}
+                    </span>
+                  ))}
+                </div>
                 <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
                   {product.name}
                 </h2>
@@ -530,6 +550,19 @@ export default function ProductDetails() {
                 >
                   Buy Now
                 </motion.button>
+
+                {/* WHATSAPP INQUIRY */}
+                <div className="relative flex items-center my-1">
+                  <div className="flex-grow h-px bg-brand-beige"></div>
+                  <span className="flex-shrink-0 mx-3 text-[0.62rem] font-bold text-muted-foreground uppercase tracking-wider">or</span>
+                  <div className="flex-grow h-px bg-brand-beige"></div>
+                </div>
+
+                <WhatsAppOrderBtn 
+                  productName={product.name}
+                  quantity={quantity}
+                  className="w-full text-xs py-3.5"
+                />
 
               </div>
 

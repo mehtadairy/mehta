@@ -116,6 +116,8 @@ export default function AdminPanel() {
   const [prodDietaryTags, setProdDietaryTags] = useState<string[]>([]);
   const [prodHighlights, setProdHighlights] = useState<string[]>([]);
   const [newHighlight, setNewHighlight] = useState("");
+  const [prodBadges, setProdBadges] = useState<string[]>([]);
+  const [newBadge, setNewBadge] = useState("");
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   const handleGenerateAiDescription = async () => {
@@ -313,9 +315,9 @@ export default function AdminPanel() {
           ingredientIds: prodIngredients,
           shelfLife: Number(prodShelfLife) || 12,
           storageInstructions: prodStorageInstructions,
-          allergens: prodAllergens,
           dietaryTags: prodDietaryTags,
-          highlights: prodHighlights
+          highlights: prodHighlights,
+          badges: prodBadges
         } : p));
         setEditingProduct(null);
       } else {
@@ -338,7 +340,8 @@ export default function AdminPanel() {
         storage_instructions: prodStorageInstructions,
         allergens: prodAllergens,
         dietary_tags: prodDietaryTags,
-        highlights: prodHighlights
+        highlights: prodHighlights,
+        badges: prodBadges
       }]).select();
 
       if (!error && data) {
@@ -366,7 +369,8 @@ export default function AdminPanel() {
           storageInstructions: newP.storage_instructions,
           allergens: newP.allergens || [],
           dietaryTags: newP.dietary_tags || [],
-          highlights: newP.highlights || []
+          highlights: newP.highlights || [],
+          badges: newP.badges || []
         };
         setProducts([newProd, ...products]);
       } else {
@@ -390,6 +394,8 @@ export default function AdminPanel() {
     setProdDietaryTags([]);
     setProdHighlights([]);
     setNewHighlight("");
+    setProdBadges([]);
+    setNewBadge("");
     setShowProductForm(false);
   };
 
@@ -411,6 +417,7 @@ export default function AdminPanel() {
     setProdAllergens(product.allergens || []);
     setProdDietaryTags(product.dietaryTags || []);
     setProdHighlights(product.highlights || []);
+    setProdBadges(product.badges || []);
     setShowProductForm(true);
   };
 
@@ -1094,6 +1101,48 @@ export default function AdminPanel() {
                                   type="button"
                                   onClick={() => setProdHighlights(prodHighlights.filter((_, i) => i !== idx))}
                                   className="text-red-500 hover:text-red-700 font-bold"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Badges */}
+                      <div className="flex flex-col gap-1.5 border-t border-brand-beige pt-4">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Custom Product Badges</label>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Add custom badge (e.g. Sugar Free)..." 
+                            value={newBadge}
+                            onChange={(e) => setNewBadge(e.target.value)}
+                            className="border border-brand-beige rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none flex-grow"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (newBadge.trim()) {
+                                setProdBadges([...prodBadges, newBadge.trim()]);
+                                setNewBadge("");
+                              }
+                            }}
+                            className="bg-brand-charcoal text-white px-3 py-1.5 text-xs font-bold rounded-lg hover:bg-black"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        {prodBadges.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {prodBadges.map((badge, idx) => (
+                              <span key={idx} className="bg-brand-charcoal text-white border border-brand-charcoal rounded-md px-2 py-1 text-[0.65rem] font-semibold flex items-center gap-1 shadow-sm">
+                                {badge}
+                                <button
+                                  type="button"
+                                  onClick={() => setProdBadges(prodBadges.filter((_, i) => i !== idx))}
+                                  className="text-red-300 hover:text-red-100 font-bold ml-1"
                                 >
                                   ×
                                 </button>
