@@ -61,8 +61,8 @@ export function generateInvoicePDF(order: any): jsPDF {
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
   doc.text("GSTIN: 24AAAAM5252M1Z9", pageWidth - margin, 24, { align: "right" });
-  doc.text("Stadium Road Outlet, Navrangpura", pageWidth - margin, 28, { align: "right" });
-  doc.text("Ahmedabad, Gujarat - 380009", pageWidth - margin, 32, { align: "right" });
+  doc.text("Near Bhidbhanjan Mahadev Mandir, Taleti Road, Navagadh", pageWidth - margin, 28, { align: "right" });
+  doc.text("Palitana, Gujarat - 364270", pageWidth - margin, 32, { align: "right" });
   doc.text("Contact: +91 99132 52232", pageWidth - margin, 36, { align: "right" });
 
   // Horizontal separator
@@ -156,7 +156,7 @@ export function generateInvoicePDF(order: any): jsPDF {
   doc.setFontSize(8.5);
   doc.setFont("Helvetica", "normal");
   doc.setTextColor(80, 80, 80);
-  
+
   doc.text("Subtotal:", summaryX, finalY);
   doc.text(`Rs ${subtotal.toFixed(2)}`, pageWidth - margin, finalY, { align: "right" });
 
@@ -185,7 +185,7 @@ export function generateInvoicePDF(order: any): jsPDF {
   doc.setFont("Helvetica", "bold");
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
   doc.text("PAYMENT DETAILS", margin, detailsY);
-  
+
   doc.setFont("Helvetica", "normal");
   doc.setTextColor(80, 80, 80);
   doc.text(`Method: ${order.payment_method || "Online"}`, margin, detailsY + 6);
@@ -376,7 +376,7 @@ export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBuff
       const { data: downloadData, error: downloadError } = await supabase.storage
         .from("invoices")
         .download(fileName);
-      
+
       if (downloadError || !downloadData) {
         throw new Error(`Failed to download PDF invoice from storage: ${downloadError?.message || "No data"}`);
       }
@@ -452,7 +452,7 @@ export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBuff
     logData.email_sent = false;
     logData.email_status = "failed";
     logData.error_message = err.message || "Unknown error";
-    
+
     // Log failure log in DB
     try {
       await supabase.from("invoice_email_logs").insert([logData]);
@@ -483,9 +483,9 @@ export async function retryFailedInvoices(): Promise<number> {
 
     for (const log of failedLogs) {
       console.log(`Retrying invoice email for log ${log.id}, attempt ${log.retry_count + 1}...`);
-      
+
       const success = await sendInvoiceEmail(log.invoice_id, log.customer_email);
-      
+
       // Update retry_count on the log
       await supabase
         .from("invoice_email_logs")

@@ -351,7 +351,7 @@ export default function ProductDetails() {
       </div>
 
       {/* --- PRODUCT PROFILE DETAILS --- */}
-      <section className="py-12 bg-white">
+      <section className="py-6 sm:py-12 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-start">
             
@@ -366,7 +366,7 @@ export default function ProductDetails() {
                 onMouseEnter={() => setIsZooming(true)}
                 onMouseLeave={() => { setIsZooming(false); setZoomStyle({ transformOrigin: "center" }); }}
                 onMouseMove={handleMouseMove}
-                className="aspect-square w-full rounded-full border border-brand-beige overflow-hidden bg-brand-cream shadow-xs p-8 flex items-center justify-center relative group cursor-zoom-in"
+                className="aspect-square w-full max-w-[450px] mx-auto rounded-full border border-brand-beige overflow-hidden bg-brand-cream shadow-xs p-6 sm:p-8 flex items-center justify-center relative group cursor-zoom-in"
               >
                 <AnimatePresence mode="wait">
                   <motion.img 
@@ -805,7 +805,7 @@ export default function ProductDetails() {
                 hidden: { opacity: 0 },
                 show: { opacity: 1, transition: { staggerChildren: 0.08 } }
               }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 justify-items-center"
             >
               {relatedProducts.map((p) => (
                 <motion.div 

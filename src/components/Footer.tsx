@@ -108,6 +108,7 @@ export default function Footer() {
                 { href: "/about", label: "About Us" },
                 { href: "/blogs", label: "Blogs" },
                 { href: "/contact", label: "Contact Us" },
+                { href: "/faq", label: "FAQ" },
               ].map((link, i) => (
                 <motion.li
                   key={link.href}
@@ -171,7 +172,7 @@ export default function Footer() {
                 rel="noreferrer"
                 className="leading-relaxed hover:text-brand-orange transition-colors"
               >
-                Near Stadium Circle, Off CG Road, Navrangpura, Ahmedabad-380009, Gujarat, India.
+                Bhidbhanjan Road, Taleti Road, Navagadh, Palitana, Gujarat 364270
               </a>
               <div>
                 <span className="block font-bold text-brand-charcoal text-[0.7rem] uppercase mt-1">Customer Care</span>

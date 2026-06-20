@@ -80,7 +80,7 @@ export default function Cart() {
               </p>
               <Link 
                 href="/shop"
-                className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-orange px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-orange-hover shadow-sm"
+                className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-orange px-6 py-3 min-h-[44px] text-xs font-bold text-white transition-colors hover:bg-brand-orange-hover shadow-sm"
               >
                 Go to Shop Catalog
               </Link>
@@ -99,54 +99,55 @@ export default function Cart() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -150 }}
                       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                      className="bg-white rounded-2xl border border-brand-beige p-5 flex flex-col sm:flex-row items-center gap-5 shadow-xs"
+                      className="bg-white rounded-2xl border border-brand-beige p-4 sm:p-5 flex flex-row items-start gap-4 shadow-xs relative"
                     >
                       <img 
                         src={item.image} 
                         alt={item.productName} 
-                        className="h-20 w-20 rounded-xl object-cover bg-brand-cream border border-brand-beige flex-shrink-0"
+                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-cover bg-brand-cream border border-brand-beige flex-shrink-0"
                       />
                       
-                      <div className="flex-grow text-center sm:text-left">
+                      <div className="flex-grow flex flex-col justify-start">
                         <Link href={`/product/${item.productId}`}>
-                          <h4 className="font-serif text-base font-bold text-brand-charcoal hover:text-brand-orange transition-colors">
+                          <h4 className="font-serif text-sm sm:text-base font-bold text-brand-charcoal hover:text-brand-orange transition-colors pr-8">
                             {item.productName}
                           </h4>
                         </Link>
-                        <span className="text-[0.7rem] font-bold text-brand-gold uppercase tracking-wider block mt-1.5 mb-3">
+                        <span className="text-[0.65rem] font-bold text-brand-gold uppercase tracking-wider block mt-1 mb-2.5">
                           {item.weight} • ₹{item.price} each
                         </span>
 
-                        <div className="flex items-center justify-center sm:justify-start gap-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-start gap-3 sm:gap-6 mt-auto">
                           {/* Quantity Counter */}
-                          <div className="flex items-center border border-brand-beige rounded-lg overflow-hidden bg-brand-cream h-8.5">
+                          <div className="flex items-center border border-brand-beige rounded-lg overflow-hidden bg-brand-cream h-10 sm:h-11 w-max">
                             <button 
                               onClick={() => updateQuantity(item.productId, item.weight, -1)}
-                              className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
+                              className="p-1 px-4 hover:bg-brand-beige text-brand-charcoal transition-colors h-full flex items-center justify-center"
                             >
-                              <Minus className="h-3.5 w-3.5" />
+                              <Minus className="h-4 w-4" />
                             </button>
                             <span className="px-3 text-xs font-bold">{item.quantity}</span>
                             <button 
                               onClick={() => updateQuantity(item.productId, item.weight, 1)}
-                              className="p-1 px-3 hover:bg-brand-beige text-brand-charcoal transition-colors h-full"
+                              className="p-1 px-4 hover:bg-brand-beige text-brand-charcoal transition-colors h-full flex items-center justify-center"
                             >
-                              <Plus className="h-3.5 w-3.5" />
+                              <Plus className="h-4 w-4" />
                             </button>
                           </div>
 
                           {/* Remove item button */}
                           <button 
                             onClick={() => removeItem(item.productId, item.weight)}
-                            className="text-red-500 hover:text-red-700 flex items-center gap-1 text-xs font-semibold hover:underline"
+                            className="absolute top-3 right-3 sm:static text-red-500 hover:text-red-700 flex items-center justify-center p-2 rounded-full hover:bg-red-50 transition-colors"
+                            aria-label="Remove item"
                           >
-                            <Trash2 className="h-4 w-4" /> Remove
+                            <Trash2 className="h-4.5 w-4.5" /> <span className="hidden sm:inline ml-1 text-xs font-semibold">Remove</span>
                           </button>
                         </div>
                       </div>
 
                       {/* Dynamic line item total */}
-                      <div className="font-serif font-bold text-lg text-brand-charcoal min-w-[80px] text-center sm:text-right border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto">
+                      <div className="font-serif font-bold text-base sm:text-lg text-brand-charcoal absolute bottom-4 right-4 sm:static sm:min-w-[80px] sm:text-right w-auto">
                         ₹{item.price * item.quantity}
                       </div>
                     </motion.div>

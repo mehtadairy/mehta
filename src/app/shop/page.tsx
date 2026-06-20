@@ -321,7 +321,7 @@ function ShopContent() {
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row gap-3 items-center justify-between border border-brand-beige rounded-xl p-3.5 bg-white shadow-2xs">
                 {/* Search bar */}
-                <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/20 px-3 py-2 focus-within:border-brand-orange focus-within:bg-white transition-all">
+                <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-brand-cream/20 px-3 py-2.5 focus-within:border-brand-orange focus-within:bg-white transition-all">
                   <Search className="h-4.5 w-4.5 text-muted-foreground mr-2" />
                   <input 
                     type="text" 
@@ -336,7 +336,7 @@ function ShopContent() {
                   {/* Mobile filter button */}
                   <button 
                     onClick={() => setShowFiltersMobile(true)}
-                    className="lg:hidden flex items-center gap-1.5 border border-brand-beige rounded-lg px-3.5 py-2 text-xs font-semibold hover:bg-brand-cream transition-colors text-brand-charcoal"
+                    className="lg:hidden flex items-center gap-1.5 border border-brand-beige rounded-lg px-4 py-2.5 text-xs font-semibold hover:bg-brand-cream transition-colors text-brand-charcoal"
                   >
                     <SlidersHorizontal className="h-4 w-4" /> Filters
                   </button>
@@ -347,7 +347,7 @@ function ShopContent() {
                     <select 
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="border-none outline-none text-xs font-semibold py-2 pr-6 pl-1 bg-white text-brand-charcoal cursor-pointer"
+                      className="border-none outline-none text-xs font-semibold py-2.5 pr-6 pl-1 bg-white text-brand-charcoal cursor-pointer"
                     >
                       <option value="relevance">Relevance</option>
                       <option value="popular">Best Sellers</option>
@@ -423,7 +423,7 @@ function ShopContent() {
                   <button 
                     disabled={currentPage === 1}
                     onClick={() => handlePageChange(currentPage - 1)}
-                    className="px-3 py-1.5 rounded-lg border border-brand-beige hover:border-brand-gold text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white text-brand-charcoal transition-all"
+                    className="px-4 py-2.5 rounded-lg border border-brand-beige hover:border-brand-gold text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white text-brand-charcoal transition-all"
                   >
                     Prev
                   </button>
@@ -431,7 +431,7 @@ function ShopContent() {
                     <button 
                       key={i}
                       onClick={() => handlePageChange(i + 1)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-all border ${currentPage === i + 1 ? "bg-brand-orange border-brand-orange text-white" : "border-brand-beige hover:border-brand-gold bg-white text-brand-charcoal hover:bg-brand-cream"}`}
+                      className={`min-w-[44px] h-11 rounded-lg text-xs font-bold transition-all border ${currentPage === i + 1 ? "bg-brand-orange border-brand-orange text-white" : "border-brand-beige hover:border-brand-gold bg-white text-brand-charcoal hover:bg-brand-cream"}`}
                     >
                       {i + 1}
                     </button>
@@ -439,7 +439,7 @@ function ShopContent() {
                   <button 
                     disabled={currentPage === totalPages}
                     onClick={() => handlePageChange(currentPage + 1)}
-                    className="px-3 py-1.5 rounded-lg border border-brand-beige hover:border-brand-gold text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white text-brand-charcoal transition-all"
+                    className="px-4 py-2.5 rounded-lg border border-brand-beige hover:border-brand-gold text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white text-brand-charcoal transition-all"
                   >
                     Next
                   </button>

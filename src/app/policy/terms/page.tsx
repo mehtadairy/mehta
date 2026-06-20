@@ -15,8 +15,8 @@ export default function TermsAndConditions() {
 
       <main className="bg-brand-cream/35 min-h-screen py-24 mt-20 sm:mt-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -37,7 +37,7 @@ export default function TermsAndConditions() {
             </div>
 
             <div className="prose prose-sm sm:prose-base max-w-none text-brand-charcoal/90 leading-relaxed flex flex-col gap-6">
-              
+
               <p className="text-xs text-muted-foreground">
                 Welcome to Mehta Sweet Mart online checkout catalog. By visiting our portal, placing an order, or checking out with our payment gateway, you agree to comply with the terms and conditions outlined below.
               </p>
@@ -96,8 +96,8 @@ export default function TermsAndConditions() {
                   <span className="font-bold text-brand-charcoal uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-brand-orange" /> Main Outlet Address
                   </span>
-                  <span>Near Stadium Circle, Off CG Road,<br />Navrangpura, Ahmedabad - 380009</span>
-                  <a href="https://share.google/5x2FPvCFeEAeFtI3N" target="_blank" rel="noreferrer" className="text-brand-orange font-bold hover:underline">View on Google Maps</a>
+                  <span>Bhidbhanjan Road, Taleti Road, Navagadh,<br />Palitana, Gujarat 364270</span>
+                  <a href="https://maps.app.goo.gl/C4a16R63uQ2j4jWq7" target="_blank" rel="noreferrer" className="text-brand-orange font-bold hover:underline">View on Google Maps</a>
                 </div>
               </div>
 

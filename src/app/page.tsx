@@ -194,7 +194,7 @@ const WHY_FEATURES = [
 const TIMELINE = [
   { year: "1972", label: "Founded in Palitana", desc: "Started as a humble sweet shop serving the pilgrim town of Palitana, Gujarat." },
   { year: "1995", label: "Legacy Expanded", desc: "Grew to serve thousands of families across Bhavnagar district." },
-  { year: "2010", label: "Ahmedabad Presence", desc: "Opened flagship store in Navrangpura, Ahmedabad, bringing Palitana taste to the city." },
+  { year: "2010", label: "Ahmedabad Presence", desc: "Opened flagship store bringing Palitana taste to the city." },
   { year: "2026", label: "Online Store", desc: "Now delivering authentic sweets pan-India through our premium online store." },
 ];
 
@@ -296,18 +296,18 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           1. HERO SECTION
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-[#FAF6EE] min-h-[100svh] flex items-center">
+      <section className="relative overflow-hidden bg-[#FAF6EE] min-h-[75svh] md:min-h-[100svh] flex items-center">
         {/* Subtle dot grid background */}
         <div className="absolute inset-0 bg-[radial-gradient(#C9A22715_1.5px,transparent_1.5px)] [background-size:28px_28px] pointer-events-none" />
 
-        {/* Warm gradient blob */}
+        {/* Warm gradient blob - hidden on mobile for performance */}
         <motion.div
           style={{ y: yBg }}
-          className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#D46D2D]/10 to-[#C9A227]/5 blur-3xl pointer-events-none"
+          className="hidden md:block absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#D46D2D]/10 to-[#C9A227]/5 blur-3xl pointer-events-none"
         />
-        <div className="absolute -bottom-20 -left-20 w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-[#4A2F1F]/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="hidden md:block absolute -bottom-20 -left-20 w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-[#4A2F1F]/5 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-20 pb-12 sm:pt-28 sm:pb-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16 pb-8 md:pt-28 md:pb-16">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -339,7 +339,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -24 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="block font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light italic text-[#C9A227]"
+                    className="block font-serif text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-light italic text-[#C9A227]"
                   >
                     {slide.headline}
                   </motion.span>
@@ -348,7 +348,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                    className="block font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#4A2F1F] mt-1"
+                    className="block font-serif text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-[#4A2F1F] mt-1"
                   >
                     {slide.boldline}
                   </motion.span>
@@ -523,7 +523,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           3. SHOP BY CATEGORY
       ═══════════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-[#FAF6EE]">
+      <section className="py-10 md:py-16 lg:py-24 bg-[#FAF6EE]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={fadeUp}
@@ -537,8 +537,8 @@ export default function Home() {
             <p className="text-sm text-[#6B5744] mt-2 max-w-md mx-auto">Handcrafted with love, made fresh daily — explore our signature collections.</p>
           </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {categories.slice(0, 4).map((cat, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-4">
+            {categories.map((cat, i) => (
               <motion.div
                 key={cat.id}
                 variants={fadeUp}
@@ -551,7 +551,7 @@ export default function Home() {
               >
                 <Link
                   href={`/shop?category=${cat.slug}`}
-                  className="group block relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[3/4] bg-[#4A2F1F] shadow-md hover:shadow-2xl transition-shadow duration-300"
+                  className="group block relative rounded-xl overflow-hidden aspect-[2/3] sm:aspect-[3/4] bg-[#4A2F1F] shadow-md hover:shadow-xl transition-shadow duration-300"
                 >
                   <img
                     src={cat.image_url || getCategoryFallbackImage(cat.slug)}
@@ -583,7 +583,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           4. BEST SELLERS — Responsive grid (mobile: 2-col, desk: 4-col)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-white overflow-hidden">
+      <section className="py-10 md:py-16 lg:py-24 bg-white overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={fadeUp}
@@ -655,11 +655,10 @@ export default function Home() {
                         <button
                           key={w}
                           onClick={() => setSelectedWeights((prev) => ({ ...prev, [product.id]: w }))}
-                          className={`rounded-md border px-2 py-0.5 text-[0.62rem] font-bold transition-all ${
-                            cw === w
+                          className={`rounded-md border px-2 py-0.5 text-[0.62rem] font-bold transition-all ${cw === w
                               ? "border-[#D46D2D] bg-[#D46D2D]/10 text-[#D46D2D]"
                               : "border-[#4A2F1F]/15 text-[#4A2F1F] hover:border-[#C9A227]"
-                          }`}
+                            }`}
                         >
                           {w}
                         </button>
@@ -837,47 +836,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════
-          7. WHY CHOOSE US — Premium feature cards
-      ═══════════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-10 sm:mb-14"
-          >
-            <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">Why Shop With Us</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2">Uncompromising Standards</h2>
-          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {WHY_FEATURES.map(({ icon: Icon, title, desc, color }, i) => (
-              <motion.div
-                key={title}
-                variants={fadeUp}
-                custom={i * 0.5}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                whileHover={{ y: -4 }}
-                className="group p-6 rounded-2xl border border-[#4A2F1F]/8 bg-[#FAF6EE]/60 hover:bg-white hover:shadow-lg transition-all duration-300 cursor-default"
-              >
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                  style={{ backgroundColor: `${color}18` }}
-                >
-                  <Icon className="h-5 w-5" style={{ color }} />
-                </div>
-                <h4 className="font-serif text-base font-bold text-[#4A2F1F] mb-1.5">{title}</h4>
-                <p className="text-xs text-[#6B5744] leading-relaxed">{desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════════════════════════════════════════════════════
           8. FEATURED PRODUCTS
@@ -948,10 +907,8 @@ export default function Home() {
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          9. TESTIMONIALS
-      ═══════════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-[#4A2F1F] overflow-hidden relative">
+      {/* FOOTER follows */}
+      {false && <section className="py-16 sm:py-24 bg-[#4A2F1F] overflow-hidden relative">
         <div className="absolute inset-0 bg-[radial-gradient(#C9A22710_1.5px,transparent_1.5px)] [background-size:28px_28px]" />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
@@ -996,12 +953,9 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
-      {/* ═══════════════════════════════════════════════════════════
-          10. FESTIVAL SPECIALS CTA
-      ═══════════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-[#FAF6EE]">
+      {false && <section className="py-16 sm:py-24 bg-[#FAF6EE]">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
@@ -1045,7 +999,7 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
-      </section>
+      </section>}
 
       {/* ═══════════════════════════════════════════════════════════
           FOOTER

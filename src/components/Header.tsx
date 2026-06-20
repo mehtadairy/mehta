@@ -500,112 +500,164 @@ export default function Header() {
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-white h-full shadow-2xl flex flex-col p-6 lg:hidden border-l border-brand-beige overflow-y-auto"
+                transition={{ type: "spring", damping: 28, stiffness: 240 }}
+                className="fixed inset-y-0 right-0 z-50 w-[88vw] max-w-sm bg-white h-full shadow-2xl flex flex-col lg:hidden"
               >
-                <div className="flex items-center justify-between border-b border-brand-beige pb-4 mb-5">
-                  <div className="flex items-center">
-                    <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#0a4d8c] border border-[#d4af37] text-center flex-col p-0.5 leading-none select-none">
+                {/* Header bar */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#EAE0D3]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0a4d8c] border border-[#d4af37] flex-col p-0.5">
                       <span className="font-serif text-[0.45rem] font-black text-[#f3efe7] tracking-wider">MEHTA</span>
-                      <span className="text-[0.22rem] font-bold text-[#d4af37] uppercase tracking-[0.02em]">Sweet Mart</span>
+                      <span className="text-[0.22rem] font-bold text-[#d4af37] uppercase">Sweet Mart</span>
                     </div>
-                    <span className="ml-2 font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">Catalog Menu</span>
+                    <span className="font-serif text-sm font-bold text-[#2A1E17] uppercase tracking-wider">Menu</span>
                   </div>
                   <button 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1.5 hover:bg-brand-cream rounded-full transition-colors text-muted-foreground hover:text-brand-charcoal"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAF6EE] text-[#2A1E17] hover:bg-[#EAE0D3] transition-colors"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-4.5 w-4.5" />
                   </button>
                 </div>
 
-                <nav className="flex flex-col gap-4">
-                  <Link 
-                    href="/" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
-                  >
-                    Home
-                  </Link>
-                  <Link 
-                    href="/about" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
-                  >
-                    About Us
-                  </Link>
-                  
-                  {/* Categories list inline on mobile */}
-                  <div className="flex flex-col gap-2 pl-3 border-l border-brand-beige">
-                    <span className="text-[0.62rem] font-bold text-brand-gold uppercase tracking-widest mb-1">Shop Categories</span>
-                    {categories.map((cat: any) => (
-                      <Link 
-                        key={cat.id} 
-                        href={`/shop?category=${cat.slug}`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-[0.72rem] font-bold text-brand-charcoal hover:text-brand-orange uppercase tracking-wider"
-                      >
-                        {cat.name}
-                      </Link>
-                    ))}
+                {/* Scrollable nav body */}
+                <nav className="flex-1 overflow-y-auto">
+                  {/* Primary links */}
+                  <div className="px-5 py-4 flex flex-col gap-1">
                     <Link 
-                      href="/shop"
+                      href="/" 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-[0.72rem] font-bold text-brand-orange hover:text-brand-orange-hover uppercase tracking-wider mt-1"
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
+                        pathname === "/" 
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
                     >
-                      All Products
+                      Home
+                    </Link>
+                    <Link 
+                      href="/about" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
+                        pathname === "/about" 
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
+                    >
+                      About Us
                     </Link>
                   </div>
 
-                  <Link 
-                    href="/blogs" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
-                  >
-                    Blogs
-                  </Link>
-                  <Link 
-                    href="/contact" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-xs font-bold uppercase tracking-wider py-1 ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
-                  >
-                    Contact Us
-                  </Link>
-                  
-                  <div className="h-px bg-brand-beige my-2"></div>
+                  {/* Shop / Categories block */}
+                  <div className="px-5 pb-4">
+                    <Link
+                      href="/shop"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors block mb-1 ${
+                        pathname === "/shop"
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8"
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
+                    >
+                      Shop
+                    </Link>
+
+                    {/* Categories nested with left-border accent */}
+                    <div className="ml-3 pl-3 border-l-2 border-[#D46D2D]/30 flex flex-col gap-0.5 mt-1">
+                      <span className="text-[0.62rem] font-bold text-[#C9A227] uppercase tracking-[0.2em] mb-1 px-2">Shop Categories</span>
+                      {categories.map((cat: any) => (
+                        <Link 
+                          key={cat.id} 
+                          href={`/shop?category=${cat.slug}`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="text-[0.78rem] font-semibold text-[#4A2F1F] hover:text-[#D46D2D] py-1.5 px-2 rounded-md hover:bg-[#FAF6EE] transition-colors"
+                        >
+                          {cat.name}
+                        </Link>
+                      ))}
+                      <Link 
+                        href="/shop"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="text-[0.72rem] font-bold text-[#D46D2D] py-1.5 px-2 mt-1 hover:underline"
+                      >
+                        View All Products →
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Secondary links */}
+                  <div className="px-5 pb-4 flex flex-col gap-1 border-t border-[#EAE0D3] pt-4">
+                    <Link 
+                      href="/blogs" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
+                        pathname === "/blogs" 
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
+                    >
+                      Blogs
+                    </Link>
+                    <Link 
+                      href="/contact" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
+                        pathname === "/contact" 
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
+                    >
+                      Contact Us
+                    </Link>
+                    <Link 
+                      href="/faq" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
+                        pathname === "/faq" 
+                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
+                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
+                      }`}
+                    >
+                      FAQ
+                    </Link>
+                  </div>
+                </nav>
+
+                {/* Bottom: auth */}
+                <div className="px-5 py-4 border-t border-[#EAE0D3] bg-[#FAF6EE]">
                   {userLoggedIn ? (
-                    <>
+                    <div className="flex flex-col gap-1">
                       <Link 
                         href="/account" 
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                        className="text-xs font-bold uppercase tracking-wider text-[#2A1E17] py-2 px-3 rounded-lg hover:bg-white transition-colors"
                       >
                         My Account
                       </Link>
                       <Link 
                         href="/admin" 
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                        className="text-xs font-bold uppercase tracking-wider text-[#2A1E17] py-2 px-3 rounded-lg hover:bg-white transition-colors"
                       >
                         Admin Console
                       </Link>
                       <button 
                         onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                        className="text-xs font-bold uppercase tracking-wider text-red-600 py-1 text-left flex items-center gap-2"
+                        className="text-xs font-bold uppercase tracking-wider text-red-500 py-2 px-3 rounded-lg hover:bg-white transition-colors text-left"
                       >
                         Logout
                       </button>
-                    </>
+                    </div>
                   ) : (
                     <Link 
                       href="/account" 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-xs font-bold uppercase tracking-wider text-brand-charcoal py-1 flex items-center gap-2"
+                      className="block w-full text-center bg-[#4A2F1F] text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl hover:bg-[#D46D2D] transition-colors"
                     >
                       Login / Register
                     </Link>
                   )}
-                </nav>
+                </div>
               </motion.div>
             </>
           )}

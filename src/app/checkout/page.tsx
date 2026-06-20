@@ -724,7 +724,7 @@ export default function Checkout() {
                             placeholder="Aarya Mehta"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                             required
                           />
                         </div>
@@ -735,7 +735,7 @@ export default function Checkout() {
                             placeholder="98765 43210"
                             value={newPhone}
                             onChange={(e) => setNewPhone(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                             required
                           />
                         </div>
@@ -749,7 +749,7 @@ export default function Checkout() {
                             placeholder="Flat/House No, Building, Company"
                             value={newFlat}
                             onChange={(e) => setNewFlat(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                             required
                           />
                         </div>
@@ -761,7 +761,7 @@ export default function Checkout() {
                             placeholder="Area, Street, Sector, Village"
                             value={newArea}
                             onChange={(e) => setNewArea(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none"
                             required
                           />
                         </div>
@@ -774,7 +774,7 @@ export default function Checkout() {
                           placeholder="E.g. near apollo hospital"
                           value={newLandmark}
                           onChange={(e) => setNewLandmark(e.target.value)}
-                          className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                          className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                         />
                       </div>
 
@@ -881,7 +881,7 @@ export default function Checkout() {
                           <select
                             value={newCity}
                             onChange={(e) => setNewCity(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                             required
                           >
                             <option value="">Select City</option>
@@ -896,7 +896,7 @@ export default function Checkout() {
                           <select
                             value={newState}
                             onChange={(e) => setNewState(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
                             required
                           >
                             <option value="">Select State</option>
@@ -911,13 +911,13 @@ export default function Checkout() {
                         <button 
                           type="button" 
                           onClick={() => setShowNewAddressForm(false)}
-                          className="px-4 py-2 border border-brand-beige hover:border-brand-gold rounded-lg text-xs font-bold text-brand-charcoal transition-colors hover:bg-white"
+                          className="px-4 py-3 min-h-[44px] border border-brand-beige hover:border-brand-gold rounded-lg text-xs font-bold text-brand-charcoal transition-colors hover:bg-white"
                         >
                           Cancel
                         </button>
                         <button 
                           type="submit" 
-                          className="px-5 py-2 bg-brand-orange hover:bg-brand-orange-hover rounded-lg text-xs font-bold text-white transition-colors"
+                          className="px-5 py-3 min-h-[44px] bg-brand-orange hover:bg-brand-orange-hover rounded-lg text-xs font-bold text-white transition-colors"
                         >
                           Save Address
                         </button>

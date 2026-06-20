@@ -994,13 +994,6 @@ function AccountContent() {
                           Here's an overview of your account and recent activities.
                         </p>
                       </div>
-                      <div className="bg-white px-4 py-2.5 rounded-xl border border-brand-beige flex items-center gap-3 shadow-xs">
-                        <Crown className="w-5 h-5 text-brand-gold" />
-                        <div>
-                          <span className="text-[0.6rem] font-bold text-muted-foreground uppercase block">LOYALTY TIER</span>
-                          <span className="text-xs font-black text-brand-charcoal">{loyaltyTier} ({loyaltyPoints} pts)</span>
-                        </div>
-                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1124,12 +1117,8 @@ function AccountContent() {
                       <div className="text-center sm:text-left">
                         <div className="flex flex-wrap items-center gap-2.5 justify-center sm:justify-start">
                           <h3 className="font-serif text-xl font-bold text-brand-charcoal">{profile?.name || "Guest User"}</h3>
-                          <span className="text-[0.6rem] font-black text-brand-gold bg-brand-cream/80 border border-brand-beige px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                            <Crown className="w-3.5 h-3.5 text-brand-gold" /> {loyaltyTier} Member
-                          </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{profile?.email || "No email address set"}</p>
-                        <p className="text-xs text-brand-orange font-bold mt-2">✨ <AnimatedCounter value={loyaltyPoints} /> Loyalty Points</p>
                       </div>
                     </div>
 

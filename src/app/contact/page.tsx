@@ -528,6 +528,51 @@ export default function Contact() {
         </motion.button>
       </div>
 
+      {/* ── LOCATION CARD ─────────────────────────────────────────── */}
+      <section className="py-12 sm:py-16 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 text-center">
+            <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">Find Us</span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4A2F1F] mt-1">Our Location</h2>
+          </div>
+          <div className="max-w-sm mx-auto">
+            <div className="rounded-3xl overflow-hidden border border-[#EAE0D3] shadow-md bg-white">
+              {/* Dot-pattern area */}
+              <div className="relative bg-[#FAF6EE] py-10 px-6 flex flex-col items-center bg-[radial-gradient(#D4AF3720_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+                <div className="w-14 h-14 rounded-full bg-[#D46D2D]/10 flex items-center justify-center mb-4">
+                  <svg className="h-7 w-7 text-[#D46D2D]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-serif text-base font-bold text-[#4A2F1F] text-center">Mehta Dairy &amp; Sweet Mart</h3>
+                <p className="text-xs text-[#6B5744] mt-1 text-center">Bhidbhanjan Road, Taleti Road, Navagadh, <br /> Palitana, Gujarat 364270</p>
+                <p className="text-[0.62rem] text-[#C9A227] font-bold uppercase tracking-wider mt-2">Gujarat, India</p>
+              </div>
+              {/* CTA bar */}
+              <a
+                href="https://share.google/5x2FPvCFeEAeFtI3N"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#4A2F1F] text-white font-bold text-sm py-4 hover:bg-[#D46D2D] transition-colors"
+              >
+                Open in Google Maps →
+              </a>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <a
+                href="https://wa.me/919913252232?text=Hello%20Mehta%20Dairy!%20I%20need%20directions%20to%20your%20store."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-[#1ebe57] transition-colors shadow"
+              >
+                Get Directions via WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
