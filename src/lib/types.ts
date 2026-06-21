@@ -55,6 +55,7 @@ export interface Address {
   pincode: string;
   isDefault: boolean;
   landmark?: string;
+  type?: 'Home' | 'Office' | 'Other';
 }
 
 export interface OrderItem {

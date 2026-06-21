@@ -586,14 +586,24 @@ export default function ProductDetails() {
               </div>
 
               {/* ── DELIVERY INFO CARD ──────────────────────────── */}
-              <div className="flex items-start gap-3 bg-[#EEF4FF] border border-[#BFCDEC] rounded-xl p-4 mt-2 mb-2">
-                <span className="text-2xl flex-shrink-0">🚚</span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[0.65rem] font-bold text-[#1D3461] uppercase tracking-wider">Delivery Information</span>
-                  <p className="text-xs text-[#2A1E17] leading-relaxed mt-0.5">
-                    Delivering across India. <span className="font-bold">Estimated delivery: 1–3 days</span>. 
-                    Free delivery on orders above <span className="font-bold">₹999</span>.
-                  </p>
+              <div className="flex flex-col gap-3 bg-[#EEF4FF] border border-[#BFCDEC] rounded-xl p-4 mt-2 mb-2">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">📍</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[0.65rem] font-bold text-[#1D3461] uppercase tracking-wider">Delivering To</span>
+                    <p className="text-xs text-[#2A1E17] font-bold mt-0.5">Ahmedabad 380015</p>
+                  </div>
+                </div>
+                <div className="h-px bg-[#BFCDEC]/50 w-full" />
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">🚚</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[0.65rem] font-bold text-[#1D3461] uppercase tracking-wider">Delivery Information</span>
+                    <p className="text-xs text-[#2A1E17] leading-relaxed mt-0.5">
+                      Delivering across India. <span className="font-bold">Estimated delivery: 1–3 days</span>. 
+                      Free delivery on orders above <span className="font-bold">₹999</span>.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -805,16 +815,16 @@ export default function ProductDetails() {
             </p>
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-brand-charcoal">
               <div className="flex items-center gap-2">
-                <span className="text-[#d4af37] font-bold">✔</span> 100% Vegetarian Sweets & Snacks
+                <span className="text-[#d4af37] font-bold">✔</span> Made Daily
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#d4af37] font-bold">✔</span> Prepared in Fully Hygienic Facilities
+                <span className="text-[#d4af37] font-bold">✔</span> No Artificial Preservatives
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#d4af37] font-bold">✔</span> Rich Traditional Heritage Recipes since 1952
+                <span className="text-[#d4af37] font-bold">✔</span> Pure Ingredients
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#d4af37] font-bold">✔</span> Premium Quality Sourced Ingredients
+                <span className="text-[#d4af37] font-bold">✔</span> Hygienically Packed
               </div>
             </div>
           </div>

@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { Playfair_Display, Outfit } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
-import MobileNavBar from "@/components/MobileNavBar";
 import ToastContainer from "@/components/Toast";
 import SplashLoader from "@/components/SplashLoader";
 import GlobalScrollManager from "@/components/ScrollToTop";
+import MobileNavBar from "@/components/MobileNavBar";
+
 
 const playfair = Playfair_Display({
   subsets: ["latin"],

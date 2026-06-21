@@ -1024,6 +1024,9 @@ export default function Checkout() {
                           <div>
                             <h4 className="font-serif text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
                               {addr.name}
+                              <span className="text-[0.55rem] font-bold uppercase tracking-wider bg-brand-cream border border-brand-beige px-1.5 py-0.5 rounded-full text-brand-orange ml-1">
+                                {addr.type || 'Home'}
+                              </span>
                               {addr.isDefault && (
                                 <span className="text-[0.55rem] font-bold uppercase tracking-wider bg-brand-beige px-1.5 py-0.5 rounded text-brand-gold">Default</span>
                               )}
@@ -1033,9 +1036,18 @@ export default function Checkout() {
                               {addr.landmark ? `Landmark: ${addr.landmark}, ` : ''}
                               {addr.city}, {addr.state} - {addr.pincode}
                             </p>
-                            <span className="text-[0.7rem] text-brand-charcoal font-semibold mt-2 block flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-brand-gold" /> {addr.phone}
-                            </span>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[0.7rem] text-brand-charcoal font-semibold flex items-center gap-1">
+                                <Phone className="h-3 w-3 text-brand-gold" /> {addr.phone}
+                              </span>
+                              <button 
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); /* TODO: Edit Address */ }}
+                                className="text-[0.65rem] font-bold text-brand-orange hover:underline px-2 py-1"
+                              >
+                                Edit
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       ))}

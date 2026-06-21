@@ -86,23 +86,29 @@ export default function About() {
             Palitana, Gujarat
           </motion.span>
 
-          {/* Headline: letter-by-letter reveal */}
+          {/* Headline: letter-by-letter reveal inside word groups */}
           <h1 className="font-serif text-5xl sm:text-6xl font-bold text-white tracking-wide uppercase overflow-hidden">
-            {headline.split("").map((char, i) => (
-              <motion.span
-                key={i}
-                className="inline-block"
-                style={{ marginRight: char === " " ? "0.3em" : undefined }}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.6 + i * 0.045,
-                  ease,
-                }}
-              >
-                {char === " " ? "\u00A0" : char}
-              </motion.span>
+            {headline.split(" ").map((word, wordIdx) => (
+              <span key={wordIdx} className="inline-block whitespace-nowrap mr-[0.3em]">
+                {word.split("").map((char, charIdx) => {
+                  const globalIdx = wordIdx * 10 + charIdx; // Approximate index for delay
+                  return (
+                    <motion.span
+                      key={globalIdx}
+                      className="inline-block"
+                      initial={{ opacity: 0, y: 40 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.6,
+                        delay: 0.6 + globalIdx * 0.045,
+                        ease,
+                      }}
+                    >
+                      {char}
+                    </motion.span>
+                  );
+                })}
+              </span>
             ))}
           </h1>
 

@@ -300,34 +300,7 @@ export default function Contact() {
                 className="w-full text-sm py-4 rounded-2xl shadow-md"
               />
 
-              {/* Map embed placeholder */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.7, delay: 0.2, ease }}
-                className="rounded-3xl overflow-hidden border border-[#EAE0D3] shadow-sm bg-white"
-              >
-                <div className="h-48 bg-[radial-gradient(#EAE0D3_1.5px,transparent_1.5px)] [background-size:16px_16px] flex flex-col items-center justify-center relative">
-                  <motion.div
-                    animate={{ y: [-4, 4, -4] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="h-12 w-12 rounded-full bg-[#D46D2D]/15 flex items-center justify-center"
-                  >
-                    <MapPin className="h-6 w-6 text-[#D46D2D]" />
-                  </motion.div>
-                  <p className="font-serif text-sm font-bold text-[#2A1E17] mt-3">Mehta Dairy, Palitana</p>
-                  <p className="text-[0.65rem] text-[#7E6B5A] mt-0.5">Bhavnagar District, Gujarat</p>
-                </div>
-                <a
-                  href="https://maps.google.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-center bg-[#2A1E17] hover:bg-[#D46D2D] text-white text-xs font-bold py-3 transition-colors"
-                >
-                  Open in Google Maps →
-                </a>
-              </motion.div>
+
             </motion.div>
 
             {/* ── RIGHT: Contact Form ────────────────────────────── */}
@@ -533,17 +506,9 @@ export default function Contact() {
           </div>
           <div className="max-w-sm mx-auto">
             <div className="rounded-3xl overflow-hidden border border-[#EAE0D3] shadow-md bg-white">
-              {/* Dot-pattern area */}
-              <div className="relative bg-[#FAF6EE] py-10 px-6 flex flex-col items-center bg-[radial-gradient(#D4AF3720_1.5px,transparent_1.5px)] [background-size:20px_20px]">
-                <div className="w-14 h-14 rounded-full bg-[#D46D2D]/10 flex items-center justify-center mb-4">
-                  <svg className="h-7 w-7 text-[#D46D2D]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="font-serif text-base font-bold text-[#4A2F1F] text-center">Mehta Dairy &amp; Sweet Mart</h3>
-                <p className="text-xs text-[#6B5744] mt-1 text-center">Bhidbhanjan Road, Taleti Road, Navagadh, <br /> Palitana, Gujarat 364270</p>
-                <p className="text-[0.62rem] text-[#C9A227] font-bold uppercase tracking-wider mt-2">Gujarat, India</p>
+              {/* Map Embed */}
+              <div className="relative bg-[#FAF6EE] h-64 flex flex-col items-center">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d118944.37520021966!2d71.74818987158223!3d21.51268686561168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3958bcda7611ffc1%3A0x643dc52f85bd8648!2sMehta%20Dairy!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
               </div>
               {/* CTA bar */}
               <a

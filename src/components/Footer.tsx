@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Send, ChevronUp, Award, Heart, Droplet, ShieldCheck, Truck } from "lucide-react";
+import { Mail, Phone, MapPin, Send, ChevronUp, Award, Heart, Droplet, ShieldCheck, Truck, Clock, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -70,29 +70,36 @@ export default function Footer() {
 
   return (
     <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden">
-      {/* TRUST STRIP */}
-      <div className="bg-white border-b border-brand-beige py-6 relative z-10">
+      {/* TRUST STRIP (Grid layout, no scroll, matching Image 4) */}
+      <div className="bg-[#4A2F1F] py-8 relative z-10 border-b border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-8 divide-x-0 sm:divide-x divide-brand-beige/50">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 text-center">
             {[
-              { icon: Award, text: "Since 1972" },
-              { icon: Heart, text: "50+ Years Of Trust" },
-              { icon: Droplet, text: "100% Pure Ingredients" },
-              { icon: ShieldCheck, text: "Secure Payments" },
-              { icon: Truck, text: "Fast Delivery" }
+              { icon: Award, value: "50+", label: "YEARS OF TRUST", sub: "Since 1972" },
+              { icon: Truck, value: "25K+", label: "ORDERS DELIVERED", sub: "Authentic Taste" },
+              { icon: Leaf, value: "100%", label: "PURE INGREDIENTS", sub: "100% Natural" },
+              { icon: Clock, value: "100%", label: "FRESH DAILY", sub: "Made Fresh" }
             ].map((item, idx) => (
               <motion.div 
                 key={idx}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="flex items-center justify-center gap-3 py-2 group"
+                transition={{ delay: idx * 0.08, duration: 0.5 }}
+                className="flex flex-col items-center justify-center gap-1 group"
               >
-                <div className="h-10 w-10 rounded-full bg-[#FAF6EE] border border-brand-beige flex items-center justify-center group-hover:bg-brand-orange/5 group-hover:border-brand-orange/20 transition-colors flex-shrink-0">
-                  <item.icon className="h-5 w-5 text-brand-orange" strokeWidth={1.5} />
+                <div className="h-10 w-10 rounded-full bg-white/10 border border-white/5 flex items-center justify-center mb-1 group-hover:bg-white/15 transition-colors shrink-0">
+                  <item.icon className="h-5 w-5 text-[#C9A227]" strokeWidth={1.5} />
                 </div>
-                <span className="text-xs font-bold text-brand-charcoal uppercase tracking-wider">{item.text}</span>
+                <span className="font-serif text-2xl font-bold text-white leading-tight">
+                  {item.value}
+                </span>
+                <span className="text-[0.65rem] font-bold text-[#C9A227] uppercase tracking-wider leading-tight">
+                  {item.label}
+                </span>
+                <span className="text-[0.55rem] text-white/60 leading-tight">
+                  {item.sub}
+                </span>
               </motion.div>
             ))}
           </div>

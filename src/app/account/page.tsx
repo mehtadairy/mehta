@@ -131,6 +131,7 @@ function AccountContent() {
 
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // OTP Login State
   const [otpPhone, setOtpPhone] = useState("");
@@ -178,6 +179,12 @@ function AccountContent() {
       }
     }
   }, []);
+
+  // Sync activeTab with URL search params (Fixes back navigation glitch)
+  useEffect(() => {
+    const tab = searchParams.get("tab") || "dashboard";
+    setActiveTab(tab);
+  }, [searchParams]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -312,6 +319,7 @@ function AccountContent() {
       }
 
       if (!loggedInStatus && !session?.user) {
+        setIsAuthChecking(false);
         // Redirect to new Login Page
         router.push("/login?redirect=/account");
         return;
@@ -398,15 +406,20 @@ function AccountContent() {
         const allProducts = await fetchProducts();
         const w = storedWishlist.map((id: string) => allProducts.find(prod => prod.id === id)).filter(Boolean);
         setWishlistItems(w);
+        setIsLoading(false);
+        setIsAuthChecking(false);
+      } else {
+        setIsAuthChecking(false);
       }
       setIsLoading(false);
+      setIsAuthChecking(false);
     };
     loadData();
   }, [activeTab]);
 
   // Sync tab from search query
   useEffect(() => {
-    setActiveTab(searchParams.get("tab") || "profile");
+    setActiveTab(searchParams.get("tab") || "dashboard");
   }, [searchParams]);
 
   const handleLogout = async () => {
@@ -626,7 +639,14 @@ function AccountContent() {
       <WhatsAppFloat />
 
       {/* ── NOT LOGGED IN ─────────────────────── */}
-      {!isLoggedIn ? (
+      {isAuthChecking ? (
+        <section className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#FAF6EE] mt-20 sm:mt-24">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-bold text-[#4A2F1F]">Checking account session...</p>
+          </div>
+        </section>
+      ) : !isLoggedIn ? (
         <section className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#FAF6EE] mt-20 sm:mt-24">
           <div className="flex flex-col items-center gap-4">
             <div className="h-10 w-10 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin"></div>
@@ -748,244 +768,210 @@ function AccountContent() {
                 {/* --- TAB 0: DASHBOARD --- */}
                 {activeTab === "dashboard" && (
                   <>
-                    {/* DESKTOP VIEW */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="flex flex-col gap-5 lg:hidden"
+                    >
+                      {/* Profile Summary Card */}
+                      <div className="relative bg-[#FAF6EE] rounded-2xl p-6 border border-[#EAE0D3] overflow-hidden flex items-center gap-4 shadow-sm">
+                        <Crown className="absolute -right-4 -bottom-4 w-32 h-32 text-[#EAE0D3] opacity-50" strokeWidth={1} />
+                        <div className="h-14 w-14 rounded-full bg-white border border-[#EAE0D3] shadow-sm flex items-center justify-center text-xl font-black text-[#2A1E17] flex-shrink-0 z-10">
+                          {profile?.name ? profile.name[0].toUpperCase() : "A"}
+                        </div>
+                        <div className="z-10 flex-grow">
+                          <h2 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">
+                            {profile?.name || "Aryan Rathod"}
+                          </h2>
+                          <p className="text-[0.65rem] font-bold text-[#D46D2D] mb-1">
+                            {profile?.email || "aaryan.b.rathod99@gmail.com"}
+                          </p>
+                          <p className="text-[0.6rem] font-bold text-[#2A1E17] uppercase tracking-widest">
+                            MEMBER SINCE {new Date().getFullYear()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 2x2 Grid Actions */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => setActiveTab("orders")} className="bg-white border border-[#EAE0D3] rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-[#D46D2D] transition-colors">
+                          <ShoppingBag className="w-6 h-6 text-[#D46D2D]" strokeWidth={1.5} />
+                          <span className="font-serif text-[0.8rem] font-bold text-[#4A2F1F]">My Orders</span>
+                        </button>
+                        <button onClick={() => setActiveTab("addresses")} className="bg-white border border-[#EAE0D3] rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-[#D46D2D] transition-colors">
+                          <MapPin className="w-6 h-6 text-[#D46D2D]" strokeWidth={1.5} />
+                          <span className="font-serif text-[0.8rem] font-bold text-[#4A2F1F]">Addresses</span>
+                        </button>
+                        <button onClick={() => setActiveTab("wishlist")} className="bg-white border border-[#EAE0D3] rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-[#D46D2D] transition-colors">
+                          <Heart className="w-6 h-6 text-[#D46D2D]" strokeWidth={1.5} />
+                          <span className="font-serif text-[0.8rem] font-bold text-[#4A2F1F]">Wishlist</span>
+                        </button>
+                        <Link href="/contact" className="bg-white border border-[#EAE0D3] rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-[#D46D2D] transition-colors">
+                          <Phone className="w-6 h-6 text-[#D46D2D]" strokeWidth={1.5} />
+                          <span className="font-serif text-[0.8rem] font-bold text-[#4A2F1F]">Support</span>
+                        </Link>
+                      </div>
+
+                      {/* List Actions */}
+                      <div className="bg-white border border-[#EAE0D3] rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                        <button onClick={() => setActiveTab("settings")} className="flex items-center justify-between p-4 border-b border-[#EAE0D3] hover:bg-[#FAF6EE] transition-colors">
+                          <div className="flex items-center gap-3">
+                            <Settings className="w-5 h-5 text-[#7E6B5A]" strokeWidth={1.5} />
+                            <span className="font-serif text-[0.85rem] font-bold text-[#4A2F1F]">Account Settings</span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[#7E6B5A]" />
+                        </button>
+                        <button onClick={handleLogout} className="flex items-center justify-between p-4 hover:bg-[#FAF6EE] transition-colors">
+                          <div className="flex items-center gap-3">
+                            <LogOut className="w-5 h-5 text-red-500" strokeWidth={1.5} />
+                            <span className="font-serif text-[0.85rem] font-bold text-red-600">Logout</span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-red-400" />
+                        </button>
+                      </div>
+
+                      {/* Recent Orders Section */}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-serif text-xl font-bold text-[#4A2F1F]">Recent Orders</h3>
+                          <button onClick={() => setActiveTab("orders")} className="text-[0.7rem] font-bold text-[#D46D2D] uppercase tracking-wider">
+                            View All
+                          </button>
+                        </div>
+                        {orders.length > 0 ? (
+                          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-none">
+                            {orders.slice(0, 5).map(o => (
+                              <div key={o.id} className="min-w-[240px] snap-start bg-white border border-[#EAE0D3] rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-serif text-[0.8rem] font-bold text-[#2A1E17]">
+                                    Order #{o.orderNumber || o.id.slice(0,6)}
+                                  </span>
+                                  <span className={`text-[0.55rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${o.status === 'Processing' ? 'bg-[#D46D2D]/10 text-[#D46D2D]' : o.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                    {o.status}
+                                  </span>
+                                </div>
+                                <div className="text-[0.65rem] text-[#7E6B5A] mb-1">
+                                  {o.date} • {o.items?.length || 0} items
+                                </div>
+                                <div className="font-bold text-[#D46D2D] mt-auto">
+                                  ₹{o.total}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 bg-white border border-[#EAE0D3] rounded-2xl">
+                            <ShoppingBag className="w-8 h-8 text-[#EAE0D3] mx-auto mb-2" />
+                            <p className="text-xs text-[#7E6B5A]">No recent orders found.</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Desktop View */}
                     <motion.div 
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
                       className="hidden lg:flex flex-col gap-8"
                     >
-                    <div className="bg-gradient-to-r from-brand-cream/60 to-transparent p-6 rounded-2xl border border-brand-beige/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div>
-                        <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
-                          Welcome back, {profile?.name ? profile.name.split(" ")[0] : "Guest"} 👋
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Here's an overview of your account and recent activities.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {[
-                        { title: "Total Orders", value: orders.length, icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
-                        { title: "Wishlist Items", value: wishlistItems.length, icon: Heart, color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-100" },
-                        { title: "Saved Addresses", value: profile?.saved_addresses?.length || 0, icon: MapPin, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-100" },
-                      ].map((stat, idx) => (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.08 }}
-                          key={idx} 
-                          className={`p-5 rounded-2xl border ${stat.border} bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group`}
-                        >
-                          <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${stat.bg} opacity-50 group-hover:scale-150 transition-transform duration-500`}></div>
-                          <div className={`h-10 w-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center relative z-10`}>
-                            <stat.icon className="h-5 w-5" />
-                          </div>
-                          <div className="relative z-10">
-                            <h4 className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wider mb-1">{stat.title}</h4>
-                            <span className="font-serif text-2xl font-bold text-brand-charcoal">
-                              <AnimatedCounter value={stat.value} />
-                            </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Recent Activity Mini-Card */}
-                      <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
-                          <h3 className="font-serif text-lg font-bold text-brand-charcoal">Recent Activity</h3>
-                          <button onClick={() => setActiveTab("orders")} className="text-xs text-brand-orange hover:text-brand-orange-hover font-bold flex items-center gap-1">
-                            View All <ArrowRight className="h-3 w-3" />
-                          </button>
-                        </div>
-                        {orders.length > 0 ? (
-                          <div className="flex flex-col gap-4">
-                            {orders.slice(0, 3).map(o => (
-                              <div key={o.id} className="flex items-center gap-4 border-b border-brand-beige/30 pb-4 last:border-0 last:pb-0">
-                                <div className="h-10 w-10 rounded-lg bg-brand-cream/50 flex items-center justify-center text-brand-orange flex-shrink-0">
-                                  <ShoppingBag className="h-5 w-5" />
-                                  {o.status === "Delivered" && <Check className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 text-white rounded-full p-[1px]" />}
-                                </div>
-                                <div className="flex-grow">
-                                  <h4 className="text-xs font-bold text-brand-charcoal">Order #{o.orderNumber}</h4>
-                                  <span className="text-[0.65rem] text-muted-foreground">{o.date} • {o.items.length} items</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className="block text-xs font-bold text-brand-charcoal">₹{o.total}</span>
-                                  <span className="text-[0.6rem] font-bold text-brand-orange uppercase">{o.status}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8">
-                            <Clock className="h-8 w-8 text-brand-beige mx-auto mb-2" />
-                            <p className="text-xs text-muted-foreground">No recent activity.</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
-                        <h3 className="font-serif text-lg font-bold text-brand-charcoal mb-6">Quick Actions</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <button onClick={() => setActiveTab("settings")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
-                            <User className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-                            <span className="text-xs font-bold text-brand-charcoal">Edit Profile</span>
-                          </button>
-                          <button onClick={() => setActiveTab("addresses")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
-                            <MapPin className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-                            <span className="text-xs font-bold text-brand-charcoal">Add Address</span>
-                          </button>
-                          <Link href="/shop" className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
-                            <Gift className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-                            <span className="text-xs font-bold text-brand-charcoal">Shop Sweets</span>
-                          </Link>
-                          <button onClick={() => setActiveTab("security")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
-                            <Shield className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-                            <span className="text-xs font-bold text-brand-charcoal">Security</span>
-                          </button>
+                      <div className="bg-gradient-to-r from-brand-cream/60 to-transparent p-6 rounded-2xl border border-brand-beige/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">
+                            Welcome back, {profile?.name ? profile.name.split(" ")[0] : "Guest"} 👋
+                          </h2>
+                          <p className="text-sm text-muted-foreground">
+                            Here's an overview of your account and recent activities.
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
 
-                  {/* MOBILE VIEW - NEW ACCOUNT DESIGN */}
-                  <div className="flex lg:hidden flex-col gap-6 w-full max-w-md mx-auto animate-fade-in-up pb-8">
-                    {/* Profile Header Card */}
-                    <div className="bg-gradient-to-r from-brand-charcoal to-[#3A2214] rounded-3xl p-6 flex flex-col justify-center shadow-xl relative overflow-hidden min-h-[140px] text-white">
-                      {/* Decorative Background Elements */}
-                      <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-orange/20 rounded-full blur-3xl"></div>
-                      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-brand-gold/20 rounded-full blur-3xl"></div>
-                      
-                      <div className="flex items-center gap-5 relative z-10">
-                        <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-brand-orange/50 shadow-lg relative bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-black shrink-0">
-                          {profileAvatar ? (
-                            <img src={profileAvatar} alt="Profile Avatar" className="w-full h-full object-cover" />
-                          ) : (
-                            profile?.name ? profile.name[0].toUpperCase() : "U"
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          {profile?.name ? (
-                            <>
-                              <h3 className="font-serif text-2xl font-bold text-white tracking-wide">👋 Hello, {profile.name.split(' ')[0]}</h3>
-                              <div className="flex items-center gap-3 mt-1.5 opacity-80">
-                                {profile.phone && <span className="text-[0.65rem] font-bold bg-white/10 px-2 py-0.5 rounded-full">{profile.phone}</span>}
-                                {profile.email && <span className="text-[0.65rem] font-bold bg-white/10 px-2 py-0.5 rounded-full truncate max-w-[120px]">{profile.email}</span>}
-                              </div>
-                              <span className="text-[0.6rem] font-bold uppercase tracking-widest text-brand-gold mt-2">Member Since {new Date().getFullYear()}</span>
-                            </>
-                          ) : (
-                            <>
-                              <h3 className="font-serif text-2xl font-bold text-white tracking-wide">👋 Hello, Guest</h3>
-                              <span className="text-[0.7rem] opacity-80 font-bold block mt-1">Welcome to Mehta Dairy</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Actions Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                      <button onClick={() => setActiveTab("orders")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
-                        <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-brand-orange transition-colors">
-                          <ShoppingBag className="w-6 h-6 text-brand-orange group-hover:text-white transition-colors" />
-                        </div>
-                        <span className="text-xs font-bold text-brand-charcoal">My Orders</span>
-                      </button>
-                      
-                      <button onClick={() => setActiveTab("wishlist")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
-                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-500 transition-colors">
-                          <Heart className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
-                        </div>
-                        <span className="text-xs font-bold text-brand-charcoal">Wishlist</span>
-                      </button>
-
-                      <button onClick={() => setActiveTab("addresses")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                          <MapPin className="w-6 h-6 text-blue-500 group-hover:text-white transition-colors" />
-                        </div>
-                        <span className="text-xs font-bold text-brand-charcoal">Addresses</span>
-                      </button>
-                      
-                      <button onClick={() => setActiveTab("rewards")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-gold/30">
-                        <div className="w-12 h-12 rounded-full bg-[#FAF6EE] flex items-center justify-center group-hover:bg-brand-gold transition-colors">
-                          <Gift className="w-6 h-6 text-brand-gold group-hover:text-white transition-colors" />
-                        </div>
-                        <span className="text-xs font-bold text-brand-charcoal">Rewards</span>
-                      </button>
-                    </div>
-
-                    {/* Second Grid (Settings, Help, Policies, Logout) */}
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <button onClick={() => setActiveTab("settings")} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
-                          <Settings className="w-5 h-5 text-gray-600" />
-                        </div>
-                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Settings</span>
-                      </button>
-
-                      <Link href="/contact" className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
-                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                          <Phone className="w-5 h-5 text-green-600" />
-                        </div>
-                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Help</span>
-                      </Link>
-
-                      <Link href="/policy/terms" className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                          <Shield className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Policies</span>
-                      </Link>
-
-                      <button onClick={() => {
-                          if (window.confirm("Are you sure you want to log out?")) handleLogout();
-                        }} 
-                        className="bg-red-50/50 rounded-2xl p-4 flex items-center gap-4 shadow-sm active:scale-95 transition-all border border-red-100 hover:bg-red-50 hover:shadow-md"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                          <LogOut className="w-5 h-5 text-red-600" />
-                        </div>
-                        <span className="text-[0.8rem] font-bold text-red-600">Logout</span>
-                      </button>
-                    </div>
-
-                    {/* Recent Orders Snippet */}
-                    <div className="mt-4">
-                      <div className="flex justify-between items-center mb-4 px-1">
-                        <h3 className="font-serif text-lg font-bold text-[#4A2F1F]">Recent Orders</h3>
-                        <button onClick={() => setActiveTab("orders")} className="text-xs text-[#D97706] font-bold">View All</button>
-                      </div>
-                      {orders.length > 0 ? (
-                        <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-none pl-1 pr-4">
-                          {orders.slice(0, 3).map(o => (
-                            <div key={o.id} onClick={() => setActiveTab("orders")} className="bg-white border border-[#EAE0D3] rounded-2xl p-4 flex-shrink-0 w-64 shadow-sm active:scale-95 transition-transform cursor-pointer">
-                              <div className="flex justify-between items-start mb-2">
-                                <span className="text-xs font-bold text-[#4A2F1F]">Order #{o.orderNumber}</span>
-                                <span className={`text-[0.65rem] font-bold uppercase px-2 py-0.5 rounded-full ${o.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                  {o.status}
-                                </span>
-                              </div>
-                              <span className="text-[0.65rem] text-muted-foreground block mb-2">{o.date} • {o.items.length} items</span>
-                              <span className="text-sm font-bold text-[#D97706]">₹{o.total}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {[
+                          { title: "Total Orders", value: orders.length, icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+                          { title: "Wishlist Items", value: wishlistItems.length, icon: Heart, color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-100" },
+                          { title: "Saved Addresses", value: profile?.saved_addresses?.length || 0, icon: MapPin, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-100" },
+                        ].map((stat, idx) => (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.08 }}
+                            key={idx} 
+                            className={`p-5 rounded-2xl border ${stat.border} bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group`}
+                          >
+                            <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${stat.bg} opacity-50 group-hover:scale-150 transition-transform duration-500`}></div>
+                            <div className={`h-10 w-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center relative z-10`}>
+                              <stat.icon className="h-5 w-5" />
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 bg-white border border-[#EAE0D3] rounded-2xl">
-                          <p className="text-xs text-muted-foreground">No recent orders found.</p>
-                        </div>
-                      )}
-                    </div>
+                            <div className="relative z-10">
+                              <h4 className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wider mb-1">{stat.title}</h4>
+                              <span className="font-serif text-2xl font-bold text-brand-charcoal">
+                                <AnimatedCounter value={stat.value} />
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
 
-                  </div>
-                </>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-serif text-lg font-bold text-brand-charcoal">Recent Activity</h3>
+                            <button onClick={() => setActiveTab("orders")} className="text-xs text-brand-orange hover:text-brand-orange-hover font-bold flex items-center gap-1">
+                              View All <ArrowRight className="h-3 w-3" />
+                            </button>
+                          </div>
+                          {orders.length > 0 ? (
+                            <div className="flex flex-col gap-4">
+                              {orders.slice(0, 3).map(o => (
+                                <div key={o.id} className="flex items-center gap-4 border-b border-brand-beige/30 pb-4 last:border-0 last:pb-0">
+                                  <div className="h-10 w-10 rounded-lg bg-brand-cream/50 flex items-center justify-center text-brand-orange flex-shrink-0">
+                                    <ShoppingBag className="h-5 w-5" />
+                                  </div>
+                                  <div className="flex-grow">
+                                    <h4 className="text-xs font-bold text-brand-charcoal">Order #{o.orderNumber || o.id.slice(0,6)}</h4>
+                                    <span className="text-[0.65rem] text-muted-foreground">{o.date} • {o.items?.length || 0} items</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="block text-xs font-bold text-brand-charcoal">₹{o.total}</span>
+                                    <span className="text-[0.6rem] font-bold text-brand-orange uppercase">{o.status}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <Clock className="h-8 w-8 text-brand-beige mx-auto mb-2" />
+                              <p className="text-xs text-muted-foreground">No recent activity.</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
+                          <h3 className="font-serif text-lg font-bold text-brand-charcoal mb-6">Quick Actions</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <button onClick={() => setActiveTab("settings")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                              <User className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                              <span className="text-xs font-bold text-brand-charcoal">Edit Profile</span>
+                            </button>
+                            <button onClick={() => setActiveTab("addresses")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                              <MapPin className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                              <span className="text-xs font-bold text-brand-charcoal">Add Address</span>
+                            </button>
+                            <Link href="/shop" className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                              <Gift className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                              <span className="text-xs font-bold text-brand-charcoal">Shop Sweets</span>
+                            </Link>
+                            <button onClick={() => setActiveTab("security")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                              <Shield className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                              <span className="text-xs font-bold text-brand-charcoal">Security</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
 
                 {/* --- TAB 1: SETTINGS DETAILS --- */}
@@ -1364,7 +1350,7 @@ function AccountContent() {
                                         </div>
                                         
                                         <div className="flex flex-col gap-2.5 mt-1">
-                                          {order.items.map((item, idx) => (
+                                          {order.items?.map((item, idx) => (
                                             <div key={idx} className="flex gap-3 items-center text-xs">
                                               <img src={item.image} alt={item.productName} className="h-10 w-10 object-cover rounded-md bg-brand-cream border border-brand-beige" />
                                               <div>
@@ -1379,8 +1365,14 @@ function AccountContent() {
                                       <div className="border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto text-xs text-brand-charcoal">
                                         <h4 className="font-serif font-bold text-[0.68rem] text-muted-foreground uppercase mb-1">Shipping Details</h4>
                                         <p className="leading-relaxed">
-                                          {order.shippingAddress?.name || "Customer"}<br />
-                                          {order.shippingAddress?.street || ""}{order.shippingAddress?.city ? `, ${order.shippingAddress.city}` : ""}
+                                          {typeof order.shippingAddress === 'string' ? (
+                                            order.shippingAddress
+                                          ) : (
+                                            <>
+                                              {order.shippingAddress?.name || "Customer"}<br />
+                                              {order.shippingAddress?.street || ""}{order.shippingAddress?.city ? `, ${order.shippingAddress.city}` : ""}
+                                            </>
+                                          )}
                                         </p>
                                       </div>
 
@@ -1949,14 +1941,15 @@ function AccountContent() {
   );
 }
 
-export default function Account() {
+export default function AccountPage() {
   return (
     <Suspense fallback={
-      <div className="h-screen flex items-center justify-center bg-brand-cream">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-brand-orange"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF6EE]">
+        <div className="h-10 w-10 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <AccountContent />
     </Suspense>
   );
 }
+

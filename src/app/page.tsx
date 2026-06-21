@@ -493,7 +493,7 @@ export default function Home() {
       ═══════════════════════════════════════════════════════════ */}
       <section className="bg-[#4A2F1F] py-5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex md:grid md:grid-cols-3 gap-6 text-center overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2 md:pb-0 px-2 md:px-0 scroll-smooth">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
             {[
               { value: 100, suffix: "+", label: "Years Legacy", icon: Award, sub: "Since 1972" },
               { value: 100, suffix: "%", label: "Pure Desi Ghee", icon: Leaf, sub: "Authentic Taste" },
@@ -506,7 +506,9 @@ export default function Home() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                className="flex flex-col items-center gap-1 min-w-[200px] md:min-w-0 snap-center shrink-0"
+                className={`flex flex-col items-center gap-1 ${
+                  label.includes('FSSAI') ? 'col-span-2 md:col-span-1 mt-2 md:mt-0' : ''
+                }`}
               >
                 <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mb-1">
                   <Icon className="h-5 w-5 text-[#C9A227]" />

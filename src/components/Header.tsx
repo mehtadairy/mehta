@@ -243,12 +243,12 @@ export default function Header() {
 
   const isHomepage = pathname === "/";
   const headerClass = isHomepage
-    ? `fixed top-0 left-0 right-0 z-40 transition-all duration-300 w-full ${
+    ? `fixed top-0 left-0 right-0 z-50 transition-all duration-300 w-full ${
         scrolled 
           ? "bg-white/95 backdrop-blur-md shadow-md border-b border-brand-beige py-2.5 sm:py-3.5" 
           : "bg-transparent py-4 sm:py-6"
       }`
-    : `sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-brand-beige shadow-sm py-2.5 sm:py-3.5 transition-all duration-300 w-full`;
+    : `sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-brand-beige shadow-sm py-2.5 sm:py-3.5 transition-all duration-300 w-full`;
 
   return (
     <>
@@ -531,92 +531,52 @@ export default function Header() {
         {/* Mobile Menu Panel */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <>
+            <div className="fixed inset-0 z-[45] lg:hidden flex flex-col items-center pt-[90px] px-6">
               {/* Backdrop */}
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 z-40 bg-brand-charcoal/40 backdrop-blur-xs lg:hidden"
+                className="absolute inset-0 bg-brand-charcoal/40 backdrop-blur-sm"
               />
 
-              {/* Slide-over Drawer Panel */}
+              {/* Floating Modal Panel */}
               <motion.div 
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 28, stiffness: 240 }}
-                className="fixed inset-y-0 right-0 z-50 w-[88vw] max-w-sm bg-white h-full shadow-2xl flex flex-col lg:hidden"
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="relative w-full max-w-sm bg-white rounded-3xl shadow-xl flex flex-col overflow-hidden max-h-[calc(100vh-110px)]"
               >
-                {/* Header bar */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[#EAE0D3]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0a4d8c] border border-[#d4af37] flex-col p-0.5">
-                      <span className="font-serif text-[0.45rem] font-black text-[#f3efe7] tracking-wider">MEHTA</span>
-                      <span className="text-[0.22rem] font-bold text-[#d4af37] uppercase">Sweet Mart</span>
-                    </div>
-                    <span className="font-serif text-sm font-bold text-[#2A1E17] uppercase tracking-wider">Menu</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#FAF6EE] text-[#2A1E17] hover:bg-[#EAE0D3] transition-colors"
-                  >
-                    <X className="h-4.5 w-4.5" />
-                  </button>
-                </div>
-
                 {/* Scrollable nav body */}
-                <nav className="flex-1 overflow-y-auto">
-                  {/* Primary links */}
-                  <div className="px-5 py-4 flex flex-col gap-1">
-                    <Link 
-                      href="/" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
-                        pathname === "/" 
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      Home
-                    </Link>
-                    <Link 
-                      href="/about" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
-                        pathname === "/about" 
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      About Us
-                    </Link>
-                  </div>
+                <nav className="flex-1 overflow-y-auto px-8 py-8 flex flex-col gap-6">
+                  <Link 
+                    href="/" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`font-serif text-[0.85rem] font-bold uppercase tracking-wider ${pathname === '/' ? 'text-[#D46D2D]' : 'text-[#4A2F1F]'}`}
+                  >
+                    HOME
+                  </Link>
+                  <Link 
+                    href="/about" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`font-serif text-[0.85rem] font-bold uppercase tracking-wider ${pathname === '/about' ? 'text-[#D46D2D]' : 'text-[#4A2F1F]'}`}
+                  >
+                    ABOUT US
+                  </Link>
 
-                  {/* Shop / Categories block */}
-                  <div className="px-5 pb-4">
-                    <Link
-                      href="/shop"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors block mb-1 ${
-                        pathname === "/shop"
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8"
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      Shop
-                    </Link>
-
-                    {/* Categories nested with left-border accent */}
-                    <div className="ml-3 pl-3 border-l-2 border-[#D46D2D]/30 flex flex-col gap-0.5 mt-1">
-                      <span className="text-[0.62rem] font-bold text-[#C9A227] uppercase tracking-[0.2em] mb-1 px-2">Shop Categories</span>
+                  <div className="flex flex-col gap-4">
+                    <span className="font-serif text-[0.85rem] font-bold uppercase tracking-wider text-[#4A2F1F]">
+                      SHOP CATEGORIES
+                    </span>
+                    <div className="flex flex-col gap-3 pl-4 border-l-2 border-[#EAE0D3]/60 ml-1">
                       {categories.map((cat: any) => (
                         <Link 
                           key={cat.id} 
                           href={`/shop?category=${cat.slug}`}
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className="text-[0.78rem] font-semibold text-[#4A2F1F] hover:text-[#D46D2D] py-1.5 px-2 rounded-md hover:bg-[#FAF6EE] transition-colors"
+                          className="font-serif text-[0.8rem] font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors"
                         >
                           {cat.name}
                         </Link>
@@ -624,88 +584,58 @@ export default function Header() {
                       <Link 
                         href="/shop"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-[0.72rem] font-bold text-[#D46D2D] py-1.5 px-2 mt-1 hover:underline"
+                        className="font-serif text-[0.8rem] font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors"
                       >
-                        View All Products →
+                        All Sweets & Farsan
                       </Link>
                     </div>
                   </div>
 
-                  {/* Secondary links */}
-                  <div className="px-5 pb-4 flex flex-col gap-1 border-t border-[#EAE0D3] pt-4">
-                    <Link 
-                      href="/blogs" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
-                        pathname === "/blogs" 
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      Blogs
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
-                        pathname === "/contact" 
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      Contact Us
-                    </Link>
-                    <Link 
-                      href="/faq" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-sm font-bold uppercase tracking-wider py-2.5 px-3 rounded-lg transition-colors ${
-                        pathname === "/faq" 
-                          ? "text-[#D46D2D] bg-[#D46D2D]/8" 
-                          : "text-[#2A1E17] hover:bg-[#FAF6EE]"
-                      }`}
-                    >
-                      FAQ
-                    </Link>
-                  </div>
-                </nav>
+                  <Link 
+                    href="/blogs" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`font-serif text-[0.85rem] font-bold uppercase tracking-wider ${pathname === '/blogs' ? 'text-[#D46D2D]' : 'text-[#4A2F1F]'}`}
+                  >
+                    BLOGS
+                  </Link>
+                  <Link 
+                    href="/contact" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`font-serif text-[0.85rem] font-bold uppercase tracking-wider ${pathname === '/contact' ? 'text-[#D46D2D]' : 'text-[#4A2F1F]'}`}
+                  >
+                    CONTACT US
+                  </Link>
 
-                {/* Bottom: auth */}
-                <div className="px-5 py-4 border-t border-[#EAE0D3] bg-[#FAF6EE]">
+                  <div className="h-px w-full bg-[#EAE0D3] my-2"></div>
+
                   {userLoggedIn ? (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-6">
                       <Link 
                         href="/account" 
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-xs font-bold uppercase tracking-wider text-[#2A1E17] py-2 px-3 rounded-lg hover:bg-white transition-colors"
+                        className="font-serif text-[0.85rem] font-bold uppercase tracking-wider text-[#4A2F1F]"
                       >
-                        My Account
-                      </Link>
-                      <Link 
-                        href="/admin" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-xs font-bold uppercase tracking-wider text-[#2A1E17] py-2 px-3 rounded-lg hover:bg-white transition-colors"
-                      >
-                        Admin Console
+                        MY ACCOUNT
                       </Link>
                       <button 
                         onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                        className="text-xs font-bold uppercase tracking-wider text-red-500 py-2 px-3 rounded-lg hover:bg-white transition-colors text-left"
+                        className="font-serif text-[0.85rem] font-bold uppercase tracking-wider text-[#4A2F1F] text-left"
                       >
-                        Logout
+                        LOGOUT
                       </button>
                     </div>
                   ) : (
                     <Link 
                       href="/account" 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="block w-full text-center bg-[#4A2F1F] text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl hover:bg-[#D46D2D] transition-colors"
+                      className="font-serif text-[0.85rem] font-bold uppercase tracking-wider text-[#4A2F1F]"
                     >
-                      Login / Register
+                      LOGIN / REGISTER
                     </Link>
                   )}
-                </div>
+                </nav>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>
       </motion.header>
