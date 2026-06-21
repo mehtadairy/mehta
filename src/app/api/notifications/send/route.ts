@@ -3,11 +3,13 @@ import { supabase } from '@/lib/supabaseClient';
 import webpush from 'web-push';
 
 // Configuration
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:support@mehtadairy.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:support@mehtadairy.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export async function POST(req: Request) {
   try {
