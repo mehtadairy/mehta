@@ -500,6 +500,26 @@ export default function AdminPanel() {
   const handleUpdateOrderStatus = async (orderId: string, newStatus: any) => {
     const payStatus = newStatus === 'Delivered' ? 'Paid' : orders.find(o => o.id === orderId)?.paymentStatus;
 
+    if (newStatus === 'Delivered') {
+      const order = orders.find(o => o.id === orderId);
+      if (order?.userPhone) {
+        try {
+          await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: order.userPhone,
+              title: 'Order Delivered! 🎉',
+              body: `Your order #${order.orderNumber} has been delivered. Enjoy!`,
+              url: '/account'
+            })
+          });
+        } catch(e) {
+          console.error("Failed to push notification", e);
+        }
+      }
+    }
+
     const { error } = await supabase.from('orders').update({
       status: newStatus,
       payment_status: payStatus
@@ -515,6 +535,28 @@ export default function AdminPanel() {
       setOrders(updated as any);
     } else {
       console.error("Failed to update order:", error);
+    }
+  };
+
+  const handleSendAdminPush = async (phone: string, name: string) => {
+    const msg = window.prompt(`Enter push notification message for ${name}:`);
+    if (!msg) return;
+    try {
+      const res = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          title: 'Message from Mehta Dairy',
+          body: msg,
+          url: '/'
+        })
+      });
+      const data = await res.json();
+      if (data.success) alert("Notification sent!");
+      else alert("Failed or User has no active push subscription.");
+    } catch(e) {
+      alert("Error sending notification.");
     }
   };
 
@@ -588,6 +630,9 @@ export default function AdminPanel() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               {products.length} products · {orders.length} orders
             </span>
+            <a href="/" target="_blank" className="hidden sm:flex items-center gap-1 text-[0.65rem] font-bold text-brand-orange hover:text-white transition-colors border border-brand-orange/30 px-3 py-1.5 rounded-lg hover:bg-brand-orange/20 mr-2">
+              Live Website ↗
+            </a>
             <button
               onClick={() => { localStorage.removeItem("mehta_admin_auth"); setIsAdminAuth(false); }}
               className="text-[0.65rem] font-bold text-white/60 hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
@@ -1498,6 +1543,7 @@ export default function AdminPanel() {
                             <th className="py-2.5">Mobile Phone</th>
                             <th className="py-2.5">Total Orders placed</th>
                             <th className="py-2.5 text-right">Lifetime purchase value</th>
+                            <th className="py-2.5 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1525,6 +1571,18 @@ export default function AdminPanel() {
                                   <td className="py-3 font-semibold">{customer.phone || "N/A"}</td>
                                   <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>
                                   <td className="py-3 text-right font-serif font-bold text-brand-orange">₹{lifetimeSpend}</td>
+                                  <td className="py-3 text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {customer.location && (
+                                        <a href={`https://www.google.com/maps?q=${customer.location.lat},${customer.location.lng}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[0.6rem] font-bold uppercase hover:bg-blue-100">
+                                          Map
+                                        </a>
+                                      )}
+                                      <button onClick={() => handleSendAdminPush(customer.phone, customer.name)} className="px-2 py-1 bg-brand-orange/10 text-brand-orange rounded text-[0.6rem] font-bold uppercase hover:bg-brand-orange/20 whitespace-nowrap">
+                                        Send Notification
+                                      </button>
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })
@@ -1544,6 +1602,7 @@ export default function AdminPanel() {
                                   <td className="py-3 font-semibold">{customerPhone}</td>
                                   <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>
                                   <td className="py-3 text-right font-serif font-bold text-brand-orange">₹{lifetimeSpend}</td>
+                                  <td className="py-3 text-right text-muted-foreground text-[0.65rem]">No DB Record</td>
                                 </tr>
                               );
                             })

@@ -95,7 +95,9 @@ import {
   LayoutDashboard,
   Crown,
   Gift,
-  Settings
+  Settings,
+  X,
+  Loader2
 } from "lucide-react";
 
 const AnimatedCounter = ({ value }: { value: number }) => {
@@ -163,6 +165,10 @@ function AccountContent() {
 
   const [profileAvatar, setProfileAvatar] = useState<string>("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  
+  // Push Notification State
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isPushLoading, setIsPushLoading] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -197,10 +203,59 @@ function AccountContent() {
   const [addrCity, setAddrCity] = useState("");
   const [addrState, setAddrState] = useState("");
   const [addrPincode, setAddrPincode] = useState("");
+  const [addrNickname, setAddrNickname] = useState("Home");
+  const [isDefaultAddr, setIsDefaultAddr] = useState(false);
   const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
   const [customCities, setCustomCities] = useState<string[]>([]);
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState<{ type: 'success' | 'warning' | 'error' | '', message: string }>({ type: '', message: '' });
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [addrLat, setAddrLat] = useState<number | null>(null);
+  const [addrLng, setAddrLng] = useState<number | null>(null);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Geolocation not supported by your browser", type: "error" } }));
+      return;
+    }
+    setLocationStatus("loading");
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setAddrLat(latitude);
+        setAddrLng(longitude);
+        try {
+          // Attempt to reverse geocode using Nominatim (free) as a fallback for Google Maps API
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data && data.address) {
+            setAddrCity(data.address.city || data.address.state_district || "");
+            setAddrState(data.address.state || "");
+            setAddrPincode(data.address.postcode || "");
+            setAddrArea(data.display_name || data.address.suburb || data.address.neighbourhood || data.address.road || "");
+            setAddrFlat(data.address.house_number || data.address.building || data.address.residential || "Current Location");
+            setLocationStatus("success");
+            window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Location detected successfully!", type: "success" } }));
+          } else {
+            setLocationStatus("success");
+          }
+        } catch (e) {
+          setLocationStatus("error");
+          window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Failed to reverse geocode location", type: "error" } }));
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        setLocationStatus("error");
+        window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Location permission denied", type: "error" } }));
+      }
+    );
+  };
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -417,6 +472,9 @@ function AccountContent() {
     setAddrCity("");
     setAddrState("");
     setAddrPincode("");
+    setAddrLat(null);
+    setAddrLng(null);
+    setLocationStatus("idle");
     setShowAddressForm(true);
   };
 
@@ -436,7 +494,9 @@ function AccountContent() {
         city: addrCity,
         state: addrState,
         pincode: addrPincode,
-        is_default: !profile.saved_addresses || profile.saved_addresses.length === 0
+        latitude: addrLat,
+        longitude: addrLng,
+        is_default: isDefaultAddr || (!profile.saved_addresses || profile.saved_addresses.length === 0)
       }]).select().single();
 
       if (error) throw error;
@@ -450,7 +510,8 @@ function AccountContent() {
         city: data.city,
         state: data.state,
         pincode: data.pincode,
-        isDefault: data.is_default
+        isDefault: data.is_default,
+        nickname: addrNickname
       };
 
       setProfile({
@@ -467,6 +528,9 @@ function AccountContent() {
       setAddrCity("");
       setAddrState("");
       setAddrPincode("");
+      setAddrLat(null);
+      setAddrLng(null);
+      setLocationStatus("idle");
     } catch (err) {
       console.error("Failed to add address", err);
     }
@@ -495,6 +559,66 @@ function AccountContent() {
     localStorage.setItem("mehta_wishlist", JSON.stringify(updatedIds));
     window.dispatchEvent(new Event("wishlistUpdated"));
   };
+
+  const handleTogglePush = async () => {
+    setIsPushLoading(true);
+    try {
+      if (!isPushEnabled) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+              const res = await fetch('/api/vapidPublicKey');
+              const { publicKey } = await res.json();
+              if (publicKey) {
+                const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+                sub = await reg.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: convertedVapidKey
+                });
+              }
+            }
+
+            if (sub && profile?.phone) {
+              await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription: sub, location: loc, phone: profile.phone })
+              });
+              setIsPushEnabled(true);
+              window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Live notifications enabled!", type: "success" } }));
+            }
+          }, (err) => {
+            console.error("Location error:", err);
+            window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "Location required for real-time tracking alerts.", type: "error" } }));
+          });
+        }
+      } else {
+        setIsPushEnabled(false);
+        // We don't unsubscribe from the browser, just stop sending from the server.
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsPushLoading(false);
+    }
+  };
+
+  // Utility function for vapid keys
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
 
   return (
     <>
@@ -709,7 +833,7 @@ function AccountContent() {
                       <div className="border border-brand-beige/50 rounded-2xl p-6 bg-white shadow-sm">
                         <h3 className="font-serif text-lg font-bold text-brand-charcoal mb-6">Quick Actions</h3>
                         <div className="grid grid-cols-2 gap-4">
-                          <button onClick={() => setActiveTab("profile")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                          <button onClick={() => setActiveTab("settings")} className="p-4 rounded-xl border border-brand-beige/50 hover:border-brand-orange/30 hover:bg-brand-orange/5 transition-all flex flex-col items-center justify-center gap-2 text-center group">
                             <User className="h-6 w-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
                             <span className="text-xs font-bold text-brand-charcoal">Edit Profile</span>
                           </button>
@@ -733,29 +857,33 @@ function AccountContent() {
                   {/* MOBILE VIEW - NEW ACCOUNT DESIGN */}
                   <div className="flex lg:hidden flex-col gap-6 w-full max-w-md mx-auto animate-fade-in-up pb-8">
                     {/* Profile Header Card */}
-                    <div className="bg-[#FAF6EE] rounded-[20px] p-5 flex flex-col justify-center shadow-sm relative overflow-hidden min-h-[90px]">
-                      <div className="absolute top-0 right-0 p-3 opacity-10">
-                        <Crown className="w-24 h-24" />
-                      </div>
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-white shadow-md relative bg-brand-cream flex items-center justify-center text-brand-charcoal text-xl font-black shrink-0">
+                    <div className="bg-gradient-to-r from-brand-charcoal to-[#3A2214] rounded-3xl p-6 flex flex-col justify-center shadow-xl relative overflow-hidden min-h-[140px] text-white">
+                      {/* Decorative Background Elements */}
+                      <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-orange/20 rounded-full blur-3xl"></div>
+                      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-brand-gold/20 rounded-full blur-3xl"></div>
+                      
+                      <div className="flex items-center gap-5 relative z-10">
+                        <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-brand-orange/50 shadow-lg relative bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-black shrink-0">
                           {profileAvatar ? (
                             <img src={profileAvatar} alt="Profile Avatar" className="w-full h-full object-cover" />
                           ) : (
                             profile?.name ? profile.name[0].toUpperCase() : "U"
                           )}
                         </div>
-                        <div>
+                        <div className="flex flex-col">
                           {profile?.name ? (
                             <>
-                              <h3 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">{profile.name}</h3>
-                              <span className="text-[0.65rem] text-[#D97706] font-bold block truncate max-w-[200px] mb-1">{profile.email || profile.phone}</span>
-                              <span className="text-[0.6rem] text-muted-foreground/80 font-bold uppercase tracking-wider block">Member Since {new Date().getFullYear()}</span>
+                              <h3 className="font-serif text-2xl font-bold text-white tracking-wide">👋 Hello, {profile.name.split(' ')[0]}</h3>
+                              <div className="flex items-center gap-3 mt-1.5 opacity-80">
+                                {profile.phone && <span className="text-[0.65rem] font-bold bg-white/10 px-2 py-0.5 rounded-full">{profile.phone}</span>}
+                                {profile.email && <span className="text-[0.65rem] font-bold bg-white/10 px-2 py-0.5 rounded-full truncate max-w-[120px]">{profile.email}</span>}
+                              </div>
+                              <span className="text-[0.6rem] font-bold uppercase tracking-widest text-brand-gold mt-2">Member Since {new Date().getFullYear()}</span>
                             </>
                           ) : (
                             <>
-                              <h3 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">Guest User</h3>
-                              <span className="text-[0.65rem] text-[#D97706] font-bold block mb-1">Welcome to Mehta Dairy</span>
+                              <h3 className="font-serif text-2xl font-bold text-white tracking-wide">👋 Hello, Guest</h3>
+                              <span className="text-[0.7rem] opacity-80 font-bold block mt-1">Welcome to Mehta Dairy</span>
                             </>
                           )}
                         </div>
@@ -763,40 +891,68 @@ function AccountContent() {
                     </div>
 
                     {/* Quick Actions Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => setActiveTab("orders")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
-                        <ShoppingBag className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-bold text-[#4A2F1F]">My Orders</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                      <button onClick={() => setActiveTab("orders")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
+                        <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-brand-orange transition-colors">
+                          <ShoppingBag className="w-6 h-6 text-brand-orange group-hover:text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold text-brand-charcoal">My Orders</span>
                       </button>
-                      <button onClick={() => setActiveTab("addresses")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
-                        <MapPin className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-bold text-[#4A2F1F]">Addresses</span>
+                      
+                      <button onClick={() => setActiveTab("wishlist")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
+                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-500 transition-colors">
+                          <Heart className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold text-brand-charcoal">Wishlist</span>
                       </button>
-                      <button onClick={() => setActiveTab("wishlist")} className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
-                        <Heart className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-bold text-[#4A2F1F]">Wishlist</span>
+
+                      <button onClick={() => setActiveTab("addresses")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-orange/30">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
+                          <MapPin className="w-6 h-6 text-blue-500 group-hover:text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold text-brand-charcoal">Addresses</span>
                       </button>
-                      <Link href="/contact" className="bg-white border border-[#EAE0D3] rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-sm min-h-[56px] active:scale-95 transition-transform group">
-                        <Phone className="w-6 h-6 text-[#D97706] group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-bold text-[#4A2F1F]">Support</span>
-                      </Link>
+                      
+                      <button onClick={() => setActiveTab("rewards")} className="bg-white rounded-2xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-transform group border border-brand-beige/30 hover:border-brand-gold/30">
+                        <div className="w-12 h-12 rounded-full bg-[#FAF6EE] flex items-center justify-center group-hover:bg-brand-gold transition-colors">
+                          <Gift className="w-6 h-6 text-brand-gold group-hover:text-white transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold text-brand-charcoal">Rewards</span>
+                      </button>
                     </div>
 
-                    {/* Account Section List */}
-                    <div className="bg-white border border-[#EAE0D3] rounded-[20px] overflow-hidden shadow-sm flex flex-col mt-2">
-                      <button onClick={() => setActiveTab("settings")} className="flex items-center gap-3 p-4 border-b border-[#EAE0D3]/60 active:bg-[#FAF6EE] transition-colors text-left">
-                        <div className="w-8 h-8 rounded-full bg-[#FAF6EE] flex items-center justify-center text-[#4A2F1F]"><Settings className="w-4 h-4" /></div>
-                        <span className="text-sm font-bold text-[#4A2F1F] flex-grow">Account Settings</span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/60" />
+                    {/* Second Grid (Settings, Help, Policies, Logout) */}
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <button onClick={() => setActiveTab("settings")} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
+                          <Settings className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Settings</span>
                       </button>
+
+                      <Link href="/contact" className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
+                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                          <Phone className="w-5 h-5 text-green-600" />
+                        </div>
+                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Help</span>
+                      </Link>
+
+                      <Link href="/policy/terms" className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] active:scale-95 transition-all border border-brand-beige/30 hover:shadow-md">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                          <Shield className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <span className="text-[0.8rem] font-bold text-brand-charcoal">Policies</span>
+                      </Link>
+
                       <button onClick={() => {
-                          if (window.confirm("Are you sure you want to log out?")) {
-                            handleLogout();
-                          }
-                        }} className="flex items-center gap-3 p-4 active:bg-red-50 transition-colors text-left text-red-600">
-                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600"><LogOut className="w-4 h-4" /></div>
-                        <span className="text-sm font-bold flex-grow">Logout</span>
-                        <ChevronRight className="w-4 h-4 text-red-300" />
+                          if (window.confirm("Are you sure you want to log out?")) handleLogout();
+                        }} 
+                        className="bg-red-50/50 rounded-2xl p-4 flex items-center gap-4 shadow-sm active:scale-95 transition-all border border-red-100 hover:bg-red-50 hover:shadow-md"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                          <LogOut className="w-5 h-5 text-red-600" />
+                        </div>
+                        <span className="text-[0.8rem] font-bold text-red-600">Logout</span>
                       </button>
                     </div>
 
@@ -1016,6 +1172,27 @@ function AccountContent() {
                           </div>
                           <input type="checkbox" className="w-5 h-5 accent-[#25D366] cursor-pointer" defaultChecked />
                         </label>
+                        
+                        <div className="h-px w-full bg-brand-beige/30 my-1"></div>
+
+                        <div className="flex items-center justify-between group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                              <Bell className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <span className="block text-sm font-bold text-brand-charcoal">Live Web Notifications</span>
+                              <span className="block text-[0.65rem] text-muted-foreground">Receive instant alerts for tracking & delivery (Requires Location)</span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={handleTogglePush}
+                            disabled={isPushLoading}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isPushEnabled ? 'bg-blue-600' : 'bg-gray-200'} ${isPushLoading ? 'opacity-50' : ''}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPushEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1098,36 +1275,91 @@ function AccountContent() {
                                   >
                                     <div className="p-4 flex flex-col sm:flex-row gap-6 justify-between items-start border-t border-brand-beige/50">
                                       <div className="flex-grow flex flex-col gap-3">
-                                        <div className="mb-4 bg-white p-3 rounded-xl border border-brand-beige">
-                                          <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider">Order Timeline</span>
-                                            <span className="inline-flex max-w-fit items-center gap-1 rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-[0.65rem] font-bold text-brand-orange uppercase tracking-wider">
+                                        <div className="mb-4 bg-white p-4 rounded-2xl border border-brand-beige shadow-sm relative overflow-hidden">
+                                          <div className="absolute top-0 right-0 w-24 h-24 bg-brand-cream/50 rounded-full blur-2xl pointer-events-none"></div>
+                                          <div className="flex justify-between items-center mb-4 relative z-10">
+                                            <span className="text-[0.7rem] font-bold text-brand-charcoal uppercase tracking-widest">Tracking Status</span>
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider ${
+                                              order.status === 'Cancelled' ? 'bg-red-50 text-red-600' :
+                                              order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-orange/10 text-brand-orange'
+                                            }`}>
+                                              {order.status === 'Delivered' && <Check className="w-3 h-3" />}
                                               {order.status}
                                             </span>
                                           </div>
-                                          <div className="relative w-full h-1 bg-gray-100 rounded-full mt-3 mb-1">
-                                            <motion.div 
-                                              initial={{ width: "0%" }}
-                                              animate={{ 
-                                                width: order.status === 'Cancelled' ? '100%' :
-                                                       order.status === 'Delivered' ? '100%' : 
-                                                       order.status === 'Shipped' ? '66%' : 
-                                                       order.status === 'Processing' ? '33%' : '5%'
-                                              }}
-                                              transition={{ duration: 0.8, ease: "easeOut" }}
-                                              className="absolute top-0 left-0 h-1 rounded-full"
-                                              style={{ 
-                                                backgroundColor: order.status === 'Cancelled' ? '#ef4444' : '#10b981'
-                                              }}
-                                            ></motion.div>
-                                          </div>
-                                          <div className="flex justify-between text-[0.6rem] text-muted-foreground font-semibold px-1 mt-2">
-                                            <span className={['Pending', 'Paid', 'Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700 font-bold' : ''}>Placed</span>
-                                            <span className={['Paid', 'Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700 font-bold' : ''}>Confirmed</span>
-                                            <span className={['Shipped', 'Delivered'].includes(order.status) ? 'text-emerald-700 font-bold' : ''}>Shipped</span>
-                                            <span className={order.status === 'Delivered' ? 'text-emerald-700 font-bold' : order.status === 'Cancelled' ? 'text-red-600 font-bold' : ''}>
-                                              {order.status === 'Cancelled' ? 'Cancelled' : 'Delivered'}
-                                            </span>
+                                          
+                                          <div className="flex flex-col relative pl-2 mt-2">
+                                            {(() => {
+                                              const isCancelled = order.status === 'Cancelled';
+                                              const steps = isCancelled 
+                                                ? ['Order Placed', 'Cancelled']
+                                                : ['Order Placed', 'Processing', 'Shipped', 'Delivered'];
+                                              
+                                              const activeIndex = isCancelled ? 1 : 
+                                                order.status?.toLowerCase() === 'delivered' ? 4 :
+                                                order.status === 'Shipped' ? 2 :
+                                                order.status === 'Processing' ? 1 : 0;
+
+                                              return steps.map((step, idx) => {
+                                                const isCompleted = idx < activeIndex;
+                                                const isActive = idx === activeIndex;
+                                                const isLast = idx === steps.length - 1;
+                                                const isFail = isCancelled && isActive;
+
+                                                return (
+                                                  <div key={step} className="flex items-start gap-4 relative pb-6 last:pb-1">
+                                                    {/* Vertical Line */}
+                                                    {!isLast && (
+                                                      <div className="absolute left-[7px] top-5 bottom-0 w-0.5 bg-brand-cream overflow-hidden">
+                                                        {(isCompleted || (isActive && !isFail)) && (
+                                                          <motion.div 
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: "100%" }}
+                                                            transition={{ duration: 0.5, delay: idx * 0.2 }}
+                                                            className={`w-full h-full ${isFail ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                                          />
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {/* Dot */}
+                                                    <div className="relative z-10 flex-shrink-0 mt-0.5">
+                                                      <motion.div 
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={{ type: "spring", stiffness: 300, damping: 20, delay: idx * 0.15 }}
+                                                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white ${
+                                                          isCompleted ? 'border-emerald-500' :
+                                                          isFail ? 'border-red-500' :
+                                                          isActive ? 'border-brand-orange ring-4 ring-brand-orange/20' : 'border-brand-beige'
+                                                        }`}
+                                                      >
+                                                        {isCompleted && <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />}
+                                                        {isFail && <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />}
+                                                        {(isActive && !isFail) && <div className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-pulse" />}
+                                                      </motion.div>
+                                                    </div>
+
+                                                    {/* Text */}
+                                                    <div className="flex flex-col -mt-0.5">
+                                                      <span className={`text-xs font-bold ${
+                                                        isCompleted ? 'text-emerald-700' :
+                                                        isFail ? 'text-red-600' :
+                                                        isActive ? 'text-brand-orange' : 'text-muted-foreground'
+                                                      }`}>
+                                                        {step}
+                                                      </span>
+                                                      {isActive && !isFail && !isLast && (
+                                                        <span className="text-[0.6rem] text-muted-foreground mt-0.5">In progress...</span>
+                                                      )}
+                                                      {isFail && (
+                                                        <span className="text-[0.6rem] text-red-500 mt-0.5">Order was cancelled</span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                );
+                                              });
+                                            })()}
                                           </div>
                                         </div>
                                         
@@ -1237,69 +1469,120 @@ function AccountContent() {
                     </div>
 
                     {showAddressForm && (
-                      <form onSubmit={handleAddAddress} className="bg-brand-cream/35 border border-brand-beige rounded-xl p-5 flex flex-col gap-4 max-w-lg animate-fade-in-up">
-                        <h4 className="font-serif text-xs font-bold text-brand-charcoal">Create Address</h4>
+                      <form onSubmit={handleAddAddress} className="bg-white border border-brand-beige rounded-2xl p-6 shadow-lg flex flex-col gap-5 max-w-lg animate-fade-in-up">
+                        <div className="flex justify-between items-center border-b border-brand-beige/50 pb-3">
+                          <h4 className="font-serif text-lg font-bold text-brand-charcoal">Add New Address</h4>
+                          <button type="button" onClick={() => setShowAddressForm(false)} className="text-muted-foreground hover:text-brand-charcoal">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Recipient Name *</label>
+                        {/* Use Current Location Button */}
+                        {(!addrFlat && !addrArea) && (
+                          <div className="w-full mb-2">
+                            <button 
+                              type="button" 
+                              onClick={handleUseCurrentLocation}
+                              disabled={isLocating}
+                              className="w-full flex items-center justify-center gap-3 bg-white text-brand-charcoal border-2 border-brand-beige min-h-[48px] rounded-xl font-bold text-sm hover:border-brand-orange hover:text-brand-orange transition-colors active:scale-95 disabled:opacity-50 shadow-sm"
+                            >
+                              {isLocating ? <Loader2 className="w-5 h-5 animate-spin text-brand-orange" /> : <MapPin className="w-5 h-5 text-brand-orange" />}
+                              {isLocating ? "Fetching your location..." : "Use Current Location"}
+                            </button>
+                            {locationStatus === "success" && (
+                              <div className="flex items-center gap-2 mt-2 text-emerald-600 text-xs font-bold bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                <Check className="w-4 h-4" /> Location detected successfully ✓
+                              </div>
+                            )}
+                            {locationStatus === "error" && (
+                              <div className="flex items-center gap-2 mt-2 text-red-600 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
+                                <AlertCircle className="w-4 h-4" /> Unable to detect location. Please enter address manually.
+                              </div>
+                            )}
+                            {locationStatus === "success" && addrLat && addrLng && (
+                              <div className="mt-3 w-full h-24 bg-brand-cream/30 rounded-xl border border-brand-beige overflow-hidden relative flex items-center justify-center">
+                                <MapPin className="w-6 h-6 text-brand-orange absolute z-10 animate-bounce" />
+                                <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#D46D2D 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                                <span className="absolute bottom-2 right-2 text-[0.6rem] font-bold text-brand-orange/60 bg-white/80 px-2 py-0.5 rounded-md">Map Preview</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-2">
+                          <div className="flex flex-col gap-1.5 relative">
                             <input 
                               type="text" 
-                              placeholder="Aarya Mehta"
+                              id="addrName"
+                              placeholder=" "
                               value={addrName}
                               onChange={(e) => setAddrName(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                              className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10"
                               required
                             />
+                            <label htmlFor="addrName" className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                              Recipient Name *
+                            </label>
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Phone Number *</label>
+                          <div className="flex flex-col gap-1.5 relative">
                             <input 
                               type="tel" 
-                              placeholder="98765 43210"
+                              id="addrPhone"
+                              placeholder=" "
                               value={addrPhone}
                               onChange={(e) => setAddrPhone(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                              className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10"
                               required
                             />
+                            <label htmlFor="addrPhone" className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                              Phone Number *
+                            </label>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-full">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Flat, House no., Building, Company, Apartment *</label>
-                            <input 
-                              type="text" 
-                              placeholder="Flat/House No, Building, Company"
-                              value={addrFlat}
-                              onChange={(e) => setAddrFlat(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
-                              required
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Area, Street, Sector, Village *</label>
-                            <input 
-                              type="text" 
-                              placeholder="Area, Street, Sector, Village"
-                              value={addrArea}
-                              onChange={(e) => setAddrArea(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5 col-span-full">
-                          <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Landmark (Optional)</label>
+                        <div className="flex flex-col gap-1.5 relative">
                           <input 
                             type="text" 
-                            placeholder="E.g. near apollo hospital"
+                            id="addrFlat"
+                            placeholder=" "
+                            value={addrFlat}
+                            onChange={(e) => setAddrFlat(e.target.value)}
+                            className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10"
+                            required
+                          />
+                          <label htmlFor="addrFlat" className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                            House / Flat No *
+                          </label>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 relative">
+                          {/* Google Places mock for area */}
+                          <input 
+                            type="text" 
+                            id="addrArea"
+                            placeholder=" "
+                            value={addrArea}
+                            onChange={(e) => setAddrArea(e.target.value)}
+                            className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10"
+                            required
+                          />
+                          <label htmlFor="addrArea" className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                            Street / Area (Autocomplete) *
+                          </label>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 relative">
+                          <input 
+                            type="text" 
+                            id="addrLandmark"
+                            placeholder=" "
                             value={addrLandmark}
                             onChange={(e) => setAddrLandmark(e.target.value)}
-                            className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                            className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10"
                           />
+                          <label htmlFor="addrLandmark" className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                            Landmark (Optional)
+                          </label>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 col-span-full">
@@ -1316,7 +1599,6 @@ function AccountContent() {
                                 if (val.length < 6) {
                                   setPincodeStatus({ type: '', message: '' });
                                   return;
-                               .0000;
                                 }
 
                                 setIsPincodeLoading(true);
@@ -1382,65 +1664,103 @@ function AccountContent() {
                               required
                             />
                             {isPincodeLoading && (
-                              <div className="flex items-center gap-1.5 mt-1.5">
-                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-brand-orange border-t-transparent"></div>
-                                <span className="text-[0.62rem] text-muted-foreground">Autofetching city & state...</span>
-                              </div>
-                            )}
-                            {pincodeStatus.message && (
-                              <p className={`text-[0.62rem] font-bold mt-1.5 ${
-                                pincodeStatus.type === 'success' ? 'text-emerald-600' :
-                                pincodeStatus.type === 'warning' ? 'text-amber-600' : 'text-red-500'
-                              }`}>
-                                {pincodeStatus.message}
-                              </p>
+                              <>
+                                <div className="flex items-center gap-1.5 mt-1.5">
+                                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-brand-orange border-t-transparent"></div>
+                                  <span className="text-[0.62rem] text-muted-foreground">Autofetching city & state...</span>
+                                </div>
+                                <Loader2 className="h-4 w-4 absolute right-3 top-4 animate-spin text-brand-orange" />
+                              </>
                             )}
                           </div>
 
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">City *</label>
+                          <div className="flex flex-col gap-1.5 relative">
                             <select
                               value={addrCity}
                               onChange={(e) => setAddrCity(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                              className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10 appearance-none"
                               required
                             >
                               <option value="">Select City</option>
-                              {Array.from(new Set([...deliveryZones.map(z => z.city), ...DEFAULT_CITIES, ...customCities])).filter(Boolean).sort().map((city) => (
+                              {Array.from(new Set([...DEFAULT_CITIES, ...customCities])).map(city => (
                                 <option key={city} value={city}>{city}</option>
                               ))}
                             </select>
+                            <label className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                              City *
+                            </label>
                           </div>
 
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">State *</label>
+                          <div className="flex flex-col gap-1.5 relative">
                             <select
                               value={addrState}
                               onChange={(e) => setAddrState(e.target.value)}
-                              className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-brand-orange"
+                              className="peer w-full border border-brand-beige/80 rounded-xl px-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange bg-brand-cream/10 appearance-none"
                               required
                             >
                               <option value="">Select State</option>
-                              {INDIAN_STATES.map((state) => (
+                              {INDIAN_STATES.map(state => (
                                 <option key={state} value={state}>{state}</option>
                               ))}
                             </select>
+                            <label className="absolute left-4 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-placeholder-shown:text-muted-foreground peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange">
+                              State *
+                            </label>
                           </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-2 border-t border-brand-beige pt-4">
+                        {pincodeStatus.message && (
+                          <div className={`p-3 rounded-lg text-xs font-bold ${
+                            pincodeStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            pincodeStatus.type === 'warning' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-red-50 text-red-600 border border-red-200'
+                          }`}>
+                            {pincodeStatus.type === 'success' && <Check className="inline h-3.5 w-3.5 mr-1" />}
+                            {pincodeStatus.type === 'warning' && <AlertCircle className="inline h-3.5 w-3.5 mr-1" />}
+                            {pincodeStatus.message}
+                          </div>
+                        )}
+
+                        {/* Nickname & Default Option */}
+                        <div className="flex flex-col gap-3 mt-2 border-t border-brand-beige/50 pt-4">
+                          <label className="text-xs font-bold text-brand-charcoal uppercase tracking-wider">Save Address As</label>
+                          <div className="flex gap-3">
+                            {['Home', 'Work', 'Other'].map(type => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => setAddrNickname(type)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${addrNickname === type ? 'bg-brand-orange/10 border-brand-orange text-brand-orange' : 'bg-white border-brand-beige text-brand-charcoal hover:border-brand-orange/50'}`}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          <label className="flex items-center gap-2 mt-2 cursor-pointer w-fit">
+                            <input 
+                              type="checkbox" 
+                              checked={isDefaultAddr}
+                              onChange={(e) => setIsDefaultAddr(e.target.checked)}
+                              className="w-4 h-4 rounded text-brand-orange accent-brand-orange border-brand-beige focus:ring-brand-orange"
+                            />
+                            <span className="text-xs text-brand-charcoal font-bold">Make this my default address</span>
+                          </label>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-4">
                           <button 
                             type="button" 
                             onClick={() => setShowAddressForm(false)}
-                            className="px-4 py-2 border border-brand-beige rounded-lg text-xs font-bold text-brand-charcoal"
+                            className="px-5 py-2.5 rounded-xl border border-brand-beige text-brand-charcoal text-xs font-bold hover:bg-brand-cream transition-colors active:scale-95"
                           >
                             Cancel
                           </button>
                           <button 
                             type="submit" 
-                            className="px-5 py-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg text-xs font-bold"
+                            className="px-6 py-2.5 rounded-xl bg-brand-orange text-white text-xs font-bold shadow-md hover:bg-brand-orange-hover hover:shadow-lg transition-all active:scale-95"
                           >
-                            Add Address
+                            Save Address
                           </button>
                         </div>
                       </form>
@@ -1455,7 +1775,7 @@ function AccountContent() {
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-[#D97706]" />
-                                <span className="text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">{addr.isDefault ? 'Home' : 'Other'}</span>
+                                <span className="text-xs font-bold text-[#4A2F1F] uppercase tracking-wider">{addr.nickname || (addr.isDefault ? 'Home' : 'Other')}</span>
                               </div>
                               {addr.isDefault && (
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>

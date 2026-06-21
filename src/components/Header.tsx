@@ -57,6 +57,52 @@ export default function Header() {
   }, [searchOpen, allProducts.length]);
 
   useEffect(() => {
+    // Request notification and location after 5 seconds
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined' && 'Notification' in window && navigator.geolocation) {
+        if (Notification.permission === 'default') {
+          Notification.requestPermission().then(async (permission) => {
+            if (permission === 'granted') {
+              try {
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                  const res = await fetch('/api/vapidPublicKey');
+                  const { publicKey } = await res.json();
+                  if (publicKey) {
+                    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
+                    const base64 = (publicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const outputArray = new Uint8Array(rawData.length);
+                    for (let i = 0; i < rawData.length; ++i) {
+                      outputArray[i] = rawData.charCodeAt(i);
+                    }
+                    sub = await reg.pushManager.subscribe({
+                      userVisibleOnly: true,
+                      applicationServerKey: outputArray
+                    });
+                  }
+                }
+                const phone = localStorage.getItem("mehta_user_phone");
+                if (sub && phone) {
+                  await fetch('/api/notifications/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription: sub, location: null, phone })
+                  });
+                }
+              } catch (e) {
+                console.error("Push registration failed", e);
+              }
+            }
+          });
+        }
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     let lastScrollY = window.scrollY;
     const handleScroll = () => {

@@ -586,13 +586,13 @@ export default function ProductDetails() {
               </div>
 
               {/* ── DELIVERY INFO CARD ──────────────────────────── */}
-              <div className="flex items-start gap-3 bg-[#EEF4FF] border border-[#BFCDEC] rounded-xl p-4">
+              <div className="flex items-start gap-3 bg-[#EEF4FF] border border-[#BFCDEC] rounded-xl p-4 mt-2 mb-2">
                 <span className="text-2xl flex-shrink-0">🚚</span>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-[#1D3461] uppercase tracking-wider">Delivery Information</span>
-                  <p className="text-[0.7rem] text-[#2A1E17] leading-relaxed">
-                    Available across Gujarat. Estimated delivery: <span className="font-bold">1–3 business days</span>. 
-                    Free delivery on orders above ₹499. WhatsApp us for same-day Palitana delivery.
+                  <span className="text-[0.65rem] font-bold text-[#1D3461] uppercase tracking-wider">Delivery Information</span>
+                  <p className="text-xs text-[#2A1E17] leading-relaxed mt-0.5">
+                    Delivering across India. <span className="font-bold">Estimated delivery: 1–3 days</span>. 
+                    Free delivery on orders above <span className="font-bold">₹999</span>.
                   </p>
                 </div>
               </div>

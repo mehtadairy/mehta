@@ -493,13 +493,12 @@ export default function Home() {
       ═══════════════════════════════════════════════════════════ */}
       <section className="bg-[#4A2F1F] py-5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="flex md:grid md:grid-cols-3 gap-6 text-center overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2 md:pb-0 px-2 md:px-0 scroll-smooth">
             {[
-              { value: 50, suffix: "+", label: "Years of Trust", icon: Award },
-              { value: 25, suffix: "K+", label: "Orders Delivered", icon: Truck },
-              { value: 100, suffix: "%", label: "Pure Ingredients", icon: Leaf },
-              { value: 100, suffix: "%", label: "Fresh Daily", icon: Clock },
-            ].map(({ value, suffix, label, icon: Icon }, i) => (
+              { value: 100, suffix: "+", label: "Years Legacy", icon: Award, sub: "Since 1972" },
+              { value: 100, suffix: "%", label: "Pure Desi Ghee", icon: Leaf, sub: "Authentic Taste" },
+              { value: 100, suffix: "%", label: "FSSAI Certified", icon: ShieldCheck, sub: "Hygiene Guaranteed" },
+            ].map(({ value, suffix, label, icon: Icon, sub }, i) => (
               <motion.div
                 key={label}
                 variants={fadeUp}
@@ -507,13 +506,17 @@ export default function Home() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                className="flex flex-col items-center gap-1"
+                className="flex flex-col items-center gap-1 min-w-[200px] md:min-w-0 snap-center shrink-0"
               >
-                <Icon className="h-5 w-5 text-[#C9A227] mb-1" />
+                <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mb-1">
+                  <Icon className="h-5 w-5 text-[#C9A227]" />
+                </div>
                 <span className="font-serif text-2xl sm:text-3xl font-bold text-white">
-                  <AnimatedNumber value={value} suffix={suffix} />
+                  {label.includes('FSSAI') ? '' : <AnimatedNumber value={value} suffix={suffix} />}
+                  {label.includes('FSSAI') ? 'FSSAI' : ''}
                 </span>
-                <span className="text-[0.65rem] font-semibold text-white/60 uppercase tracking-wider">{label}</span>
+                <span className="text-[0.7rem] font-bold text-[#C9A227] uppercase tracking-widest">{label.includes('FSSAI') ? 'Certified' : label}</span>
+                <span className="text-[0.6rem] text-white/60">{sub}</span>
               </motion.div>
             ))}
           </div>

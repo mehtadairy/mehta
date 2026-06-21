@@ -10,12 +10,17 @@ export default function SplashLoader() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Show splash on every page load/refresh as requested
+    // Skip splash on repeat visits for better performance
+    if (localStorage.getItem('splash_seen')) {
+      setIsVisible(false);
+      return;
+    }
+
     setIsVisible(true);
     document.body.style.overflow = "hidden";
 
-    // Progress bar animation
-    const duration = 1200; // 1.2 seconds for full animation
+    // Progress bar animation (1.2 seconds for full animation)
+    const duration = 1200; 
     const intervalTime = 30;
     const steps = duration / intervalTime;
     let currentStep = 0;
@@ -30,6 +35,7 @@ export default function SplashLoader() {
         setTimeout(() => {
           setIsVisible(false);
           document.body.style.overflow = "";
+          localStorage.setItem('splash_seen', 'true');
         }, 150);
       }
     }, intervalTime);
@@ -84,58 +90,33 @@ export default function SplashLoader() {
           {/* Shimmering Gold Radial Background */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,155,60,0.08)_0%,rgba(0,0,0,0)_75%)] pointer-events-none" />
 
-
-
           <div className="relative flex flex-col items-center z-10">
-            {/* Animated Cursive Brand Logo (Mehta Dairy) with thick outline */}
-            <motion.div
-              variants={textContainer}
-              initial="hidden"
-              animate="visible"
-              className="flex items-center justify-center flex-wrap"
-            >
-              {/* "Mehta" */}
-              <div className="flex">
-                {"Mehta".split("").map((char, idx) => (
-                  <motion.span
-                    key={`mehta-${idx}`}
-                    variants={letterVariants}
-                    className="inline-block text-5xl sm:text-7xl md:text-8xl text-white font-bold tracking-tight"
-                    style={{
-                      fontFamily: "'Pacifico', cursive",
-                      textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-                      color: "#5A3E2B",
-                    }}
-                  >
-                    {char}
-                  </motion.span>
-                ))}
-              </div>
+            {/* Static Brand Logo (Mehta Dairy) for better mobile performance */}
+            <div className="flex items-center justify-center flex-wrap">
+              <span
+                className="inline-block text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight"
+                style={{
+                  fontFamily: "'Pacifico', cursive",
+                  textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                  color: "#5A3E2B",
+                }}
+              >
+                Mehta
+              </span>
 
-              {/* Spacing between words */}
               <span className="w-4 sm:w-6" />
 
-              {/* "Dairy" with dotless 'i' and custom star dot */}
-              <div className="flex">
-                {"Dairy".split("").map((char, idx) => {
-                  const isI = char.toLowerCase() === "i";
-                  return (
-                    <motion.span
-                      key={`dairy-${idx}`}
-                      variants={letterVariants}
-                      className="inline-block text-5xl sm:text-7xl md:text-8xl text-white font-bold tracking-tight"
-                      style={{
-                        fontFamily: "'Pacifico', cursive",
-                        textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-                        color: "#5A3E2B",
-                      }}
-                    >
-                      {char}
-                    </motion.span>
-                  );
-                })}
-              </div>
-            </motion.div>
+              <span
+                className="inline-block text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight"
+                style={{
+                  fontFamily: "'Pacifico', cursive",
+                  textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                  color: "#5A3E2B",
+                }}
+              >
+                Dairy
+              </span>
+            </div>
 
             {/* Glowing Brand Tagline */}
             <div className="mt-8 text-center px-4">

@@ -64,7 +64,7 @@ const DEFAULT_CITIES = [
 
 import { Address, Coupon } from "@/lib/types";
 import { supabase } from "@/lib/supabaseClient";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle } from "lucide-react";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function Checkout() {
   const router = useRouter();
@@ -92,6 +92,49 @@ export default function Checkout() {
   const [customCities, setCustomCities] = useState<string[]>([]);
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState<{ type: 'success' | 'warning' | 'error' | '', message: string }>({ type: '', message: '' });
+
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newLat, setNewLat] = useState<number | null>(null);
+  const [newLng, setNewLng] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      return;
+    }
+    setLocationStatus("loading");
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setNewLat(latitude);
+        setNewLng(longitude);
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data && data.address) {
+            setNewCity(data.address.city || data.address.state_district || "");
+            setNewState(data.address.state || "");
+            setNewPincode(data.address.postcode || "");
+            setNewArea(data.display_name || data.address.suburb || data.address.neighbourhood || data.address.road || "");
+            setNewFlat(data.address.house_number || data.address.building || data.address.residential || "Current Location");
+            setLocationStatus("success");
+          } else {
+            setLocationStatus("success");
+          }
+        } catch (e) {
+          setLocationStatus("error");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        setLocationStatus("error");
+      }
+    );
+  };
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -284,6 +327,9 @@ export default function Checkout() {
     setNewCity("");
     setNewState("");
     setNewPincode("");
+    setNewLat(null);
+    setNewLng(null);
+    setLocationStatus("idle");
     setPincodeStatus({ type: '', message: '' });
     setShowNewAddressForm(true);
   };
@@ -308,6 +354,8 @@ export default function Checkout() {
         city: newCity,
         state: newState,
         pincode: newPincode,
+        latitude: newLat,
+        longitude: newLng,
         is_default: addresses.length === 0
       }]).select().single();
 
@@ -710,6 +758,37 @@ export default function Checkout() {
                     <form onSubmit={handleAddAddress} className="bg-brand-cream/35 border border-brand-beige rounded-xl p-5 flex flex-col gap-4 animate-fade-in-up">
                       <h4 className="font-serif text-xs font-bold text-brand-charcoal">New Address Details</h4>
                       
+                      {(!newFlat && !newArea) && (
+                        <div className="w-full mb-2">
+                          <button 
+                            type="button" 
+                            onClick={handleUseCurrentLocation}
+                            disabled={isLocating}
+                            className="w-full flex items-center justify-center gap-3 bg-white text-brand-charcoal border-2 border-brand-beige min-h-[48px] rounded-xl font-bold text-sm hover:border-brand-orange hover:text-brand-orange transition-colors active:scale-95 disabled:opacity-50 shadow-sm"
+                          >
+                            {isLocating ? <Loader2 className="w-5 h-5 animate-spin text-brand-orange" /> : <MapPin className="w-5 h-5 text-brand-orange" />}
+                            {isLocating ? "Fetching your location..." : "Use Current Location"}
+                          </button>
+                          {locationStatus === "success" && (
+                            <div className="flex items-center gap-2 mt-2 text-emerald-600 text-xs font-bold bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                              <Check className="w-4 h-4" /> Location detected successfully ✓
+                            </div>
+                          )}
+                          {locationStatus === "error" && (
+                            <div className="flex items-center gap-2 mt-2 text-red-600 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
+                              <AlertCircle className="w-4 h-4" /> Unable to detect location. Please enter manually.
+                            </div>
+                          )}
+                          {locationStatus === "success" && newLat && newLng && (
+                            <div className="mt-3 w-full h-24 bg-brand-cream/30 rounded-xl border border-brand-beige overflow-hidden relative flex items-center justify-center">
+                              <MapPin className="w-6 h-6 text-brand-orange absolute z-10 animate-bounce" />
+                              <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#D46D2D 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                              <span className="absolute bottom-2 right-2 text-[0.6rem] font-bold text-brand-orange/60 bg-white/80 px-2 py-0.5 rounded-md">Map Preview</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
                           <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Recipient Name *</label>
@@ -1021,22 +1100,37 @@ export default function Checkout() {
                 </div>
 
                 {pincodeError && (
-                  <div className="bg-red-50 text-red-600 text-[0.65rem] font-medium p-2 rounded-lg mt-2 mb-2 border border-red-100 flex gap-2">
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <div className="bg-red-50 text-red-600 text-[0.65rem] font-medium p-3 rounded-xl mt-2 mb-2 border border-red-100 flex gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <p>{pincodeError}</p>
                   </div>
                 )}
 
                 {deliveryDays && !pincodeError && (
-                  <div className="bg-emerald-50 text-emerald-700 text-[0.65rem] font-bold p-2 rounded-lg mt-2 mb-2 border border-emerald-100 text-center">
-                    Estimated Delivery: {deliveryDays}
+                  <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl mt-2 mb-2 border border-emerald-100 flex items-center gap-3">
+                    <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <Check className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[0.65rem] font-bold uppercase tracking-wider text-emerald-600/80">Estimated Delivery</span>
+                      <span className="text-sm font-bold">{deliveryDays.includes('min') ? deliveryDays : `Arriving by ${deliveryDays}`}</span>
+                    </div>
                   </div>
                 )}
+
+                <div className="bg-[#FAF6EE] border border-[#EAE0D3] rounded-xl p-3 flex items-center justify-center gap-2 mb-2 mt-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-[#4A2F1F]">100% Secure Payment</span>
+                  <div className="flex gap-1.5 ml-2">
+                    <span className="text-[0.6rem] font-bold bg-white px-1.5 py-0.5 rounded border border-[#EAE0D3]">UPI</span>
+                    <span className="text-[0.6rem] font-bold bg-white px-1.5 py-0.5 rounded border border-[#EAE0D3]">CARDS</span>
+                  </div>
+                </div>
 
                 <button 
                   onClick={handleProceedToPayment}
                   disabled={!!pincodeError && deliveryMethod === 'Home'}
-                  className="w-full inline-flex items-center justify-center rounded-xl bg-brand-orange py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-orange-hover disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full hidden lg:inline-flex items-center justify-center rounded-xl bg-brand-orange py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-orange-hover disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Proceed to Payment <ChevronRight className="ml-1 h-4 w-4" />
                 </button>
@@ -1047,6 +1141,21 @@ export default function Checkout() {
           </div>
         </div>
       </section>
+
+      {/* --- STICKY MOBILE BOTTOM BAR --- */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#EAE0D3] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] lg:hidden z-30 pointer-events-auto flex items-center justify-between">
+        <div className="flex flex-col">
+           <span className="text-[0.65rem] text-muted-foreground font-bold uppercase tracking-wider">Total to pay</span>
+           <span className="font-serif text-xl font-black text-[#D46D2D]">₹{totalPayable}</span>
+        </div>
+        <button 
+          onClick={handleProceedToPayment}
+          disabled={!!pincodeError && deliveryMethod === 'Home'}
+          className="flex-1 ml-6 rounded-xl bg-brand-orange py-3.5 text-sm font-bold text-white shadow-lg transition-transform active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+        >
+          Pay Now <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
 
       {/* --- RAZORPAY GATEWAY SIMULATOR MODAL --- */}
       <AnimatePresence>
