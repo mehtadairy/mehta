@@ -85,7 +85,9 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <GlobalScrollManager />
         </Suspense>
+        <div className="flex-1 pb-40">
         {children}
+      </div>
         <MobileNavBar />
         <ToastContainer />
         <SplashLoader />

@@ -69,7 +69,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden">
+    <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden pb-20">
       {/* TRUST STRIP (Grid layout, no scroll, matching Image 4) */}
       <div className="bg-[#4A2F1F] py-8 relative z-10 border-b border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -80,7 +80,7 @@ export default function Footer() {
               { icon: Leaf, value: "100%", label: "PURE INGREDIENTS", sub: "100% Natural" },
               { icon: Clock, value: "100%", label: "FRESH DAILY", sub: "Made Fresh" }
             ].map((item, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -233,6 +233,19 @@ export default function Footer() {
           >
             &copy; 2026 All Rights Reserved By Mehta Sweet Mart
           </motion.div>
+          <motion.a
+            href="https://optenary.tech"
+            target="_blank"
+            rel="noreferrer"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex items-center text-xs text-white hover:underline"
+          >
+            <img src="/optenary.jpeg" alt="Optenary Tech" className="h-5 w-auto mr-2" />
+            Developed by Optenary Tech
+          </motion.a>
 
           <div className="flex items-center gap-4">
             {/* Social icons stagger */}
