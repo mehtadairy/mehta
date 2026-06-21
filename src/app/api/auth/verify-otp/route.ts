@@ -1,98 +1,46 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
 
-export async function POST(request: Request) {
+const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || '';
+
+export async function POST(req: Request) {
   try {
-    const { phone, otp } = await request.json();
+    const { phone, otp } = await req.json();
 
     if (!phone || !otp) {
-      return NextResponse.json({ success: false, message: 'Phone and OTP are required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Phone number and OTP are required' }, { status: 400 });
     }
 
-    const authKey = process.env.MSG91_AUTH_KEY;
+    const cleanPhone = phone.replace(/\D/g, '');
+    const mobile = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    let isOtpValid = false;
-
-    // Simulated Fallback Mode
-    const isSimulated = !authKey || 
-                        authKey === 'your-msg91-auth-key-optional' || 
-                        otp === '123456' || 
-                        !process.env.MSG91_TEMPLATE_ID;
-
-    if (isSimulated) {
-      console.log(`[SIMULATED MSG91] Verifying OTP ${otp} for ${phone}`);
-      // In simulated mode, let's accept "123456" as the valid OTP
-      if (otp === '123456') {
-        isOtpValid = true;
-      } else {
-         return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid OTP (Simulated mode expects 123456)',
-          type: 'error'
-        }, { status: 400 });
+    if (!MSG91_AUTH_KEY) {
+      console.log(`[MSG91 Mock] Verifying OTP ${otp} for ${mobile}`);
+      // Mock logic: 1234 is always successful in mock mode
+      if (otp === '1234') {
+        return NextResponse.json({ success: true, message: 'OTP verified (mock mode)' });
       }
-    } else {
-      // Actual MSG91 Integration
-      const url = `https://control.msg91.com/api/v5/otp/verify?otp=${otp}&mobile=91${phone}&authkey=${authKey}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.type === 'error') {
-        return NextResponse.json({ success: false, message: data.message }, { status: 400 });
-      }
-      isOtpValid = true;
+      return NextResponse.json({ success: false, error: 'Invalid OTP' }, { status: 400 });
     }
 
-    if (isOtpValid) {
-      // Handle Supabase Profile
-      // Check if user exists
-      let { data: profile, error: fetchError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone', phone)
-        .single();
+    const url = `https://api.msg91.com/api/v5/otp/verify?otp=${otp}&mobile=${mobile}&authkey=${MSG91_AUTH_KEY}`;
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        // PGRST116 means zero rows found, which is fine
-        console.error('Supabase fetch error:', fetchError);
-      }
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
 
-      if (!profile) {
-        // Create new user profile
-        const { data: newProfile, error: insertError } = await supabase
-          .from('customers')
-          .insert([
-            { name: 'Customer', phone: phone, email: '' }
-          ])
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Supabase insert error:', insertError);
-        } else {
-          profile = newProfile;
-        }
-      }
+    const data = await response.json();
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'OTP verified successfully',
-        profile 
-      });
+    if (data.type === 'error' || data.type === 'error') { // MSG91 sometimes returns type: error
+      return NextResponse.json({ success: false, error: data.message || 'Invalid OTP' }, { status: 400 });
     }
+
+    return NextResponse.json({ success: true, message: 'OTP verified successfully' });
 
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to verify OTP' },
-      { status: 500 }
-    );
+    console.error('Verify OTP Error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to verify OTP' }, { status: 500 });
   }
 }

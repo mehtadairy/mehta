@@ -1,53 +1,43 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || '';
+const MSG91_TEMPLATE_ID = process.env.MSG91_TEMPLATE_ID || ''; // Optional: if using a specific template
+
+export async function POST(req: Request) {
   try {
-    const { phone } = await request.json();
+    const { phone } = await req.json();
 
     if (!phone) {
-      return NextResponse.json({ success: false, message: 'Phone number is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Phone number is required' }, { status: 400 });
     }
 
-    const authKey = process.env.MSG91_AUTH_KEY;
-    const templateId = process.env.MSG91_TEMPLATE_ID;
+    const cleanPhone = phone.replace(/\D/g, '');
+    const mobile = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    // Simulated Fallback Mode
-    if (!authKey || authKey === 'your-msg91-auth-key-optional' || !templateId) {
-      console.log(`[SIMULATED MSG91] Sending OTP to ${phone}`);
-      return NextResponse.json({ 
-        success: true, 
-        message: 'OTP sent successfully (Simulated)',
-        type: 'success'
-      });
+    if (!MSG91_AUTH_KEY) {
+      console.log(`[MSG91 Mock] Sending OTP to ${mobile}`);
+      return NextResponse.json({ success: true, message: 'OTP sent (mock mode)', reqId: `mock_${Date.now()}` });
     }
 
-    // Actual MSG91 Integration
-    const url = `https://control.msg91.com/api/v5/otp?template_id=${templateId}&mobile=91${phone}&authkey=${authKey}`;
-    
+    const url = `https://api.msg91.com/api/v5/otp?template_id=${MSG91_TEMPLATE_ID}&mobile=${mobile}&authkey=${MSG91_AUTH_KEY}`;
+
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'content-type': 'application/json',
+      },
     });
 
     const data = await response.json();
 
     if (data.type === 'error') {
-      return NextResponse.json({ success: false, message: data.message }, { status: 400 });
+      throw new Error(data.message);
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'OTP sent successfully',
-      data 
-    });
+    return NextResponse.json({ success: true, message: 'OTP sent successfully', reqId: data.request_id });
 
   } catch (error: any) {
-    console.error('Error sending OTP:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to send OTP' },
-      { status: 500 }
-    );
+    console.error('Send OTP Error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to send OTP' }, { status: 500 });
   }
 }

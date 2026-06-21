@@ -95,10 +95,14 @@ export default function AuthCallback() {
       localStorage.setItem("mehta_logged_in", "true");
       localStorage.setItem("mehta_user_name", userName);
       localStorage.setItem("mehta_user_email", email);
-      if (userPhone) {
+      
+      const needsPhoneVerification = !userPhone || customer?.phone_verified === false;
+      
+      if (!needsPhoneVerification) {
         localStorage.setItem("mehta_user_phone", userPhone);
       } else {
         localStorage.removeItem("mehta_user_phone"); // Prompt to enter phone number
+        localStorage.setItem("mehta_pending_phone_verification", "true");
       }
 
       // 4. Trigger state update events across pages
@@ -107,7 +111,10 @@ export default function AuthCallback() {
       // 5. Redirect to destination or account dashboard
       const params = new URLSearchParams(window.location.search);
       const redirectUrl = params.get("redirect");
-      if (redirectUrl) {
+      
+      if (needsPhoneVerification) {
+        router.push("/complete-profile");
+      } else if (redirectUrl) {
         router.push(redirectUrl);
       } else {
         router.push("/account");

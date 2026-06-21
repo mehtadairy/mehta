@@ -132,13 +132,8 @@ export default function Checkout() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check login state
+    // Check login state (no redirect, allow guest)
     const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
-    if (!isLoggedIn) {
-      router.push("/account?redirect=/checkout");
-      return;
-    }
-
     // Cart load
     const storedCart = localStorage.getItem("mehta_cart");
     if (storedCart) {
@@ -298,61 +293,54 @@ export default function Checkout() {
     e.preventDefault();
     if (!newName || !newPhone || !newFlat || !newArea || !newCity || !newState || !newPincode) return;
 
-    const phone = localStorage.getItem("mehta_user_phone");
-    const email = localStorage.getItem("mehta_user_email");
-    if (!phone && !email) {
-      alert("Please log in first.");
-      return;
-    }
-
+    const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
     let customerId = localStorage.getItem("mehta_user_id");
-    if (!customerId) {
-      let query = supabase.from('customers').select('id');
-      if (phone) {
-        query = query.eq('phone', phone);
-      } else if (email) {
-        query = query.eq('email', email);
+
+    let newAddr: Address;
+
+    if (isLoggedIn && customerId) {
+      const { data, error } = await supabase.from('addresses').insert([{
+        customer_id: customerId,
+        full_name: newName,
+        mobile: newPhone,
+        address: `${newFlat}, ${newArea}`,
+        landmark: newLandmark || null,
+        city: newCity,
+        state: newState,
+        pincode: newPincode,
+        is_default: addresses.length === 0
+      }]).select().single();
+
+      if (error) {
+        alert("Failed to save address to profile: " + error.message);
+        return;
       }
-      const { data: customer } = await query.maybeSingle();
-      if (customer) {
-        customerId = customer.id;
-        localStorage.setItem("mehta_user_id", customer.id);
-      }
+
+      newAddr = {
+        id: data.id,
+        name: data.full_name,
+        phone: data.mobile,
+        street: data.address,
+        landmark: data.landmark,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        isDefault: data.is_default
+      };
+    } else {
+      // Guest Checkout: Just create local address object
+      newAddr = {
+        id: `guest-addr-${Date.now()}`,
+        name: newName,
+        phone: newPhone,
+        street: `${newFlat}, ${newArea}`,
+        landmark: newLandmark || "",
+        city: newCity,
+        state: newState,
+        pincode: newPincode,
+        isDefault: true
+      };
     }
-
-    if (!customerId) {
-      alert("Customer record not found. Please log in again.");
-      return;
-    }
-
-    const { data, error } = await supabase.from('addresses').insert([{
-      customer_id: customerId,
-      full_name: newName,
-      mobile: newPhone,
-      address: `${newFlat}, ${newArea}`,
-      landmark: newLandmark || null,
-      city: newCity,
-      state: newState,
-      pincode: newPincode,
-      is_default: addresses.length === 0
-    }]).select().single();
-
-    if (error) {
-      alert("Failed to save address: " + error.message);
-      return;
-    }
-
-    const newAddr: Address = {
-      id: data.id,
-      name: data.full_name,
-      phone: data.mobile,
-      street: data.address,
-      landmark: data.landmark,
-      city: data.city,
-      state: data.state,
-      pincode: data.pincode,
-      isDefault: data.is_default
-    };
 
     const updated = [...addresses, newAddr];
     setAddresses(updated);
@@ -378,11 +366,16 @@ export default function Checkout() {
       return;
     }
     
-    const userPhone = localStorage.getItem("mehta_user_phone");
+    const selectedAddrObj = addresses.find(a => a.id === selectedAddressId);
+    let userPhone = localStorage.getItem("mehta_user_phone");
+    
     if (!userPhone || userPhone === 'null' || userPhone === 'undefined' || userPhone.trim() === '') {
-      alert("Please link your phone number in your Profile page first to checkout.");
-      router.push("/account?tab=profile");
-      return;
+      if (selectedAddrObj && selectedAddrObj.phone) {
+        userPhone = selectedAddrObj.phone;
+      } else {
+        alert("Please enter a valid phone number in your shipping address.");
+        return;
+      }
     }
     
     setShowPaymentModal(true);
@@ -396,8 +389,8 @@ export default function Checkout() {
         ? addresses.find(a => a.id === selectedAddressId) as Address
         : { id: 'pickup', name: 'Self Pickup', phone: 'N/A', street: 'Mehta Sweet Mart Main Branch', city: 'Ahmedabad', state: 'Gujarat', pincode: '380009', isDefault: false };
 
-      const userName = localStorage.getItem("mehta_user_name") || "Customer";
-      const userPhone = localStorage.getItem("mehta_user_phone") || "";
+      const userName = localStorage.getItem("mehta_user_name") || orderAddress.name || "Customer";
+      const userPhone = localStorage.getItem("mehta_user_phone") || orderAddress.phone || "";
       const userEmail = localStorage.getItem("mehta_user_email") || "";
       const orderId = typeof window !== "undefined" && window.crypto && window.crypto.randomUUID
         ? window.crypto.randomUUID()
@@ -409,6 +402,7 @@ export default function Checkout() {
 
       const orderPayload = {
         id: orderId,
+        customer_id: localStorage.getItem("mehta_user_id") || null,
         order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         user_name: userName,
         user_phone: userPhone,

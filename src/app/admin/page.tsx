@@ -85,6 +85,7 @@ export default function AdminPanel() {
   // Order sections state
   const [orderStatusFilter, setOrderStatusFilter] = useState<"All" | "Processing" | "Shipped" | "Delivered" | "Cancelled">("All");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
 
   // Product CRUD states
   const [showProductForm, setShowProductForm] = useState(false);
@@ -1463,9 +1464,27 @@ export default function AdminPanel() {
               {/* ==================== TAB 4: CUSTOMERS ==================== */}
               {activeTab === "customers" && (
                 <div className="flex flex-col gap-6 animate-fade-in">
-                  <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-beige pb-3">
-                    Customer Database Directory
-                  </h3>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-brand-beige pb-3 gap-3">
+                    <h3 className="font-serif text-lg font-bold text-brand-charcoal">
+                      Customer Database Directory
+                    </h3>
+                    {/* Search Bar */}
+                    <div className="w-full sm:max-w-xs relative flex items-center border border-brand-beige rounded-lg bg-white px-3 py-1.5 focus-within:border-brand-orange transition-all">
+                      <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                      <input 
+                        type="text" 
+                        placeholder="Search Name, Phone, Email..."
+                        value={customerSearchQuery}
+                        onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                        className="w-full text-xs bg-transparent border-none outline-none text-brand-charcoal"
+                      />
+                      {customerSearchQuery && (
+                        <button onClick={() => setCustomerSearchQuery("")} className="text-muted-foreground hover:text-brand-charcoal">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                   {dbCustomers.length === 0 && orders.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-12">No registered customer transactions found.</p>
@@ -1483,7 +1502,14 @@ export default function AdminPanel() {
                         </thead>
                         <tbody>
                           {dbCustomers.length > 0 ? (
-                            dbCustomers.map((customer, idx) => {
+                            dbCustomers.filter((c) => {
+                              const query = customerSearchQuery.toLowerCase();
+                              return (
+                                (c.name && c.name.toLowerCase().includes(query)) ||
+                                (c.email && c.email.toLowerCase().includes(query)) ||
+                                (c.phone && c.phone.includes(query))
+                              );
+                            }).map((customer, idx) => {
                               const customerOrders = orders.filter(
                                 o => 
                                   (customer.phone && o.userPhone === customer.phone) || 
@@ -1503,7 +1529,10 @@ export default function AdminPanel() {
                               );
                             })
                           ) : (
-                            Array.from(new Set(orders.map(o => o.userName))).map((name, idx) => {
+                            Array.from(new Set(orders.map(o => o.userName))).filter(name => {
+                              const query = customerSearchQuery.toLowerCase();
+                              return name.toLowerCase().includes(query);
+                            }).map((name, idx) => {
                               const customerOrders = orders.filter(o => o.userName === name);
                               const customerPhone = customerOrders[0]?.userPhone || "N/A";
                               const lifetimeSpend = customerOrders.reduce((sum, o) => sum + o.total, 0);

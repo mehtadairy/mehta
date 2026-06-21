@@ -140,21 +140,7 @@ function AccountContent() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    setOtpError("");
-    try {
-      const redirectUrl = searchParams.get("redirect") || "/account";
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setOtpError(err.message || "Failed to initialize Google login.");
-      setIsLoading(false);
-    }
+    // Moved to Login Page
   };
 
   // Account State
@@ -270,6 +256,12 @@ function AccountContent() {
         window.dispatchEvent(new Event("authUpdated"));
       }
 
+      if (!loggedInStatus && !session?.user) {
+        // Redirect to new Login Page
+        router.push("/login?redirect=/account");
+        return;
+      }
+
       if (loggedInStatus && (phone || email)) {
         // Fetch Profile from API (by phone first, fallback to email)
         const queryParam = phone && phone !== 'null' ? `phone=${phone}` : `email=${email}`;
@@ -374,71 +366,7 @@ function AccountContent() {
     router.push("/");
   };
 
-  // OTP Login Functions
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpPhone) return;
-    setIsLoading(true);
-    setOtpError("");
-    
-    try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: otpPhone })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setIsOtpSent(true);
-      } else {
-        setOtpError(data.message || "Failed to send OTP.");
-      }
-    } catch (err) {
-      setOtpError("An error occurred while sending OTP.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpPhone || !otpCode) return;
-    setIsLoading(true);
-    setOtpError("");
-    
-    try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: otpPhone, otp: otpCode })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        localStorage.setItem("mehta_logged_in", "true");
-        localStorage.setItem("mehta_user_phone", otpPhone);
-        if (data.profile?.id) localStorage.setItem("mehta_user_id", data.profile.id);
-        if (data.profile?.name) localStorage.setItem("mehta_user_name", data.profile.name);
-        if (data.profile?.email) localStorage.setItem("mehta_user_email", data.profile.email);
-        setProfile(data.profile);
-        setIsLoggedIn(true);
-        setOtpError("");
-        window.dispatchEvent(new Event("authUpdated"));
-        
-        const redirectUrl = searchParams.get("redirect");
-        if (redirectUrl) {
-          router.push(redirectUrl);
-        }
-      } else {
-        setOtpError(data.message || "Invalid OTP.");
-      }
-    } catch (err) {
-      setOtpError("An error occurred while verifying OTP.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // OTP Login Functions moved to /login/page.tsx
 
   // Update Profile Info
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -573,308 +501,12 @@ function AccountContent() {
       <Header />
       <WhatsAppFloat />
 
-      {/* ── NOT LOGGED IN — SPLIT SCREEN AUTH ─────────────────────── */}
+      {/* ── NOT LOGGED IN ─────────────────────── */}
       {!isLoggedIn ? (
-        <section className="min-h-[calc(100vh-80px)] flex items-stretch bg-[#FAF6EE] mt-20 sm:mt-24">
-          <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto shadow-2xl rounded-none lg:rounded-3xl overflow-hidden border border-[#EAE0D3] my-0 lg:my-8">
-
-            {/* ── LEFT BRAND PANEL ──────────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="hidden lg:flex lg:w-5/12 relative flex-col justify-between p-10 overflow-hidden bg-[#2A1E17]"
-            >
-              {/* Background image */}
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: "url('/store_inside_counter.jpeg')" }}
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#2A1E17]/60 via-[#2A1E17]/40 to-[#2A1E17]/90" />
-
-              {/* Top: Logo + badge */}
-              <div className="relative z-10 flex flex-col gap-3">
-                <span className="inline-flex items-center gap-2 bg-[#D4AF37]/20 border border-[#D4AF37]/30 text-[#D4AF37] text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full w-fit">
-                  ✦ Since 1972 Legacy
-                </span>
-                <h2 className="font-serif text-3xl font-bold text-white leading-tight mt-2">
-                  Mehta Dairy
-                </h2>
-                <p className="text-xs text-white/70 leading-relaxed max-w-xs">
-                  Serving authentic sweets, namkeens, and premium gift hampers from the heart of Palitana.
-                </p>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="relative z-10 flex flex-col gap-3">
-                {[
-                  { icon: "✓", text: "50+ Years of Trust" },
-                  { icon: "✓", text: "100% Authentic Ingredients" },
-                  { icon: "✓", text: "Fresh Daily Production" },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + i * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex items-center gap-3"
-                  >
-                    <span className="h-5 w-5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] text-[0.6rem] font-black flex-shrink-0">
-                      {item.icon}
-                    </span>
-                    <span className="text-xs text-white/80 font-medium">{item.text}</span>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Customer testimonial */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4"
-              >
-                <p className="text-xs text-white/90 italic leading-relaxed">
-                  "The kaju katli is absolutely divine. My family has been ordering from Mehta Dairy for over 20 years!"
-                </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="h-7 w-7 rounded-full bg-[#D4AF37]/30 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] text-xs font-black">
-                    P
-                  </div>
-                  <div>
-                    <p className="text-[0.65rem] font-bold text-white">Priya Shah</p>
-                    <p className="text-[0.6rem] text-white/50">Loyal Customer, Ahmedabad</p>
-                  </div>
-                  <div className="ml-auto flex gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="text-[#D4AF37] text-[0.6rem]">★</span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* ── RIGHT AUTH CARD ──────────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-              className="flex-1 flex flex-col justify-center bg-white px-6 py-12 sm:px-10 lg:px-16"
-            >
-              <div className="max-w-sm mx-auto w-full">
-
-                {/* Header */}
-                <div className="mb-8">
-                  <h1 className="font-serif text-3xl font-bold text-[#2A1E17]">
-                    {isOtpSent ? "Enter Your OTP" : "Welcome Back"}
-                  </h1>
-                  <p className="text-xs text-[#7E6B5A] mt-1.5">
-                    {isOtpSent
-                      ? `We sent a 6-digit OTP to +91 ${otpPhone}`
-                      : "Sign in to access orders, wishlist & saved addresses"}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  {!isOtpSent ? (
-                    <>
-                      {/* Google Button — Primary */}
-                      <motion.button
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
-                        whileTap={{ scale: 0.97 }}
-                        type="button"
-                        onClick={handleGoogleLogin}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 border-2 border-[#EAE0D3] hover:border-[#D46D2D]/40 bg-white hover:bg-[#FAF6EE] rounded-2xl py-4 text-sm font-bold text-[#2A1E17] shadow-sm transition-all cursor-pointer disabled:opacity-60 min-h-[56px]"
-                      >
-                        {isLoading ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                            className="h-5 w-5 rounded-full border-2 border-[#D46D2D] border-t-transparent"
-                          />
-                        ) : (
-                          <svg className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                          </svg>
-                        )}
-                        {isLoading ? "Connecting to Google…" : "Continue with Google"}
-                      </motion.button>
-
-                      {/* Divider */}
-                      <div className="relative flex items-center">
-                        <div className="flex-grow h-px bg-[#EAE0D3]" />
-                        <span className="flex-shrink mx-4 text-[0.62rem] font-bold text-[#7E6B5A] uppercase tracking-widest">
-                          Or sign in with mobile
-                        </span>
-                        <div className="flex-grow h-px bg-[#EAE0D3]" />
-                      </div>
-
-                      {/* Phone input — floating label */}
-                      <div className="relative">
-                        <div className={`flex items-center rounded-2xl border-2 bg-[#FAF6EE]/50 px-4 py-3.5 transition-all ${
-                          focusedField === "phone"
-                            ? "border-[#D46D2D] bg-white ring-4 ring-[#D46D2D]/10"
-                            : "border-[#EAE0D3] hover:border-[#D46D2D]/40"
-                        }`}>
-                          <span className="text-sm font-bold text-[#2A1E17] mr-2">+91</span>
-                          <div className="w-px h-5 bg-[#EAE0D3] mr-3" />
-                          <Phone className="h-4 w-4 text-[#7E6B5A] mr-2 flex-shrink-0" />
-                          <input
-                            type="tel"
-                            placeholder="98765 43210"
-                            value={otpPhone}
-                            onChange={(e) => setOtpPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                            onFocus={() => setFocusedField("phone")}
-                            onBlur={() => setFocusedField(null)}
-                            className="flex-1 bg-transparent outline-none text-sm text-[#2A1E17] font-medium placeholder-[#7E6B5A]/50"
-                            disabled={isLoading}
-                          />
-                        </div>
-                      </div>
-
-                      {otpError && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-xs text-red-500 font-medium -mt-1"
-                        >
-                          {otpError}
-                        </motion.p>
-                      )}
-
-                      <motion.button
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 24px rgba(212,109,45,0.3)" }}
-                        whileTap={{ scale: 0.97 }}
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={isLoading || otpPhone.length < 10}
-                        className="w-full flex items-center justify-center gap-2 bg-[#D46D2D] hover:bg-[#BF5E23] disabled:bg-[#D46D2D]/40 text-white font-bold text-sm rounded-2xl py-4 shadow-lg transition-all cursor-pointer min-h-[52px]"
-                      >
-                        {isLoading ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                            className="h-4 w-4 rounded-full border-2 border-white border-t-transparent"
-                          />
-                        ) : null}
-                        {isLoading ? "Sending OTP…" : "Send OTP via SMS"}
-                      </motion.button>
-                    </>
-                  ) : (
-                    /* ── OTP INPUT PANEL ── */
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setIsOtpSent(false); setOtpError(""); setOtpCode(""); }}
-                        className="text-[0.68rem] text-[#D46D2D] font-bold hover:underline text-left -mt-2 cursor-pointer"
-                      >
-                        ← Change number
-                      </button>
-
-                      {/* 6-box OTP grid */}
-                      <div className="relative w-full flex justify-between gap-2.5 items-center py-2">
-                        <input
-                          type="tel"
-                          maxLength={6}
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          onFocus={() => setIsOtpInputFocused(true)}
-                          onBlur={() => setIsOtpInputFocused(false)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-text z-20"
-                          required
-                          disabled={isLoading}
-                          autoFocus
-                        />
-                        {Array.from({ length: 6 }).map((_, idx) => {
-                          const char = otpCode[idx] || "";
-                          const isActive = isOtpInputFocused && idx === otpCode.length;
-                          const isFilled = char !== "";
-                          return (
-                            <div
-                              key={idx}
-                              className={`relative flex-1 h-14 rounded-2xl border-2 flex items-center justify-center text-base font-bold transition-all duration-200 ${
-                                isActive
-                                  ? "border-[#D46D2D] bg-[#D46D2D]/5 shadow-[0_0_0_4px_rgba(212,109,45,0.15)] scale-105"
-                                  : isFilled
-                                  ? "border-[#2A1E17] bg-white text-[#2A1E17]"
-                                  : "border-[#EAE0D3] bg-[#FAF6EE]"
-                              }`}
-                            >
-                              <AnimatePresence mode="popLayout">
-                                {char && (
-                                  <motion.span
-                                    initial={{ scale: 0.5, y: 5, opacity: 0 }}
-                                    animate={{ scale: 1, y: 0, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                    className="font-mono text-lg font-black text-[#2A1E17]"
-                                  >
-                                    {char}
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
-                              {isActive && (
-                                <motion.div
-                                  animate={{ opacity: [1, 0, 1] }}
-                                  transition={{ duration: 0.9, repeat: Infinity }}
-                                  className="absolute h-6 w-0.5 bg-[#D46D2D] rounded-full"
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {otpError && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-xs text-red-500 font-medium"
-                        >
-                          {otpError}
-                        </motion.p>
-                      )}
-
-                      <motion.button
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 24px rgba(212,109,45,0.3)" }}
-                        whileTap={{ scale: 0.97 }}
-                        type="button"
-                        onClick={handleVerifyOtp}
-                        disabled={isLoading || otpCode.length < 6}
-                        className="w-full flex items-center justify-center gap-2 bg-[#D46D2D] hover:bg-[#BF5E23] disabled:bg-[#D46D2D]/40 text-white font-bold text-sm rounded-2xl py-4 shadow-lg transition-all cursor-pointer min-h-[52px]"
-                      >
-                        {isLoading ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                            className="h-4 w-4 rounded-full border-2 border-white border-t-transparent"
-                          />
-                        ) : null}
-                        {isLoading ? "Verifying…" : "Verify & Login"}
-                      </motion.button>
-
-                      <p className="text-[0.62rem] text-[#7E6B5A] text-center">
-                        Use <span className="font-bold text-[#D46D2D]">123456</span> in simulation mode.
-                      </p>
-                    </>
-                  )}
-
-                  {/* Footer trust note */}
-                  <p className="text-[0.62rem] text-[#7E6B5A] text-center leading-relaxed mt-1">
-                    By signing in, you agree to our{" "}
-                    <Link href="/policy/terms" className="text-[#D46D2D] hover:underline font-semibold">Terms</Link>{" "}
-                    &amp;{" "}
-                    <Link href="/policy/privacy" className="text-[#D46D2D] hover:underline font-semibold">Privacy Policy</Link>.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
+        <section className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#FAF6EE] mt-20 sm:mt-24">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-bold text-[#4A2F1F]">Redirecting to Login...</p>
           </div>
         </section>
       ) : (
@@ -1331,6 +963,62 @@ function AccountContent() {
                         </button>
                       </div>
                     </form>
+
+                    {/* Notification Preferences */}
+                    <div className="mt-8 mb-6">
+                      <h3 className="font-serif text-2xl font-bold text-brand-charcoal mb-2">
+                        Notification Preferences
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-6">
+                        Control how you want to receive updates about your orders and account.
+                      </p>
+                      
+                      <div className="flex flex-col gap-4 max-w-xl bg-white border border-brand-beige/50 rounded-2xl p-6 shadow-sm">
+                        <label className="flex items-center justify-between cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-brand-cream flex items-center justify-center text-brand-orange group-hover:scale-110 transition-transform">
+                              <Mail className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <span className="block text-sm font-bold text-brand-charcoal">Email Updates</span>
+                              <span className="block text-[0.65rem] text-muted-foreground">Receive order confirmations and receipts via email</span>
+                            </div>
+                          </div>
+                          <input type="checkbox" className="w-5 h-5 accent-brand-orange cursor-pointer" defaultChecked />
+                        </label>
+
+                        <div className="h-px w-full bg-brand-beige/30 my-1"></div>
+
+                        <label className="flex items-center justify-between cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-brand-cream flex items-center justify-center text-brand-orange group-hover:scale-110 transition-transform">
+                              <Phone className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <span className="block text-sm font-bold text-brand-charcoal">SMS Updates</span>
+                              <span className="block text-[0.65rem] text-muted-foreground">Receive text messages for delivery tracking</span>
+                            </div>
+                          </div>
+                          <input type="checkbox" className="w-5 h-5 accent-brand-orange cursor-pointer" defaultChecked />
+                        </label>
+                        
+                        <div className="h-px w-full bg-brand-beige/30 my-1"></div>
+
+                        <label className="flex items-center justify-between cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform">
+                              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.487-1.761-1.66-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            </div>
+                            <div>
+                              <span className="block text-sm font-bold text-brand-charcoal">WhatsApp Updates</span>
+                              <span className="block text-[0.65rem] text-muted-foreground">Get order status directly on WhatsApp</span>
+                            </div>
+                          </div>
+                          <input type="checkbox" className="w-5 h-5 accent-[#25D366] cursor-pointer" defaultChecked />
+                        </label>
+                      </div>
+                    </div>
+
                   </motion.div>
                 )}
 
