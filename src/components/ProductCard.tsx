@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingBasket, Heart, Eye, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Product } from "@/lib/types";
+import { Product, generateSlug } from "@/lib/types";
 import { animateFlyToCart } from "@/lib/animations";
 
 interface ProductCardProps {
@@ -145,7 +145,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
 
-          <Link href={`/product/${product.id}`} className="block w-full h-full relative p-2">
+          <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
             <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
               <img
                 src={product.images[0]}
@@ -174,7 +174,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.category}
           </span>
 
-          <Link href={`/product/${product.id}`}>
+          <Link href={`/product/${generateSlug(product.name)}`}>
             <h3 className="font-serif text-sm sm:text-base font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors line-clamp-1 leading-snug">
               {product.name}
             </h3>

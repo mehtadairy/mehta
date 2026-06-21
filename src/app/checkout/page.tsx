@@ -62,9 +62,9 @@ const DEFAULT_CITIES = [
   "Morbi"
 ];
 
-import { Address, Coupon } from "@/lib/types";
-import { supabase } from "@/lib/supabaseClient";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { Address, Coupon, Product } from "@/lib/types";
+import { supabase, fetchProducts } from "@/lib/supabaseClient";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2 } from "lucide-react";
 
 export default function Checkout() {
   const router = useRouter();
@@ -170,6 +170,7 @@ export default function Checkout() {
   const [finalOrderId, setFinalOrderId] = useState("");
   const [invoiceRecord, setInvoiceRecord] = useState<any>(null);
   const [isEmailSending, setIsEmailSending] = useState(false);
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
 
   // Load state
   useEffect(() => {
@@ -183,10 +184,10 @@ export default function Checkout() {
       const parsed = JSON.parse(storedCart);
       setCart(parsed);
       if (parsed.length === 0) {
-        router.push("/cart");
+        // stay on page
       }
     } else {
-      router.push("/cart");
+      // stay on page
     }
 
     // Addresses load
@@ -238,6 +239,35 @@ export default function Checkout() {
     loadAddrs();
 
   }, [router]);
+
+  useEffect(() => {
+    const fetchRecs = async () => {
+      const allProds = await fetchProducts();
+      setRecommendations(allProds.slice(0, 4));
+    };
+    fetchRecs();
+  }, []);
+
+  const handleRemoveFromCart = (productId: string, weight: string) => {
+    const updated = cart.filter(item => !(item.productId === productId && item.weight === weight));
+    setCart(updated);
+    localStorage.setItem("mehta_cart", JSON.stringify(updated));
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  const handleAddRecToCart = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const weight = Object.keys(product.prices)[0];
+    const price = product.prices[weight];
+    const currentCart = JSON.parse(localStorage.getItem("mehta_cart") || "[]");
+    const idx = currentCart.findIndex((i: any) => i.productId === product.id && i.weight === weight);
+    if (idx > -1) currentCart[idx].quantity += 1;
+    else currentCart.push({ productId: product.id, productName: product.name, image: product.images[0], weight, price, quantity: 1 });
+    localStorage.setItem("mehta_cart", JSON.stringify(currentCart));
+    window.dispatchEvent(new Event("cartUpdated"));
+    setCart(currentCart);
+  };
 
   // Load invoice after order is placed successfully
   useEffect(() => {
@@ -1066,17 +1096,47 @@ export default function Checkout() {
                   <ShoppingBasket className="h-4.5 w-4.5 text-brand-orange" /> Basket Items ({cart.length})
                 </h3>
                 
-                <div className="flex flex-col gap-3.5 max-h-[220px] overflow-y-auto pr-1">
-                  {cart.map((item, idx) => (
-                    <div key={idx} className="flex gap-3 justify-between items-center text-xs">
-                      <div className="flex gap-2.5 items-center">
-                        <img src={item.image} alt={item.productName} className="h-10 w-10 rounded-lg object-cover bg-brand-cream border border-brand-beige flex-shrink-0" />
-                        <div>
-                          <h4 className="font-serif font-bold text-brand-charcoal line-clamp-1">{item.productName}</h4>
-                          <span className="text-[0.65rem] text-muted-foreground">{item.weight} x {item.quantity}</span>
+                {cart.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground text-xs">
+                    Your cart is empty.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3.5 max-h-[220px] overflow-y-auto pr-1">
+                    {cart.map((item, idx) => (
+                      <div key={idx} className="flex gap-3 justify-between items-center text-xs">
+                        <div className="flex gap-2.5 items-center">
+                          <img src={item.image} alt={item.productName} className="h-10 w-10 rounded-lg object-cover bg-brand-cream border border-brand-beige flex-shrink-0" />
+                          <div>
+                            <h4 className="font-serif font-bold text-brand-charcoal line-clamp-1">{item.productName}</h4>
+                            <span className="text-[0.65rem] text-muted-foreground">{item.weight} x {item.quantity}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-serif font-bold text-brand-charcoal">₹{item.price * item.quantity}</span>
+                          <button onClick={() => handleRemoveFromCart(item.productId, item.weight)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-full transition-colors" aria-label="Remove item">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                      <span className="font-serif font-bold text-brand-charcoal">₹{item.price * item.quantity}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recommendations */}
+              <div className="bg-white border border-brand-beige rounded-2xl p-6 shadow-xs flex flex-col gap-4">
+                <h3 className="font-serif text-sm font-bold text-brand-charcoal border-b border-brand-beige pb-3">
+                  You Might Also Like
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {recommendations.map(rec => (
+                    <div key={rec.id} className="border border-brand-beige rounded-xl p-2.5 flex flex-col items-center text-center hover:border-brand-orange transition-colors">
+                      <img src={rec.images?.[0] || "/placeholder.png"} className="w-16 h-16 object-contain rounded mb-2" alt={rec.name} />
+                      <span className="text-[0.65rem] font-bold text-brand-charcoal line-clamp-1 leading-tight mb-0.5">{rec.name}</span>
+                      <span className="text-[0.6rem] text-brand-orange font-bold mb-2">₹{Object.values(rec.prices)[0] as number}</span>
+                      <button onClick={(e) => handleAddRecToCart(rec, e)} className="text-[0.55rem] font-bold uppercase tracking-wider text-white bg-brand-orange py-1.5 px-3 rounded-full hover:bg-brand-orange-hover w-full transition-colors">
+                        Add
+                      </button>
                     </div>
                   ))}
                 </div>

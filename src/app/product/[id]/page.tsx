@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
-import { Product } from "@/lib/types";
+import { Product, generateSlug } from "@/lib/types";
 import { fetchProducts } from "@/lib/supabaseClient";
 import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -193,7 +193,8 @@ export default function ProductDetails() {
   useEffect(() => {
     const loadProduct = async () => {
       const allProducts = await fetchProducts();
-      const found = allProducts.find(p => p.id === productId);
+      const decodedId = decodeURIComponent(productId);
+      const found = allProducts.find(p => p.id === decodedId || generateSlug(p.name) === decodedId);
       
       if (found) {
         setProduct(found);

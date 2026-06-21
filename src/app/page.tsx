@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
-import { Product } from "@/lib/types";
+import { Product, generateSlug } from "@/lib/types";
 import {
   motion,
   AnimatePresence,
@@ -491,34 +491,35 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           2. TRUST STATS STRIP
       ═══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#4A2F1F] py-5">
+      <section className="bg-[#4A2F1F] py-8 relative z-10 border-b border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 text-center">
             {[
-              { value: 100, suffix: "+", label: "Years Legacy", icon: Award, sub: "Since 1972" },
-              { value: 100, suffix: "%", label: "Pure Desi Ghee", icon: Leaf, sub: "Authentic Taste" },
-              { value: 100, suffix: "%", label: "FSSAI Certified", icon: ShieldCheck, sub: "Hygiene Guaranteed" },
-            ].map(({ value, suffix, label, icon: Icon, sub }, i) => (
+              { icon: Award, value: "50+", label: "YEARS OF TRUST", sub: "Since 1972" },
+              { icon: Truck, value: "25K+", label: "ORDERS DELIVERED", sub: "Authentic Taste" },
+              { icon: Leaf, value: "100%", label: "PURE INGREDIENTS", sub: "100% Natural" },
+              { icon: Clock, value: "100%", label: "FRESH DAILY", sub: "Made Fresh" }
+            ].map((item, idx) => (
               <motion.div
-                key={label}
-                variants={fadeUp}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
+                key={idx}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className={`flex flex-col items-center gap-1 ${
-                  label.includes('FSSAI') ? 'col-span-2 md:col-span-1 mt-2 md:mt-0' : ''
-                }`}
+                transition={{ delay: idx * 0.08, duration: 0.5 }}
+                className="flex flex-col items-center justify-center gap-1 group"
               >
-                <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mb-1">
-                  <Icon className="h-5 w-5 text-[#C9A227]" />
+                <div className="h-10 w-10 rounded-full bg-white/10 border border-white/5 flex items-center justify-center mb-1 group-hover:bg-white/15 transition-colors shrink-0">
+                  <item.icon className="h-5 w-5 text-[#C9A227]" strokeWidth={1.5} />
                 </div>
-                <span className="font-serif text-2xl sm:text-3xl font-bold text-white">
-                  {label.includes('FSSAI') ? '' : <AnimatedNumber value={value} suffix={suffix} />}
-                  {label.includes('FSSAI') ? 'FSSAI' : ''}
+                <span className="font-serif text-2xl font-bold text-white leading-tight">
+                  {item.value}
                 </span>
-                <span className="text-[0.7rem] font-bold text-[#C9A227] uppercase tracking-widest">{label.includes('FSSAI') ? 'Certified' : label}</span>
-                <span className="text-[0.6rem] text-white/60">{sub}</span>
+                <span className="text-[0.65rem] font-bold text-[#C9A227] uppercase tracking-wider leading-tight">
+                  {item.label}
+                </span>
+                <span className="text-[0.55rem] text-white/60 leading-tight">
+                  {item.sub}
+                </span>
               </motion.div>
             ))}
           </div>
@@ -624,7 +625,7 @@ export default function Home() {
                   className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col"
                 >
                   {/* Image */}
-                  <Link href={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-white">
+                  <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
                     {product.popular && (
                       <span className="absolute left-2 top-2 z-10 rounded-md bg-[#C9A227] px-2 py-0.5 text-[0.58rem] font-bold text-[#4A2F1F] uppercase tracking-wider shadow">
                         Best Seller
@@ -641,7 +642,7 @@ export default function Home() {
                   {/* Body */}
                   <div className="p-3 sm:p-4 flex flex-col flex-grow">
                     <span className="text-[0.58rem] font-bold text-[#C9A227] uppercase tracking-widest">{product.category}</span>
-                    <Link href={`/product/${product.id}`}>
+                    <Link href={`/product/${generateSlug(product.name)}`}>
                       <h3 className="font-serif text-sm sm:text-base font-bold text-[#4A2F1F] hover:text-[#D46D2D] transition-colors line-clamp-1 mt-0.5 leading-snug">
                         {product.name}
                       </h3>
@@ -881,7 +882,7 @@ export default function Home() {
                     whileHover={{ y: -3 }}
                     className="group bg-white border border-[#4A2F1F]/8 rounded-2xl p-4 flex gap-4 items-center hover:shadow-md transition-shadow"
                   >
-                    <Link href={`/product/${product.id}`} className="h-20 w-20 rounded-xl bg-[#FAF6EE] overflow-hidden flex-shrink-0">
+                    <Link href={`/product/${generateSlug(product.name)}`} className="h-20 w-20 rounded-xl bg-[#FAF6EE] overflow-hidden flex-shrink-0">
                       <img
                         src={product.images[0]}
                         alt={product.name}
@@ -891,7 +892,7 @@ export default function Home() {
                     </Link>
                     <div className="flex-grow min-w-0">
                       <span className="text-[0.58rem] font-bold text-[#C9A227] uppercase tracking-widest">{product.category}</span>
-                      <Link href={`/product/${product.id}`}>
+                      <Link href={`/product/${generateSlug(product.name)}`}>
                         <h4 className="font-serif text-sm font-bold text-[#4A2F1F] hover:text-[#D46D2D] transition-colors line-clamp-1 mt-0.5">{product.name}</h4>
                       </Link>
                       <div className="flex items-center justify-between mt-2">

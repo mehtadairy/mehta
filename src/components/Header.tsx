@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import { 
   Coupon,
-  Product
+  Product,
+  generateSlug
 } from "@/lib/types";
 import { supabase, fetchCategories, fetchProducts } from "@/lib/supabaseClient";
 
@@ -723,7 +724,7 @@ export default function Header() {
                         return (
                           <Link 
                             key={prod.id}
-                            href={`/product/${prod.id}`}
+                            href={`/product/${generateSlug(prod.name)}`}
                             onClick={() => setSearchOpen(false)}
                             className="flex items-center gap-3 p-2 rounded-xl hover:bg-brand-cream border border-transparent hover:border-brand-beige/50 transition-all group"
                           >

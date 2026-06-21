@@ -70,41 +70,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden pb-20">
-      {/* TRUST STRIP (Grid layout, no scroll, matching Image 4) */}
-      <div className="bg-[#4A2F1F] py-8 relative z-10 border-b border-white/5">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 text-center">
-            {[
-              { icon: Award, value: "50+", label: "YEARS OF TRUST", sub: "Since 1972" },
-              { icon: Truck, value: "25K+", label: "ORDERS DELIVERED", sub: "Authentic Taste" },
-              { icon: Leaf, value: "100%", label: "PURE INGREDIENTS", sub: "100% Natural" },
-              { icon: Clock, value: "100%", label: "FRESH DAILY", sub: "Made Fresh" }
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.08, duration: 0.5 }}
-                className="flex flex-col items-center justify-center gap-1 group"
-              >
-                <div className="h-10 w-10 rounded-full bg-white/10 border border-white/5 flex items-center justify-center mb-1 group-hover:bg-white/15 transition-colors shrink-0">
-                  <item.icon className="h-5 w-5 text-[#C9A227]" strokeWidth={1.5} />
-                </div>
-                <span className="font-serif text-2xl font-bold text-white leading-tight">
-                  {item.value}
-                </span>
-                <span className="text-[0.65rem] font-bold text-[#C9A227] uppercase tracking-wider leading-tight">
-                  {item.label}
-                </span>
-                <span className="text-[0.55rem] text-white/60 leading-tight">
-                  {item.sub}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
+
 
       {/* Upper Footer: Cream background */}
       <motion.div

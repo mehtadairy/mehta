@@ -115,3 +115,8 @@ export const validateCoupon = (c: string): Coupon | undefined => undefined;
 export const getAddresses = (): Address[] => [];
 export const saveAddresses = (a: Address[]) => {};
 export const addOrder = (o: Order) => {};
+
+export const generateSlug = (name: string) => {
+  if (!name) return "";
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+};

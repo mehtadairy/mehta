@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
-import { getCoupons, Coupon } from "@/lib/types";
+import { getCoupons, Coupon, generateSlug } from "@/lib/types";
 import { 
   ShoppingBasket, 
   Trash2, 
@@ -126,7 +126,7 @@ export default function Cart() {
                       />
                       
                       <div className="flex-grow flex flex-col justify-start">
-                        <Link href={`/product/${item.productId}`}>
+                        <Link href={`/product/${generateSlug(item.productName)}`}>
                           <h4 className="font-serif text-sm sm:text-base font-bold text-brand-charcoal hover:text-brand-orange transition-colors pr-8">
                             {item.productName}
                           </h4>
