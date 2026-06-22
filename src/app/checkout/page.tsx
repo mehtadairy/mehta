@@ -64,7 +64,7 @@ const DEFAULT_CITIES = [
 
 import { Address, Coupon, Product } from "@/lib/types";
 import { supabase, fetchProducts } from "@/lib/supabaseClient";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2 } from "lucide-react";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck } from "lucide-react";
 
 export default function Checkout() {
   const router = useRouter();
@@ -74,6 +74,7 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<'Home' | 'Pickup'>('Home');
+  const [selectedPickupStore, setSelectedPickupStore] = useState<'navagadh' | 'taleti'>('navagadh');
 
   // Address creation form
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
@@ -384,8 +385,6 @@ export default function Checkout() {
         city: newCity,
         state: newState,
         pincode: newPincode,
-        latitude: newLat,
-        longitude: newLng,
         is_default: addresses.length === 0
       }]).select().single();
 
@@ -465,7 +464,17 @@ export default function Checkout() {
     try {
       const orderAddress = deliveryMethod === 'Home' 
         ? addresses.find(a => a.id === selectedAddressId) as Address
-        : { id: 'pickup', name: 'Self Pickup', phone: 'N/A', street: 'Mehta Sweet Mart Main Branch', city: 'Ahmedabad', state: 'Gujarat', pincode: '380009', isDefault: false };
+        : { 
+            id: 'pickup', 
+            name: 'Self Pickup', 
+            phone: 'N/A', 
+            street: selectedPickupStore === 'navagadh' ? 'Navagadh Main Branch (Since 1972)' : 'Taleti Road Branch', 
+            city: 'Palitana', 
+            state: 'Gujarat', 
+            pincode: '364270', 
+            isDefault: false,
+            pickup_store: selectedPickupStore
+          };
 
       const userName = localStorage.getItem("mehta_user_name") || orderAddress.name || "Customer";
       const userPhone = localStorage.getItem("mehta_user_phone") || orderAddress.phone || "";
@@ -480,7 +489,6 @@ export default function Checkout() {
 
       const orderPayload = {
         id: orderId,
-        customer_id: localStorage.getItem("mehta_user_id") || null,
         order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         user_name: userName,
         user_phone: userPhone,
@@ -680,47 +688,67 @@ export default function Checkout() {
         </div>
       </section>
 
-      {/* --- STEPS PROGRESS BAR --- */}
-      <div className="bg-white border-b border-brand-beige py-6">
-        <div className="mx-auto max-w-xl px-6 flex items-center justify-between relative">
-          {/* Progress bar connector line */}
-          <div className="absolute left-10 right-10 top-4 h-0.5 bg-brand-cream -translate-y-1/2 -z-10">
+      {/* --- PREMIUM STEPS PROGRESS BAR --- */}
+      <div className="bg-white border-b border-brand-beige py-8 shadow-xs relative z-10">
+        <div className="mx-auto max-w-2xl px-6">
+          <div className="relative flex justify-between">
+            {/* Background Line */}
+            <div className="absolute top-1/2 left-0 w-full h-1 bg-brand-cream -translate-y-1/2 rounded-full" />
+            
+            {/* Active Progress Line */}
             <motion.div 
+              className="absolute top-1/2 left-0 h-1 bg-brand-orange -translate-y-1/2 rounded-full"
               initial={{ width: "0%" }}
               animate={{ 
                 width: deliveryMethod === 'Home' 
                   ? (selectedAddressId ? "100%" : "50%") 
                   : "100%" 
               }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="h-full bg-brand-orange"
+              transition={{ duration: 0.6, ease: "easeInOut" }}
             />
-          </div>
 
-          {/* Step 1 */}
-          <div className="flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-brand-orange text-white flex items-center justify-center text-xs font-bold shadow-md">1</div>
-            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Delivery</span>
-          </div>
-
-          {/* Step 2 */}
-          <div className="flex flex-col items-center">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              deliveryMethod === 'Home' 
-                ? (selectedAddressId ? "bg-brand-orange text-white shadow-md" : "bg-brand-cream border border-brand-beige text-muted-foreground") 
-                : "bg-brand-orange text-white shadow-md animate-pulse"
-            }`}>2</div>
-            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Address</span>
-          </div>
-
-          {/* Step 3 */}
-          <div className="flex flex-col items-center">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              deliveryMethod === 'Home' 
-                ? (selectedAddressId ? "bg-brand-orange text-white shadow-md" : "bg-brand-cream border border-brand-beige text-muted-foreground") 
-                : "bg-brand-orange text-white shadow-md"
-            }`}>3</div>
-            <span className="text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider mt-1.5">Payment</span>
+            {[
+              { id: 1, label: "Delivery", icon: <Truck className="w-5 h-5 sm:w-6 sm:h-6" />, done: true, active: false },
+              { 
+                id: 2, 
+                label: "Address", 
+                icon: <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />, 
+                done: deliveryMethod === 'Pickup' || !!selectedAddressId, 
+                active: deliveryMethod === 'Home' && !selectedAddressId 
+              },
+              { 
+                id: 3, 
+                label: "Payment", 
+                icon: <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />, 
+                done: paymentSuccess, 
+                active: (deliveryMethod === 'Pickup' || !!selectedAddressId) && !paymentSuccess 
+              }
+            ].map((step) => (
+              <div key={step.id} className="relative z-10 flex flex-col items-center group">
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full border-[3px] transition-all duration-300 shadow-sm ${
+                    step.done 
+                      ? "bg-brand-orange border-brand-orange text-white"
+                      : step.active
+                        ? "bg-white border-brand-orange text-brand-orange shadow-md"
+                        : "bg-white border-brand-beige text-muted-foreground"
+                  }`}
+                >
+                  {step.done ? <Check className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} /> : step.icon}
+                </motion.div>
+                <span className={`mt-3 text-[0.65rem] sm:text-xs font-bold uppercase tracking-wider transition-colors duration-300 ${
+                  step.done || step.active ? "text-brand-charcoal" : "text-muted-foreground"
+                }`}>
+                  {step.label}
+                </span>
+                
+                {/* Subtle pulse for active step */}
+                {step.active && (
+                  <span className="absolute top-0 w-12 h-12 sm:w-14 sm:h-14 bg-brand-orange rounded-full opacity-20 animate-ping" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -760,10 +788,127 @@ export default function Checkout() {
                     }`}
                   >
                     <span className="font-serif text-xs font-bold mb-1">Self Outlet Pickup</span>
-                    <span className="text-[0.62rem] text-muted-foreground">Pick up from Stadium Road outlet</span>
+                    <span className="text-[0.62rem] text-muted-foreground">Pick up from Palitana outlet</span>
                   </button>
                 </div>
               </div>
+
+              {/* Store Pickup Selector */}
+              {deliveryMethod === 'Pickup' && (
+                <div className="bg-white border border-brand-beige rounded-2xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-brand-beige pb-3">
+                    <h3 className="font-serif text-base font-bold text-brand-charcoal">
+                      2. Select Branch
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                    {/* Navagadh Branch */}
+                    <div 
+                      onClick={() => setSelectedPickupStore('navagadh')}
+                      className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all ${
+                        selectedPickupStore === 'navagadh' 
+                          ? 'border-brand-orange bg-brand-orange/5 shadow-md' 
+                          : 'border-brand-beige hover:border-brand-orange/50 bg-white'
+                      }`}
+                    >
+                      {selectedPickupStore === 'navagadh' && (
+                        <div className="absolute top-4 right-4 text-brand-orange font-bold text-xs flex items-center gap-1">
+                          <Check className="w-4 h-4" strokeWidth={3} /> Selected
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className="inline-block bg-brand-gold/10 text-brand-gold text-[0.6rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                          ⭐ Most Popular
+                        </span>
+                        <span className="inline-block bg-brand-charcoal text-white text-[0.6rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                          Since 1972 Flagship Store
+                        </span>
+                      </div>
+                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base">Navagadh Main Branch</h4>
+                      <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Navagadh, Palitana, Gujarat
+                      </p>
+                      
+                      {selectedPickupStore === 'navagadh' && (
+                        <div className="mt-4 pt-4 border-t border-brand-orange/20 flex flex-col gap-2">
+                          <h5 className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider mb-1">Pickup Details</h5>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📍</span>
+                            Navagadh Main Branch
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">🕒</span>
+                            Ready in 30–60 Minutes
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📞</span>
+                            +91 9316688014
+                          </div>
+                          
+                          <a 
+                            href="https://maps.google.com/?q=Navagadh,Palitana" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-3 w-full bg-white border border-brand-beige text-brand-charcoal text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cream hover:border-brand-orange transition-colors"
+                          >
+                            📍 Get Directions
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Taleti Branch */}
+                    <div 
+                      onClick={() => setSelectedPickupStore('taleti')}
+                      className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all ${
+                        selectedPickupStore === 'taleti' 
+                          ? 'border-brand-orange bg-brand-orange/5 shadow-md' 
+                          : 'border-brand-beige hover:border-brand-orange/50 bg-white'
+                      }`}
+                    >
+                      {selectedPickupStore === 'taleti' && (
+                        <div className="absolute top-4 right-4 text-brand-orange font-bold text-xs flex items-center gap-1">
+                          <Check className="w-4 h-4" strokeWidth={3} /> Selected
+                        </div>
+                      )}
+                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">Taleti Road Branch</h4>
+                      <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Taleti Road, Palitana, Gujarat
+                      </p>
+                      
+                      {selectedPickupStore === 'taleti' && (
+                        <div className="mt-4 pt-4 border-t border-brand-orange/20 flex flex-col gap-2">
+                          <h5 className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider mb-1">Pickup Details</h5>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📍</span>
+                            Taleti Road Branch
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">🕒</span>
+                            Ready in 30–60 Minutes
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
+                            <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📞</span>
+                            +91 9316688014
+                          </div>
+                          
+                          <a 
+                            href="https://maps.google.com/?q=Taleti+Road,Palitana" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-3 w-full bg-white border border-brand-beige text-brand-charcoal text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cream hover:border-brand-orange transition-colors"
+                          >
+                            📍 Get Directions
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Shipping Address Selector */}
               {deliveryMethod === 'Home' && (

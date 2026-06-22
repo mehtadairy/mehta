@@ -99,7 +99,9 @@ export function generateInvoicePDF(order: any): jsPDF {
   // Address text wrapping
   const addr = order.shipping_address;
   let addressStr = "Self Outlet Pickup";
-  if (addr && addr.street) {
+  if (addr && addr.id === 'pickup') {
+    addressStr = `Store Pickup: ${addr.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}, Palitana`;
+  } else if (addr && addr.street) {
     addressStr = `${addr.street}, ${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}, ${addr.state} - ${addr.pincode}`;
   }
   const splitAddress = doc.splitTextToSize(`Address: ${addressStr}`, pageWidth / 2 - margin - 5);

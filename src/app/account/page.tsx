@@ -507,8 +507,6 @@ function AccountContent() {
         city: addrCity,
         state: addrState,
         pincode: addrPincode,
-        latitude: addrLat,
-        longitude: addrLng,
         is_default: isDefaultAddr || (!profile.saved_addresses || profile.saved_addresses.length === 0)
       }]).select().single();
 
@@ -1367,6 +1365,11 @@ function AccountContent() {
                                         <p className="leading-relaxed">
                                           {typeof order.shippingAddress === 'string' ? (
                                             order.shippingAddress
+                                          ) : order.shippingAddress?.id === 'pickup' ? (
+                                            <>
+                                              <span className="font-bold text-brand-orange">{order.shippingAddress?.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}</span><br />
+                                              {order.shippingAddress?.pickup_store === 'taleti' ? 'Taleti Road' : 'Navagadh'}, Palitana
+                                            </>
                                           ) : (
                                             <>
                                               {order.shippingAddress?.name || "Customer"}<br />

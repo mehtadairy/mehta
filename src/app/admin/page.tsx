@@ -204,6 +204,7 @@ export default function AdminPanel() {
            userName: o.user_name,
            userPhone: o.user_phone,
            userEmail: o.user_email,
+           shippingAddress: o.shipping_address,
            items: o.order_items ? o.order_items.map((i: any) => ({
               productId: i.product_id,
               productName: i.product_name,
@@ -826,7 +827,7 @@ export default function AdminPanel() {
                   {/* Product Form Modal Popup */}
                   <AnimatePresence>
                     {showProductForm && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="fixed inset-0 z-50 flex items-start justify-center pt-6 sm:pt-10 pb-6 px-4">
                         {/* Backdrop */}
                         <motion.div 
                           initial={{ opacity: 0 }}
@@ -841,7 +842,7 @@ export default function AdminPanel() {
                           initial={{ scale: 0.95, y: 15, opacity: 0 }}
                           animate={{ scale: 1, y: 0, opacity: 1 }}
                           exit={{ scale: 0.95, y: 15, opacity: 0 }}
-                          className="relative z-10 w-full max-w-2xl bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+                          className="relative z-10 w-full max-w-2xl bg-white border border-brand-beige rounded-2xl p-6 sm:p-8 flex flex-col gap-4 shadow-2xl max-h-[calc(100vh-3rem)] sm:max-h-[85vh] overflow-y-auto"
                         >
                           <form onSubmit={handleAddProduct} className="flex flex-col gap-4 w-full">
                       <div className="flex items-center justify-between border-b border-brand-beige pb-3 mb-2">
@@ -1459,6 +1460,23 @@ export default function AdminPanel() {
                                 <p className="text-xs text-brand-charcoal font-semibold mt-2.5">
                                   Buyer: {o.userName} ({o.userPhone})
                                 </p>
+                                
+                                {o.shippingAddress && (
+                                  <div className="mt-2 text-xs">
+                                    <span className="text-muted-foreground font-bold">Delivery: </span>
+                                    {typeof o.shippingAddress === 'string' ? (
+                                      o.shippingAddress
+                                    ) : o.shippingAddress?.id === 'pickup' ? (
+                                      <span className="font-bold text-brand-orange bg-brand-orange/10 px-1.5 py-0.5 rounded border border-brand-orange/20">
+                                        Pickup @ {(o.shippingAddress as any).pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        {o.shippingAddress.street || ''}{o.shippingAddress.city ? `, ${o.shippingAddress.city}` : ''}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                                 
                                 <ul className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                                   {o.items.map((item, idx) => (
