@@ -64,7 +64,7 @@ export async function fetchProducts(): Promise<Product[]> {
 
 export async function fetchCategories(): Promise<any[]> {
   const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
-  if (error) return [];
+  if (error || !data) return [];
   return data.filter((c: any) => c.status !== 'inactive' && c.is_active !== false);
 }
 

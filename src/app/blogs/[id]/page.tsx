@@ -22,9 +22,9 @@ interface BlogArticle {
   featured?: boolean;
 }
 
-export default function BlogPost({ params }: { params: Promise<{ id: string }> }) {
+export default function BlogPost({ params }: { params: any }) {
   const router = useRouter();
-  const { id } = use(params);
+  const id = params?.id ? params.id : use(params).id;
   const [article, setArticle] = useState<BlogArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
