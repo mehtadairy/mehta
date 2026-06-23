@@ -64,7 +64,6 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import ProductCard from "@/components/ProductCard";
-import { BUSINESS } from "@/lib/businessConfig";
 import {
   getProfile,
   saveProfile,
