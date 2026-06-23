@@ -86,6 +86,8 @@ export interface Order {
   userPhone: string;
   userEmail?: string;
   invoice?: any;
+  createdAt?: string;
+  [key: string]: any;
 }
 
 export interface UserProfile {
