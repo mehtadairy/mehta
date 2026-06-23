@@ -71,7 +71,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  status: 'Pending' | 'Confirmed' | 'Processing' | 'Preparing' | 'Ready For Pickup' | 'Shipped' | 'Delivered' | 'Cancelled' | string;
   items: OrderItem[];
   subtotal: number;
   discount: number;
