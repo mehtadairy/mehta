@@ -219,7 +219,7 @@ export default function BlogsPage() {
                       {featuredArticle.category}
                     </span>
                     <h3 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal hover:text-brand-orange transition-colors">
-                      <Link href={`#${featuredArticle.id}`}>{featuredArticle.title}</Link>
+                      <Link href={`/blogs/${featuredArticle.id}`}>{featuredArticle.title}</Link>
                     </h3>
                     <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                       {featuredArticle.excerpt}
@@ -233,12 +233,12 @@ export default function BlogsPage() {
                       <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {featuredArticle.readTime}</span>
                     </div>
 
-                    <a 
-                      href={`#${featuredArticle.id}`}
+                    <Link 
+                      href={`/blogs/${featuredArticle.id}`}
                       className="inline-flex items-center text-xs font-bold text-brand-orange hover:text-brand-orange-hover gap-1 transition-colors uppercase tracking-wider"
                     >
                       Read full story <ArrowRight className="h-3.5 w-3.5" />
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -334,23 +334,17 @@ export default function BlogsPage() {
                   {/* Expanded text reading section */}
                   <div className="px-5 pb-5">
                     <div className="border-t border-brand-beige/50 pt-4 flex flex-col gap-4">
-                      <p className="text-[0.72rem] text-brand-charcoal bg-brand-cream/15 border border-brand-beige/30 p-3 rounded-lg leading-relaxed italic hidden group-hover:block animate-fade-in-up">
-                        "{art.content}"
-                      </p>
-
                       <div className="flex items-center justify-between">
                         <span className="text-[0.62rem] text-muted-foreground font-bold flex items-center gap-1">
                           <User className="h-3 w-3" /> By {art.author.split(" ")[0]}
                         </span>
                         
-                        <a 
-                          href="https://wa.me/919876543210?text=Hi,%20I'm%20writing%20after%20reading%20your%20story%20online!" 
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <Link 
+                          href={`/blogs/${art.id}`}
                           className="text-[0.68rem] font-bold text-brand-orange hover:text-[#1abc9c] uppercase tracking-wider inline-flex items-center gap-1 transition-colors"
                         >
-                          Enquire <ArrowRight className="h-3 w-3" />
-                        </a>
+                          Read full article <ArrowRight className="h-3 w-3" />
+                        </Link>
                       </div>
                     </div>
                   </div>

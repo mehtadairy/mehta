@@ -11,6 +11,7 @@ import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
 import { Search, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
+import { useLanguage } from "@/lib/context/LanguageContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -117,6 +118,8 @@ function ShopContent() {
   // Loading indicators
   const [pageLoading, setPageLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(true);
+  
+  const { t } = useLanguage();
 
   // Ref on the products grid section for scroll-into-view on filter change
   const productsRef = useRef<HTMLDivElement>(null);
@@ -263,7 +266,7 @@ function ShopContent() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="font-serif text-3xl sm:text-5xl font-extrabold tracking-wide drop-shadow-sm uppercase"
           >
-            {banner.title}
+            {t(banner.title)}
           </motion.h2>
           <motion.div 
             initial={{ scaleX: 0 }}
@@ -301,7 +304,7 @@ function ShopContent() {
                       : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
                   }`}
                 >
-                  All Items
+                  {t('category.all_items')}
                 </button>
                 {categories.map((cat) => (
                   <button
@@ -313,7 +316,7 @@ function ShopContent() {
                         : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
                     }`}
                   >
-                    {cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}
+                    {t(`cat.${cat.slug}`)}
                   </button>
                 ))}
               </div>
@@ -470,7 +473,7 @@ function ShopContent() {
                     <svg className="w-7 h-7 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
-                    <span className="text-[0.62rem] leading-none uppercase tracking-wider font-semibold">All Items</span>
+                    <span className="text-[0.62rem] leading-none uppercase tracking-wider font-semibold">{t('category.all_items')}</span>
                   </motion.button>
                   
                   {/* Dynamic category tiles */}
@@ -489,7 +492,7 @@ function ShopContent() {
                         }`}
                       >
                         {getCategoryIcon(cat.slug)}
-                        <span className="text-[0.62rem] leading-none uppercase tracking-wider mt-1">{cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}</span>
+                        <span className="text-[0.62rem] leading-none uppercase tracking-wider mt-1">{t(`cat.${cat.slug}`)}</span>
                       </motion.button>
                     );
                   })}
@@ -576,7 +579,7 @@ function ShopContent() {
                             : "bg-white text-[#2A1E17] border-[#EAE0D3] hover:border-[#D46D2D]"
                         }`}
                       >
-                        {cat.name.replace("Sweets of ", "").replace("Tasty & ", "").replace("Chat-Patta ", "")}
+                        {cat.slug === "all" ? t('category.all_items') : t(`cat.${cat.slug}`)}
                       </button>
                     ))}
                   </div>

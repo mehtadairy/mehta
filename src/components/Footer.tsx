@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, Send, ChevronUp, Award, Heart, Droplet, ShieldCheck, Truck, Clock, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/lib/context/LanguageContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -17,6 +18,7 @@ const colVariants = {
 };
 
 export default function Footer() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
@@ -88,10 +90,10 @@ export default function Footer() {
             className="flex flex-col gap-4"
           >
             <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
-              About Mehta Sweet Mart
+              {t('footer.our_story')}
             </h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              One taste stays unforgettable — Ahmedabad&apos;s legendary sweets. Mehta Sweet Mart is the best place to visit in Gujarat. Now delivering globally. Savor the premium sweets crafted in Gujarat, proudly known as India&apos;s &ldquo;City of Sweets&rdquo;, delivered fresh to your world.
+              {t('footer.about')}
             </p>
           </motion.div>
 
@@ -102,14 +104,14 @@ export default function Footer() {
             className="flex flex-col gap-4"
           >
             <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
-              Explore
+              {t('home.category.explore')}
             </h4>
             <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
               {[
-                { href: "/shop", label: "Products" },
-                { href: "/about", label: "About Us" },
-                { href: "/blogs", label: "Blogs" },
-                { href: "/contact", label: "Contact Us" },
+                { href: "/shop", label: t('footer.products') },
+                { href: "/about", label: t('header.about') },
+                { href: "/blogs", label: t('header.blogs') },
+                { href: "/contact", label: t('header.contact') },
                 { href: "/faq", label: "FAQ" },
               ].map((link, i) => (
                 <motion.li
@@ -134,13 +136,13 @@ export default function Footer() {
             className="flex flex-col gap-4"
           >
             <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
-              Policies
+              {t('footer.legal')}
             </h4>
             <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
               {[
-                { href: "/policy/refund", label: "Refund Policy" },
-                { href: "/policy/privacy", label: "Privacy Policy" },
-                { href: "/policy/terms", label: "Terms" },
+                { href: "/policy/refund", label: t('footer.refund') },
+                { href: "/policy/privacy", label: t('footer.privacy') },
+                { href: "/policy/terms", label: t('footer.terms') },
                 { href: "/policy/payment", label: "Online Payment" },
               ].map((link, i) => (
                 <motion.li
@@ -197,7 +199,7 @@ export default function Footer() {
             transition={{ duration: 0.7 }}
             className="text-xs font-semibold select-none text-white/80"
           >
-            &copy; 2026 All Rights Reserved By Mehta Sweet Mart
+            {t('footer.rights')}
           </motion.div>
           <motion.a
             href="https://optenary.tech"

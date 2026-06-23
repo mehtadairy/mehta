@@ -97,8 +97,10 @@ import {
   Gift,
   Settings,
   X,
-  Loader2
+  Loader2,
+  ShoppingCart
 } from "lucide-react";
+import { useLocation } from "@/lib/context/LocationContext";
 
 const AnimatedCounter = ({ value }: { value: number }) => {
   const [count, setCount] = useState(0);
@@ -148,6 +150,30 @@ function AccountContent() {
 
   // Account State
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  const handleOrderAgain = (items: any[]) => {
+    const currentCart = JSON.parse(localStorage.getItem("mehta_cart") || "[]");
+    
+    items.forEach(item => {
+      const existingIdx = currentCart.findIndex((i: any) => i.productId === item.productId && i.weight === item.weight);
+      if (existingIdx > -1) {
+        currentCart[existingIdx].quantity += item.quantity;
+      } else {
+        currentCart.push({
+          productId: item.productId,
+          productName: item.productName,
+          image: item.image || '/sweets/default.jpg',
+          weight: item.weight,
+          price: item.price,
+          quantity: item.quantity
+        });
+      }
+    });
+
+    localStorage.setItem("mehta_cart", JSON.stringify(currentCart));
+    window.dispatchEvent(new Event("cartUpdated"));
+    router.push("/cart");
+  };
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
@@ -170,6 +196,8 @@ function AccountContent() {
   // Push Notification State
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [isPushLoading, setIsPushLoading] = useState(false);
+  
+  const { nearestBranch, distanceKm } = useLocation();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1274,15 +1302,18 @@ function AccountContent() {
                                           
                                           <div className="flex flex-col relative pl-2 mt-2">
                                             {(() => {
+                                              const isPickup = (order.shippingAddress as any)?.id === 'pickup';
+                                              const deliveryStep = isPickup ? 'Ready For Pickup' : 'Out For Delivery';
                                               const isCancelled = order.status === 'Cancelled';
                                               const steps = isCancelled 
-                                                ? ['Order Placed', 'Cancelled']
-                                                : ['Order Placed', 'Processing', 'Shipped', 'Delivered'];
+                                                ? ['Placed', 'Cancelled']
+                                                : ['Placed', 'Confirmed', 'Preparing', deliveryStep, 'Delivered'];
                                               
                                               const activeIndex = isCancelled ? 1 : 
                                                 order.status?.toLowerCase() === 'delivered' ? 4 :
-                                                order.status === 'Shipped' ? 2 :
-                                                order.status === 'Processing' ? 1 : 0;
+                                                (order.status === 'Ready For Pickup' || order.status === 'Out For Delivery' || order.status === 'Shipped') ? 3 :
+                                                order.status === 'Preparing' ? 2 :
+                                                order.status === 'Confirmed' ? 1 : 0;
 
                                               return steps.map((step, idx) => {
                                                 const isCompleted = idx < activeIndex;
@@ -1434,6 +1465,19 @@ function AccountContent() {
                                           </span>
                                         )}
                                       </div>
+
+                                      <div className="border-t sm:border-t-0 border-brand-beige pt-3 sm:pt-0 w-full sm:w-auto text-xs text-brand-charcoal flex flex-col justify-end">
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOrderAgain(order.items || []);
+                                          }}
+                                          className="py-2.5 px-6 bg-brand-orange hover:bg-brand-orange-hover text-white text-[0.75rem] font-bold rounded-lg transition-colors cursor-pointer text-center uppercase tracking-wider flex items-center justify-center gap-2 mt-auto shadow-sm"
+                                        >
+                                          <ShoppingCart className="w-4 h-4" />
+                                          Order Again
+                                        </button>
+                                      </div>
                                     </div>
                                   </motion.div>
                                 )}
@@ -1450,8 +1494,13 @@ function AccountContent() {
                 {activeTab === "addresses" && (
                   <div className="flex flex-col gap-6 animate-fade-in">
                     <div className="flex justify-between items-center border-b border-brand-beige pb-3">
-                      <h3 className="font-serif text-lg font-bold text-brand-charcoal">
+                      <h3 className="font-serif text-lg font-bold text-brand-charcoal flex flex-col sm:flex-row sm:items-center gap-2">
                         Address Book
+                        {nearestBranch && (
+                          <span className="text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest font-sans inline-flex items-center gap-1 w-fit mt-1 sm:mt-0">
+                            <MapPin className="w-3 h-3" /> Closest Store: {nearestBranch}
+                          </span>
+                        )}
                       </h3>
                       {!showAddressForm && (
                         <button 

@@ -6,6 +6,7 @@ import { ShoppingBasket, Heart, Eye, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Product, generateSlug } from "@/lib/types";
 import { animateFlyToCart } from "@/lib/animations";
+import { useLanguage } from "@/lib/context/LanguageContext";
 
 interface ProductCardProps {
   product: Product;
@@ -30,6 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [showQuickView, setShowQuickView] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [cartAdded, setCartAdded] = useState(false);
+  const { t } = useLanguage();
 
   // Sync wishlist status on mount
   useEffect(() => {
@@ -171,17 +173,17 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Info body */}
         <div className="flex flex-grow flex-col p-3.5 sm:p-4 relative z-10">
           <span className="text-[0.6rem] font-bold text-[#D4AF37] uppercase tracking-wider mb-0.5">
-            {product.category}
+            {t(product.category)}
           </span>
 
           <Link href={`/product/${generateSlug(product.name)}`}>
             <h3 className="font-serif text-sm sm:text-base font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors line-clamp-1 leading-snug">
-              {product.name}
+              {t(product.name)}
             </h3>
           </Link>
 
           <p className="text-[0.68rem] sm:text-xs text-[#7E6B5A] line-clamp-2 leading-relaxed mt-1 mb-3 flex-grow">
-            {product.description}
+            {t(product.description)}
           </p>
 
           {/* Weight selector — compact on mobile */}
@@ -205,7 +207,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center justify-between border-t border-[#EAE0D3]/60 pt-3 mt-auto">
             <div className="flex flex-col">
               <span className="text-[0.55rem] text-[#7E6B5A] uppercase leading-none mb-0.5">Price</span>
-              <span className="font-serif text-base sm:text-lg font-bold text-[#2A1E17] leading-none">
+              <span className="font-sans tabular-nums text-base sm:text-lg font-bold text-[#2A1E17] leading-none">
                 ₹{price}
               </span>
             </div>
@@ -292,13 +294,13 @@ export default function ProductCard({ product }: ProductCardProps) {
               <div className="flex-1 flex flex-col justify-between min-w-0">
                 <div>
                   <span className="text-[0.6rem] font-bold text-[#D4AF37] uppercase tracking-wider block mb-1">
-                    {product.category}
+                    {t(product.category)}
                   </span>
                   <h3 className="font-serif text-xl font-bold text-[#2A1E17] mb-1.5">
-                    {product.name}
+                    {t(product.name)}
                   </h3>
                   <p className="text-xs text-[#7E6B5A] leading-relaxed mb-4">
-                    {product.description}
+                    {t(product.description)}
                   </p>
 
                   <span className="text-[0.65rem] font-bold text-[#2A1E17] uppercase tracking-wider block mb-2">
@@ -324,7 +326,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <div className="border-t border-[#EAE0D3]/60 pt-4 flex items-center justify-between">
                   <div>
                     <span className="text-[0.6rem] text-[#7E6B5A] uppercase leading-none block mb-1">Price</span>
-                    <span className="font-serif text-2xl font-bold text-[#D46D2D]">₹{price}</span>
+                    <span className="font-sans tabular-nums text-2xl font-bold text-[#D46D2D]">₹{price}</span>
                   </div>
                   <button
                     onClick={(e) => {

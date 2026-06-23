@@ -6,6 +6,8 @@ import ToastContainer from "@/components/Toast";
 import SplashLoader from "@/components/SplashLoader";
 import GlobalScrollManager from "@/components/ScrollToTop";
 import MobileNavBar from "@/components/MobileNavBar";
+import { LanguageProvider } from "@/lib/context/LanguageContext";
+import { LocationProvider } from "@/lib/context/LocationContext";
 
 
 const playfair = Playfair_Display({
@@ -85,12 +87,16 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <GlobalScrollManager />
         </Suspense>
-        <div className="flex-1 pb-40">
-        {children}
-      </div>
-        <MobileNavBar />
-        <ToastContainer />
-        <SplashLoader />
+        <LanguageProvider>
+          <LocationProvider>
+            <div className="flex-1">
+              {children}
+            </div>
+            <MobileNavBar />
+            <ToastContainer />
+            <SplashLoader />
+          </LocationProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

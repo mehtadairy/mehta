@@ -16,8 +16,10 @@ import {
   LogOut,
   Settings,
   Heart,
-  ChevronDown
+  ChevronDown,
+  Globe
 } from "lucide-react";
+import { useLanguage } from "@/lib/context/LanguageContext";
 import {
   Coupon,
   Product
@@ -35,6 +37,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const { t, language, setLanguage } = useLanguage();
 
   // Custom states for premium navigation animations
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -276,7 +279,7 @@ export default function Header() {
                   href="/"
                   className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/" ? "text-brand-orange" : "text-brand-charcoal"}`}
                 >
-                  Home
+                  {t("header.home")}
                 </Link>
                 {pathname === "/" && (
                   <motion.div
@@ -304,7 +307,7 @@ export default function Header() {
                   href="/about"
                   className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/about" ? "text-brand-orange" : "text-brand-charcoal"}`}
                 >
-                  About Us
+                  {t("header.about")}
                 </Link>
                 {pathname === "/about" && (
                   <motion.div
@@ -329,7 +332,7 @@ export default function Header() {
                 onMouseLeave={() => { setHoveredIndex(null); setIsProductsHovered(false); }}
               >
                 <button className="flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-wider text-brand-charcoal hover:text-brand-orange py-1 select-none">
-                  Products <ChevronDown className="h-3 w-3" />
+                  {t("header.shop")} <ChevronDown className="h-3 w-3" />
                 </button>
                 {pathname.startsWith("/shop") && (
                   <motion.div
@@ -385,7 +388,7 @@ export default function Header() {
                   href="/blogs"
                   className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/blogs" ? "text-brand-orange" : "text-brand-charcoal"}`}
                 >
-                  Blogs
+                  {t("header.blogs")}
                 </Link>
                 {pathname === "/blogs" && (
                   <motion.div
@@ -413,7 +416,7 @@ export default function Header() {
                   href="/contact"
                   className={`text-[0.7rem] font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${pathname === "/contact" ? "text-brand-orange" : "text-brand-charcoal"}`}
                 >
-                  Contact Us
+                  {t("header.contact")}
                 </Link>
                 {pathname === "/contact" && (
                   <motion.div
@@ -485,6 +488,19 @@ export default function Header() {
                   <User className="h-4.5 w-4.5" />
                 </Link>
               )}
+
+              {/* Language Switcher */}
+              <div className="relative group ml-1">
+                <button className="flex items-center gap-1 p-1.5 text-brand-charcoal hover:text-brand-orange transition-colors rounded-full border border-transparent hover:border-brand-beige">
+                  <Globe className="h-4 w-4" />
+                  <span className="text-[0.6rem] font-bold uppercase">{language}</span>
+                </button>
+                <div className="absolute right-0 top-full hidden group-hover:flex flex-col w-32 rounded-xl border border-brand-beige bg-white shadow-xl z-50 overflow-hidden animate-fade-in-up">
+                  <button onClick={() => setLanguage("en")} className={`px-4 py-2.5 text-left text-xs font-bold transition-colors ${language === "en" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}>English</button>
+                  <button onClick={() => setLanguage("gu")} className={`px-4 py-2.5 text-left text-xs font-bold transition-colors ${language === "gu" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}>ગુજરાતી</button>
+                  <button onClick={() => setLanguage("hi")} className={`px-4 py-2.5 text-left text-xs font-bold transition-colors ${language === "hi" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal hover:bg-brand-cream"}`}>हिंदी</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -510,6 +526,19 @@ export default function Header() {
                 </span>
               )}
             </button>
+
+            {/* Mobile Language Switcher */}
+            <div className="relative group flex items-center">
+              <button className="flex items-center gap-1 p-1.5 text-brand-charcoal hover:text-brand-orange transition-colors">
+                <Globe className="h-5 w-5" />
+                <span className="text-[0.5rem] font-bold uppercase">{language}</span>
+              </button>
+              <div className="absolute right-0 top-full hidden group-hover:flex flex-col w-32 rounded-xl border border-brand-beige bg-white shadow-xl z-50 overflow-hidden">
+                <button onClick={() => setLanguage("en")} className={`px-4 py-3 text-left text-xs font-bold ${language === "en" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal"}`}>English</button>
+                <button onClick={() => setLanguage("gu")} className={`px-4 py-3 text-left text-xs font-bold ${language === "gu" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal"}`}>ગુજરાતી</button>
+                <button onClick={() => setLanguage("hi")} className={`px-4 py-3 text-left text-xs font-bold ${language === "hi" ? "bg-brand-cream text-brand-orange" : "text-brand-charcoal"}`}>हिंदी</button>
+              </div>
+            </div>
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -658,7 +687,7 @@ export default function Header() {
                 <input
                   id="header-search-input"
                   type="text"
-                  placeholder="Search premium sweets, crunchy farsan, cookies..."
+                  placeholder={t("header.search")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-grow border-none outline-none font-sans text-brand-charcoal text-base"
@@ -881,7 +910,7 @@ export default function Header() {
                     {/* Total payable */}
                     <div className="flex justify-between text-base font-bold text-brand-charcoal">
                       <span>Total Order Value</span>
-                      <span className="font-serif text-lg text-brand-orange">₹{totalPayable}</span>
+                      <span className="font-sans tabular-nums text-lg text-brand-orange font-bold">₹{totalPayable}</span>
                     </div>
                   </div>
 

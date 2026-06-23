@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { getCoupons, Coupon, generateSlug } from "@/lib/types";
+import ProductRecommendations from "@/components/ProductRecommendations";
 import { 
   ShoppingBasket, 
   Trash2, 
@@ -165,7 +166,7 @@ export default function Cart() {
                       </div>
 
                       {/* Dynamic line item total */}
-                      <div className="font-serif font-bold text-base sm:text-lg text-brand-charcoal absolute bottom-4 right-4 sm:static sm:min-w-[80px] sm:text-right w-auto">
+                      <div className="font-sans tabular-nums font-bold text-base sm:text-lg text-brand-charcoal absolute bottom-4 right-4 sm:static sm:min-w-[80px] sm:text-right w-auto">
                         ₹{item.price * item.quantity}
                       </div>
                     </motion.div>
@@ -216,7 +217,7 @@ export default function Cart() {
 
                   <div className="flex justify-between text-sm font-bold text-brand-charcoal">
                     <span>Total Payable</span>
-                    <span className="font-serif text-lg text-brand-orange">₹{totalPayable}</span>
+                    <span className="font-sans tabular-nums text-lg text-brand-orange font-bold">₹{totalPayable}</span>
                   </div>
 
                   <button 
@@ -251,6 +252,24 @@ export default function Cart() {
           )}
         </div>
       </section>
+
+      {/* --- SMART RECOMMENDATIONS --- */}
+      {cart.length > 0 && (
+        <section className="py-12 bg-white border-t border-brand-beige overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <ProductRecommendations 
+              currentProductId={cart[0]?.productId}
+              type="bought_together" 
+              limit={6} 
+            />
+            <ProductRecommendations 
+              currentProductId={cart[cart.length - 1]?.productId}
+              type="may_like" 
+              limit={6} 
+            />
+          </div>
+        </section>
+      )}
 
       <Footer />
     </>

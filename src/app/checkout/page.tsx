@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
+import ProductRecommendations from "@/components/ProductRecommendations";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -64,7 +65,8 @@ const DEFAULT_CITIES = [
 
 import { Address, Coupon, Product } from "@/lib/types";
 import { supabase, fetchProducts } from "@/lib/supabaseClient";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck } from "lucide-react";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, Minus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck } from "lucide-react";
+import { useLocation } from "@/lib/context/LocationContext";
 
 export default function Checkout() {
   const router = useRouter();
@@ -75,6 +77,16 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<'Home' | 'Pickup'>('Home');
   const [selectedPickupStore, setSelectedPickupStore] = useState<'navagadh' | 'taleti'>('navagadh');
+
+  const { nearestBranch } = useLocation();
+
+  useEffect(() => {
+    if (nearestBranch === "Taleti Road Branch") {
+      setSelectedPickupStore("taleti");
+    } else {
+      setSelectedPickupStore("navagadh");
+    }
+  }, [nearestBranch]);
 
   // Address creation form
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
@@ -251,6 +263,19 @@ export default function Checkout() {
 
   const handleRemoveFromCart = (productId: string, weight: string) => {
     const updated = cart.filter(item => !(item.productId === productId && item.weight === weight));
+    setCart(updated);
+    localStorage.setItem("mehta_cart", JSON.stringify(updated));
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  const handleUpdateQuantity = (productId: string, weight: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    const updated = cart.map(item => {
+      if (item.productId === productId && item.weight === weight) {
+        return { ...item, quantity: newQuantity };
+      }
+      return item;
+    });
     setCart(updated);
     localStorage.setItem("mehta_cart", JSON.stringify(updated));
     window.dispatchEvent(new Event("cartUpdated"));
@@ -825,7 +850,10 @@ export default function Checkout() {
                           Since 1972 Flagship Store
                         </span>
                       </div>
-                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base">Navagadh Main Branch</h4>
+                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">
+                        Navagadh Main Branch (Since 1972)
+                        {nearestBranch === "Navagadh Main Branch" && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
+                      </h4>
                       <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
                         <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Navagadh, Palitana, Gujarat
                       </p>
@@ -873,7 +901,10 @@ export default function Checkout() {
                           <Check className="w-4 h-4" strokeWidth={3} /> Selected
                         </div>
                       )}
-                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">Taleti Road Branch</h4>
+                      <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">
+                        Taleti Road Branch
+                        {nearestBranch === "Taleti Road Branch" && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
+                      </h4>
                       <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
                         <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Taleti Road, Palitana, Gujarat
                       </p>
@@ -1253,11 +1284,29 @@ export default function Checkout() {
                           <img src={item.image} alt={item.productName} className="h-10 w-10 rounded-lg object-cover bg-brand-cream border border-brand-beige flex-shrink-0" />
                           <div>
                             <h4 className="font-serif font-bold text-brand-charcoal line-clamp-1">{item.productName}</h4>
-                            <span className="text-[0.65rem] text-muted-foreground">{item.weight} x {item.quantity}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[0.65rem] text-muted-foreground font-medium">{item.weight}</span>
+                              <div className="flex items-center gap-1.5 bg-[#FAF6EE] border border-[#EAE0D3] rounded px-1.5 py-0.5">
+                                <button 
+                                  onClick={(e) => { e.preventDefault(); handleUpdateQuantity(item.productId, item.weight, item.quantity - 1); }}
+                                  className="text-brand-charcoal hover:text-brand-orange disabled:opacity-30 disabled:cursor-not-allowed"
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus className="w-2.5 h-2.5" />
+                                </button>
+                                <span className="text-[0.65rem] font-bold text-brand-charcoal w-3 text-center">{item.quantity}</span>
+                                <button 
+                                  onClick={(e) => { e.preventDefault(); handleUpdateQuantity(item.productId, item.weight, item.quantity + 1); }}
+                                  className="text-brand-charcoal hover:text-brand-orange"
+                                >
+                                  <Plus className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="font-serif font-bold text-brand-charcoal">₹{item.price * item.quantity}</span>
+                          <span className="font-sans tabular-nums font-bold text-brand-charcoal">₹{item.price * item.quantity}</span>
                           <button onClick={() => handleRemoveFromCart(item.productId, item.weight)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-full transition-colors" aria-label="Remove item">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1313,7 +1362,7 @@ export default function Checkout() {
 
                 <div className="flex justify-between text-sm font-bold text-brand-charcoal mb-2">
                   <span>Grand Total</span>
-                  <span className="font-serif text-lg text-brand-orange">₹{totalPayable}</span>
+                  <span className="font-sans tabular-nums text-lg text-brand-orange font-bold">₹{totalPayable}</span>
                 </div>
 
                 {pincodeError && (
@@ -1363,7 +1412,7 @@ export default function Checkout() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#EAE0D3] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] lg:hidden z-30 pointer-events-auto flex items-center justify-between">
         <div className="flex flex-col">
            <span className="text-[0.65rem] text-muted-foreground font-bold uppercase tracking-wider">Total to pay</span>
-           <span className="font-serif text-xl font-black text-[#D46D2D]">₹{totalPayable}</span>
+           <span className="font-sans tabular-nums text-xl font-black text-[#D46D2D]">₹{totalPayable}</span>
         </div>
         <button 
           onClick={handleProceedToPayment}
@@ -1407,7 +1456,7 @@ export default function Checkout() {
                     </div>
                     <div className="text-right">
                       <span className="text-[0.65rem] block text-indigo-200">PAYABLE AMOUNT</span>
-                      <span className="font-serif text-lg font-bold">₹{totalPayable}</span>
+                      <span className="font-sans tabular-nums text-lg font-bold">₹{totalPayable}</span>
                     </div>
                   </div>
 
@@ -1618,7 +1667,6 @@ export default function Checkout() {
         )}
       </AnimatePresence>
 
-      <Footer />
     </>
   );
 }

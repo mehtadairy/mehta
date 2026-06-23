@@ -12,6 +12,7 @@ import { fetchProducts } from "@/lib/supabaseClient";
 import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
+import ProductRecommendations from "@/components/ProductRecommendations";
 
 const getIngredients = (name: string, category: string) => {
   const n = name.toLowerCase();
@@ -570,10 +571,10 @@ export default function ProductDetails() {
               {/* ── TRUST BADGES STRIP ──────────────────────────── */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 py-1">
                 {[
-                  { icon: "🌿", label: "Freshly Prepared", sub: "Daily fresh batches" },
-                  { icon: "⭐", label: "Premium Quality", sub: "100% authentic" },
-                  { icon: "🔒", label: "Secure Payments", sub: "Razorpay protected" },
-                  { icon: "🚚", label: "Fast Delivery", sub: "Same day dispatch" },
+                  { icon: "🏛️", label: "Since 1972", sub: "Legacy of purity" },
+                  { icon: "🥛", label: "Pure Ghee", sub: "100% authentic" },
+                  { icon: "🌿", label: "Freshly Made", sub: "Daily fresh batches" },
+                  { icon: "🍃", label: "Jain Friendly", sub: "100% vegetarian" },
                 ].map(({ icon, label, sub }) => (
                   <div
                     key={label}
@@ -832,41 +833,23 @@ export default function ProductDetails() {
         </div>
       </section>
 
-      {/* --- YOU MAY ALSO LIKE RELATED PRODUCTS --- */}
-      {relatedProducts.length > 0 && (
-        <section className="py-20 bg-white border-t border-brand-beige">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-charcoal text-center mb-4">
-              You May Also Like
-            </h3>
-            <div className="h-0.5 w-16 bg-brand-gold mx-auto mb-16"></div>
-            
-            <motion.div 
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={{
-                hidden: { opacity: 0 },
-                show: { opacity: 1, transition: { staggerChildren: 0.08 } }
-              }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 justify-items-center"
-            >
-              {relatedProducts.map((p) => (
-                <motion.div 
-                  key={p.id} 
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } }
-                  }}
-                  className="w-full"
-                >
-                  <ProductCard product={p} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      )}
+      {/* --- SMART RECOMMENDATIONS --- */}
+      <section className="py-12 bg-white border-t border-brand-beige overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <ProductRecommendations 
+            currentProductId={product.id} 
+            category={product.category} 
+            type="also_bought" 
+            limit={6} 
+          />
+          <ProductRecommendations 
+            currentProductId={product.id} 
+            category={product.category} 
+            type="bought_together" 
+            limit={6} 
+          />
+        </div>
+      </section>
 
       {/* Sticky Bottom Actions Bar for Mobile/Tablet */}
       <AnimatePresence>

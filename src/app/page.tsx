@@ -36,7 +36,10 @@ import {
   Heart,
   Package,
   Quote,
+  MapPin
 } from "lucide-react";
+import { useLocation } from "@/lib/context/LocationContext";
+import { useLanguage } from "@/lib/context/LanguageContext";
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 const AnimatedNumber = ({
@@ -209,6 +212,8 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const { nearestBranch, distanceKm } = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -227,7 +232,7 @@ export default function Home() {
       const cats = await fetchCategories();
       setCategories(cats);
       const popular = all.filter((p) => p.popular);
-      setBestSellers(popular.length >= 6 ? popular.slice(0, 8) : all.slice(0, 8));
+      setBestSellers(popular);
       const feat = all.filter((p) => !p.popular);
       setFeaturedProducts(feat.length > 0 ? feat.slice(0, 6) : all.slice(4, 10));
       const init: { [id: string]: string } = {};
@@ -293,6 +298,8 @@ export default function Home() {
       <Header />
       <WhatsAppFloat />
 
+
+
       {/* ═══════════════════════════════════════════════════════════
           1. HERO SECTION
       ═══════════════════════════════════════════════════════════ */}
@@ -328,7 +335,7 @@ export default function Home() {
                 >
                   <Sparkles className="h-3.5 w-3.5 text-[#C9A227]" />
                   <span className="text-[0.68rem] font-bold text-[#4A2F1F] uppercase tracking-widest">
-                    {slide.badge}
+                    {t(`home.hero.badge_${slide.id + 1}`)}
                   </span>
                 </motion.div>
 
@@ -341,7 +348,7 @@ export default function Home() {
                     transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     className="block font-serif text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-light italic text-[#C9A227]"
                   >
-                    {slide.headline}
+                    {t(`home.hero.headline_${slide.id + 1}`)}
                   </motion.span>
                   <motion.span
                     key={`bold-${currentSlide}`}
@@ -350,7 +357,7 @@ export default function Home() {
                     transition={{ duration: 0.8, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
                     className="block font-serif text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-[#4A2F1F] mt-1"
                   >
-                    {slide.boldline}
+                    {t(`home.hero.boldline_${slide.id + 1}`)}
                   </motion.span>
                 </h1>
 
@@ -361,7 +368,7 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.42 }}
                   className="text-sm sm:text-base text-[#6B5744] leading-relaxed max-w-md"
                 >
-                  {slide.sub}
+                  {t(`home.hero.sub_${slide.id + 1}`)}
                 </motion.p>
 
                 {/* CTAs */}
@@ -375,14 +382,14 @@ export default function Home() {
                     href={slide.cta.href}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#4A2F1F] text-white px-6 py-3.5 text-xs font-bold uppercase tracking-wider hover:bg-[#4A2F1F]/85 transition-all hover:-translate-y-0.5 hover:shadow-lg shadow-md"
                   >
-                    {slide.cta.label}
+                    {t(`home.hero.cta_${slide.id + 1}`)}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                   <Link
                     href="/shop"
                     className="inline-flex items-center gap-2 rounded-xl border-2 border-[#4A2F1F]/25 bg-white/60 backdrop-blur-sm text-[#4A2F1F] px-6 py-3.5 text-xs font-bold uppercase tracking-wider hover:border-[#D46D2D] hover:text-[#D46D2D] transition-all hover:-translate-y-0.5"
                   >
-                    Explore All
+                    {t('home.hero.explore')}
                   </Link>
                 </motion.div>
 
@@ -393,9 +400,9 @@ export default function Home() {
                   transition={{ delay: 0.7 }}
                   className="flex flex-wrap gap-4 mt-1"
                 >
-                  {["50+ Years", "25K+ Orders", "100% Pure"].map((t) => (
-                    <span key={t} className="flex items-center gap-1.5 text-[0.68rem] font-semibold text-[#6B5744]">
-                      <CheckCircle className="h-3.5 w-3.5 text-[#4A9C6D]" /> {t}
+                  {[t('home.hero.trust_1'), t('home.hero.trust_2'), t('home.hero.trust_3')].map((text) => (
+                    <span key={text} className="flex items-center gap-1.5 text-[0.68rem] font-semibold text-[#6B5744]">
+                      <CheckCircle className="h-3.5 w-3.5 text-[#4A9C6D]" /> {text}
                     </span>
                   ))}
                 </motion.div>
@@ -440,7 +447,7 @@ export default function Home() {
                       <span className="text-lg">⭐</span>
                       <div>
                         <div className="text-xs font-bold text-[#4A2F1F]">4.9 / 5.0</div>
-                        <div className="text-[0.6rem] text-[#6B5744]">2,400+ reviews</div>
+                        <div className="text-[0.6rem] text-[#6B5744]">{t('home.hero.reviews')}</div>
                       </div>
                     </div>
                   </motion.div>
@@ -451,7 +458,7 @@ export default function Home() {
                     transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                     className="absolute -top-2 -right-2 sm:top-4 sm:-right-6 bg-[#4A2F1F] text-white rounded-full px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-wider shadow-lg"
                   >
-                    Fresh Today
+                    {t('home.hero.fresh')}
                   </motion.div>
                 </div>
               </div>
@@ -495,10 +502,10 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 text-center">
             {[
-              { icon: Award, value: "50+", label: "YEARS OF TRUST", sub: "Since 1972" },
-              { icon: Truck, value: "25K+", label: "ORDERS DELIVERED", sub: "Authentic Taste" },
-              { icon: Leaf, value: "100%", label: "PURE INGREDIENTS", sub: "100% Natural" },
-              { icon: Clock, value: "100%", label: "FRESH DAILY", sub: "Made Fresh" }
+              { icon: Award, value: "50+", label: t('home.stats.years'), sub: t('home.stats.years_sub') },
+              { icon: Truck, value: "25K+", label: t('home.stats.orders'), sub: t('home.stats.orders_sub') },
+              { icon: Leaf, value: "100%", label: t('home.stats.pure'), sub: t('home.stats.pure_sub') },
+              { icon: Clock, value: "100%", label: t('home.stats.fresh'), sub: t('home.stats.fresh_sub') }
             ].map((item, idx) => (
               <motion.div
                 key={idx}
@@ -538,9 +545,9 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-10 sm:mb-14"
           >
-            <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">Crafted Collections</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2">Shop By Category</h2>
-            <p className="text-sm text-[#6B5744] mt-2 max-w-md mx-auto">Handcrafted with love, made fresh daily — explore our signature collections.</p>
+            <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">{t('home.category.badge')}</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2">{t('home.category.title')}</h2>
+            <p className="text-sm text-[#6B5744] mt-2 max-w-md mx-auto">{t('home.category.sub')}</p>
           </motion.div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-4">
@@ -572,10 +579,10 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#D46D2D]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
-                    <span className="block text-[0.58rem] font-bold text-[#C9A227] uppercase tracking-widest mb-1">Collection</span>
+                    <span className="block text-[0.58rem] font-bold text-[#C9A227] uppercase tracking-widest mb-1">{t('home.category.collection')}</span>
                     <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-tight">{cat.name}</h3>
                     <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
-                      <span className="text-[0.65rem] text-white/80 font-medium">Explore</span>
+                      <span className="text-[0.65rem] text-white/80 font-medium">{t('home.category.explore')}</span>
                       <ArrowRight className="h-3 w-3 text-white/80" />
                     </div>
                   </div>
@@ -599,11 +606,11 @@ export default function Home() {
             className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 sm:mb-14"
           >
             <div>
-              <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">Customer Favorites</span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2">Our Best Sellers</h2>
+              <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">{t('home.bestseller.badge')}</span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2">{t('home.bestseller.title')}</h2>
             </div>
             <Link href="/shop" className="inline-flex items-center gap-2 text-xs font-bold text-[#D46D2D] uppercase tracking-wider hover:gap-3 transition-all">
-              View All <ArrowRight className="h-3.5 w-3.5" />
+              {t('home.bestseller.view_all')} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </motion.div>
 
@@ -628,7 +635,7 @@ export default function Home() {
                   <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
                     {product.popular && (
                       <span className="absolute left-2 top-2 z-10 rounded-md bg-[#C9A227] px-2 py-0.5 text-[0.58rem] font-bold text-[#4A2F1F] uppercase tracking-wider shadow">
-                        Best Seller
+                        {t('home.bestseller.best_seller')}
                       </span>
                     )}
                     <img
@@ -672,7 +679,7 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#4A2F1F]/8">
-                      <span className="font-serif text-base sm:text-lg font-bold text-[#4A2F1F]">₹{cp}</span>
+                      <span className="font-sans tabular-nums text-base sm:text-lg font-bold text-[#4A2F1F]">₹{cp}</span>
                     </div>
 
                     {/* CTAs */}
@@ -710,8 +717,8 @@ export default function Home() {
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-white text-sm">Order via WhatsApp</p>
-                <p className="text-white/80 text-xs">Chat directly with us for bulk orders, gifts & custom boxes</p>
+                <p className="font-bold text-white text-sm">{t('home.whatsapp.title')}</p>
+                <p className="text-white/80 text-xs">{t('home.whatsapp.sub')}</p>
               </div>
             </div>
             <a
@@ -720,7 +727,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-white text-[#25D366] font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-white/90 transition-all hover:-translate-y-0.5 shadow-md whitespace-nowrap"
             >
-              <Phone className="h-3.5 w-3.5" /> Chat Now
+              <Phone className="h-3.5 w-3.5" /> {t('home.whatsapp.cta')}
             </a>
           </div>
         </div>
@@ -742,17 +749,17 @@ export default function Home() {
               className="lg:col-span-5 flex flex-col gap-6"
             >
               <div>
-                <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">Our Story</span>
+                <span className="text-[0.65rem] font-bold text-[#D46D2D] uppercase tracking-[0.25em]">{t('home.story.badge')}</span>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] mt-2 leading-tight">
-                  A Legacy Born in Palitana
+                  {t('home.story.title')}
                 </h2>
                 <div className="h-0.5 w-16 bg-[#C9A227] mt-4" />
               </div>
               <p className="text-sm text-[#6B5744] leading-relaxed">
-                Mehta Dairy and Sweet Mart started its journey in 1972, serving handmade pedas and cow-fat sweets to pilgrims and families in the sacred town of Palitana, Gujarat.
+                {t('home.story.p1')}
               </p>
               <p className="text-sm text-[#4A2F1F] font-semibold leading-relaxed">
-                Our formula remains unchanged: 100% pure dairy, zero compromise on hygiene, and original flavors trusted by three generations.
+                {t('home.story.p2')}
               </p>
 
               {/* Timeline */}
