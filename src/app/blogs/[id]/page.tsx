@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -22,9 +22,9 @@ interface BlogArticle {
   featured?: boolean;
 }
 
-export default function BlogPost({ params }: { params: any }) {
+export default function BlogPost() {
   const router = useRouter();
-  const id = params?.id ? params.id : use(params).id;
+  const { id } = useParams() as { id: string };
   const [article, setArticle] = useState<BlogArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
