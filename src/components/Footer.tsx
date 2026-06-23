@@ -112,6 +112,7 @@ export default function Footer() {
                 { href: "/shop", label: t('footer.products') },
                 { href: "/about", label: t('header.about') },
                 { href: "/blogs", label: t('header.blogs') },
+                { href: "/gallery", label: "Gallery" },
                 { href: "/contact", label: t('header.contact') },
                 { href: "/faq", label: "FAQ" },
               ].map((link, i) => (

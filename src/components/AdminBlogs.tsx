@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Plus, Edit, Trash2, Check, X, PenTool, Loader2, Sparkles } from "lucide-react";
+import { Plus, Edit, Trash2, Check, X, PenTool, Loader2, Sparkles, UploadCloud, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/Toast";
+import imageCompression from "browser-image-compression";
 
 interface BlogArticle {
   id: string;
@@ -84,6 +85,9 @@ export default function AdminBlogs() {
   const [readTime, setReadTime] = useState("");
   const [featured, setFeatured] = useState(false);
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
   useEffect(() => {
     fetchBlogs();
   }, []);
@@ -135,6 +139,68 @@ export default function AdminBlogs() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Invalid image type (JPG, PNG, WEBP)");
+      return;
+    }
+
+    setUploadError("");
+    setIsUploadingImage(true);
+
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: "image/webp" as any
+      };
+      const compressedFile = await imageCompression(file, options);
+
+      if (isUsingSupabase) {
+        const fileExt = "webp";
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `blogs/${fileName}`;
+
+        const { error } = await supabase.storage
+          .from('products')
+          .upload(filePath, compressedFile, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: 'image/webp'
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
+
+        setImage(publicUrlData.publicUrl);
+        showToast("Image uploaded successfully!", "success");
+      } else {
+        const reader = new FileReader();
+        reader.readAsDataURL(compressedFile);
+        reader.onloadend = () => {
+          setImage(reader.result as string);
+          showToast("Image converted to Base64!", "success");
+        };
+      }
+    } catch (err: any) {
+      console.error("Image upload failed:", err);
+      setUploadError(err.message || "Upload failed");
+      showToast("Upload failed", "error");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -364,14 +430,28 @@ export default function AdminBlogs() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Featured Banner Image URL</label>
-              <input 
-                type="text" 
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-                className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
-              />
+              <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase flex justify-between items-center">
+                <span>Featured Banner Image</span>
+                {uploadError && <span className="text-[0.6rem] text-red-500 normal-case">{uploadError}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="Image URL or upload..."
+                  className="border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none flex-1"
+                />
+                <label className="cursor-pointer bg-white border border-brand-beige rounded-lg px-3 flex items-center justify-center hover:bg-brand-cream transition-colors group">
+                  {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-brand-orange" /> : <UploadCloud className="w-4 h-4 text-muted-foreground group-hover:text-brand-orange transition-colors" />}
+                  <input type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleImageUpload} disabled={isUploadingImage} />
+                </label>
+              </div>
+              {image && (
+                <div className="mt-1 relative h-20 w-full rounded overflow-hidden border border-brand-beige/50 bg-brand-cream/30">
+                  <img src={image} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -423,71 +503,63 @@ export default function AdminBlogs() {
       )}
 
       {!showForm && (
-        <div className="overflow-x-auto bg-white border border-brand-beige rounded-2xl shadow-xs">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-brand-beige bg-brand-cream/35 text-muted-foreground font-semibold">
-                <th className="py-3 px-4">Article Details</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Author</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Featured</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blogs.map((b) => (
-                <tr key={b.id} className="border-b border-brand-beige/50 hover:bg-brand-cream/10 transition-colors">
-                  <td className="py-3.5 px-4 max-w-[280px]">
-                    <div className="flex items-center gap-3">
-                      <img src={b.image} alt={b.title} className="h-10 w-10 object-cover rounded bg-brand-cream" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-bold text-brand-charcoal truncate">{b.title}</span>
-                        <span className="text-[0.65rem] text-muted-foreground truncate">{b.excerpt}</span>
-                      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {blogs.length === 0 && !isLoading && (
+            <div className="col-span-full py-12 text-center text-xs text-muted-foreground border border-dashed border-brand-beige rounded-xl bg-brand-cream/10">
+              No blog posts recorded. Click "Add Blog Article" to write your first story!
+            </div>
+          )}
+          {blogs.map((b) => (
+            <div key={b.id} className="group relative flex flex-col bg-white border border-brand-beige rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300">
+              <div className="relative h-40 w-full bg-brand-cream overflow-hidden">
+                <img src={b.image} alt={b.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute top-3 left-3 flex gap-1">
+                  <span className="px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full text-[0.6rem] font-bold text-brand-charcoal uppercase tracking-wider shadow-sm">
+                    {b.category}
+                  </span>
+                  {b.featured && (
+                    <span className="px-2 py-0.5 bg-amber-400 text-amber-900 rounded-full text-[0.6rem] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Featured
+                    </span>
+                  )}
+                </div>
+                <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-y-[-5px] group-hover:translate-y-0 duration-300">
+                  <button 
+                    onClick={() => handleEdit(b)}
+                    className="h-7 w-7 rounded-full bg-white/90 text-brand-charcoal flex items-center justify-center hover:bg-white hover:text-brand-orange shadow-md transition-colors"
+                    title="Edit article"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(b.id)}
+                    className="h-7 w-7 rounded-full bg-white/90 text-red-500 flex items-center justify-center hover:bg-red-50 shadow-md transition-colors"
+                    title="Delete article"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 flex flex-col flex-1">
+                <h4 className="font-bold text-brand-charcoal text-sm leading-tight line-clamp-2 mb-1.5 group-hover:text-brand-orange transition-colors">
+                  {b.title}
+                </h4>
+                <p className="text-[0.65rem] text-muted-foreground line-clamp-2 mb-3 flex-1">
+                  {b.excerpt}
+                </p>
+                <div className="flex items-center justify-between mt-auto pt-3 border-t border-brand-beige/50">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-5 w-5 rounded-full bg-brand-cream flex items-center justify-center text-[0.55rem] font-bold text-brand-gold uppercase">
+                      {b.author.charAt(0)}
                     </div>
-                  </td>
-                  <td className="py-3.5 px-4 font-semibold uppercase text-[0.65rem] text-brand-gold">{b.category}</td>
-                  <td className="py-3.5 px-4 font-semibold text-brand-charcoal">{b.author}</td>
-                  <td className="py-3.5 px-4 text-muted-foreground">{b.date}</td>
-                  <td className="py-3.5 px-4">
-                    {b.featured ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[0.62rem] font-bold text-amber-700 border border-amber-200">
-                        Featured
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button 
-                        onClick={() => handleEdit(b)}
-                        className="h-8 w-8 rounded-lg border border-brand-beige hover:border-brand-gold flex items-center justify-center text-brand-charcoal hover:bg-brand-cream transition-colors"
-                        title="Edit article"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(b.id)}
-                        className="h-8 w-8 rounded-lg border border-red-100 hover:border-red-500 flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
-                        title="Delete article"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {blogs.length === 0 && !isLoading && (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-muted-foreground">
-                    No blog posts recorded. Click "Add Blog Article" to write your first story!
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <span className="text-[0.6rem] font-semibold text-brand-charcoal truncate max-w-[80px]">{b.author}</span>
+                  </div>
+                  <span className="text-[0.6rem] text-muted-foreground font-medium">{b.date} • {b.readTime}</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

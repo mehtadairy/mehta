@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { fetchProducts, fetchCategories } from "@/lib/supabaseClient";
+import { fetchProducts, fetchCategories, fetchBanners } from "@/lib/supabaseClient";
 import { Product, generateSlug } from "@/lib/types";
 import {
   motion,
@@ -208,6 +208,7 @@ export default function Home() {
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   const [selectedWeights, setSelectedWeights] = useState<{ [id: string]: string }>({});
   const [currentSlide, setCurrentSlide] = useState(0);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
@@ -231,6 +232,8 @@ export default function Home() {
       setProducts(all);
       const cats = await fetchCategories();
       setCategories(cats);
+      const bans = await fetchBanners();
+      setBanners(bans);
       const popular = all.filter((p) => p.popular);
       setBestSellers(popular);
       const feat = all.filter((p) => !p.popular);
@@ -245,9 +248,17 @@ export default function Home() {
     load();
   }, []);
 
+  const slideCount = banners.length > 0 ? banners.length : SLIDES.length;
+  const slideCountRef = useRef(slideCount);
+  useEffect(() => {
+    slideCountRef.current = slideCount;
+  }, [slideCount]);
+
   // Auto-advance hero slider
   useEffect(() => {
-    const t = setInterval(() => setCurrentSlide((p) => (p === 0 ? 1 : 0)), 7000);
+    const t = setInterval(() => {
+      setCurrentSlide((p) => (p + 1) % slideCountRef.current);
+    }, 7000);
     return () => clearInterval(t);
   }, []);
 
@@ -291,7 +302,49 @@ export default function Home() {
     router.push("/checkout");
   };
 
-  const slide = SLIDES[currentSlide];
+  const activeSlides = banners.length > 0 
+    ? banners.map((b, i) => {
+        let headline = "";
+        let boldline = b.title || "";
+        if (b.title && b.title.includes("|")) {
+          const parts = b.title.split("|");
+          headline = parts[0].trim();
+          boldline = parts[1].trim();
+        } else if (b.title && b.title.includes("-")) {
+          const parts = b.title.split("-");
+          headline = parts[0].trim();
+          boldline = parts.slice(1).join("-").trim();
+        } else {
+          // If no separator, make first word italic, rest bold
+          const parts = b.title ? b.title.split(" ") : [];
+          if (parts.length > 1) {
+            headline = parts[0];
+            boldline = parts.slice(1).join(" ");
+          }
+        }
+        
+        return {
+          id: i,
+          badge: "100% PURE · NO PRESERVATIVES",
+          headline: headline,
+          boldline: boldline,
+          sub: b.subtitle,
+          cta: { label: b.button_text || "Order Now", href: b.button_link || "/shop" },
+          image: b.image_url,
+          accent: "#C9A227"
+        }
+      })
+    : SLIDES;
+
+  const slide = activeSlides[currentSlide % activeSlides.length];
+
+  const handleNextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
+  };
+
+  const handlePrevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? activeSlides.length - 1 : prev - 1));
+  };
 
   return (
     <div className="bg-[#FAF6EE] min-h-screen text-[#2C2C2C] overflow-x-hidden selection:bg-[#D46D2D]/20">
@@ -307,14 +360,21 @@ export default function Home() {
         {/* Subtle dot grid background */}
         <div className="absolute inset-0 bg-[radial-gradient(#C9A22715_1.5px,transparent_1.5px)] [background-size:28px_28px] pointer-events-none" />
 
-        {/* Warm gradient blob - hidden on mobile for performance */}
-        <motion.div
-          style={{ y: yBg }}
-          className="hidden md:block absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#D46D2D]/10 to-[#C9A227]/5 blur-3xl pointer-events-none"
-        />
-        <div className="hidden md:block absolute -bottom-20 -left-20 w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-[#4A2F1F]/5 to-transparent blur-3xl pointer-events-none" />
+        {/* Carousel Nav Buttons */}
+        <button 
+          onClick={handlePrevSlide}
+          className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/60 hover:bg-white rounded-full flex items-center justify-center shadow-md border border-[#4A2F1F]/10 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-[#4A2F1F]" />
+        </button>
+        <button 
+          onClick={handleNextSlide}
+          className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/60 hover:bg-white rounded-full flex items-center justify-center shadow-md border border-[#4A2F1F]/10 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-[#4A2F1F]" />
+        </button>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16 pb-8 md:pt-28 md:pb-16">
+        <div className="mx-auto max-w-7xl px-8 sm:px-12 lg:px-16 relative z-10 w-full pt-20 pb-12 md:pt-28 md:pb-16">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -331,33 +391,33 @@ export default function Home() {
                   initial={{ opacity: 0, y: -16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
-                  className="inline-flex items-center gap-2 self-start rounded-full bg-[#4A2F1F]/8 border border-[#4A2F1F]/15 px-4 py-1.5"
+                  className="inline-flex items-center gap-2 self-start rounded-full bg-[#FAF6EE] border border-[#C9A227]/30 px-4 py-1.5 shadow-sm"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-[#C9A227]" />
-                  <span className="text-[0.68rem] font-bold text-[#4A2F1F] uppercase tracking-widest">
-                    {t(`home.hero.badge_${slide.id + 1}`)}
+                  <span className="text-[0.65rem] font-bold text-[#4A2F1F] uppercase tracking-[0.15em]">
+                    {slide.badge || t(`home.hero.badge_${slide.id + 1}`)}
                   </span>
                 </motion.div>
 
                 {/* Headline */}
-                <h1 className="leading-[1.08]">
+                <h1 className="leading-[1.05]">
                   <motion.span
                     key={`italic-${currentSlide}`}
                     initial={{ opacity: 0, x: -24 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="block font-serif text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-light italic text-[#C9A227]"
+                    className="block font-serif text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-medium italic text-[#C9A227]"
                   >
-                    {t(`home.hero.headline_${slide.id + 1}`)}
+                    {slide.headline || t(`home.hero.headline_${slide.id + 1}`)}
                   </motion.span>
                   <motion.span
                     key={`bold-${currentSlide}`}
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                    className="block font-serif text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-[#4A2F1F] mt-1"
+                    className="block font-serif text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-bold text-[#4A2F1F] mt-1"
                   >
-                    {t(`home.hero.boldline_${slide.id + 1}`)}
+                    {slide.boldline || t(`home.hero.boldline_${slide.id + 1}`)}
                   </motion.span>
                 </h1>
 
@@ -366,9 +426,9 @@ export default function Home() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.42 }}
-                  className="text-sm sm:text-base text-[#6B5744] leading-relaxed max-w-md"
+                  className="text-sm sm:text-base text-[#6B5744] leading-relaxed max-w-md mt-2"
                 >
-                  {t(`home.hero.sub_${slide.id + 1}`)}
+                  {slide.sub || t(`home.hero.sub_${slide.id + 1}`)}
                 </motion.p>
 
                 {/* CTAs */}
@@ -376,20 +436,20 @@ export default function Home() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.55 }}
-                  className="flex flex-wrap gap-3 mt-2"
+                  className="flex flex-wrap gap-4 mt-4"
                 >
                   <Link
                     href={slide.cta.href}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#4A2F1F] text-white px-6 py-3.5 text-xs font-bold uppercase tracking-wider hover:bg-[#4A2F1F]/85 transition-all hover:-translate-y-0.5 hover:shadow-lg shadow-md"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#4A2F1F] text-white px-8 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-[#3A2215] transition-all hover:-translate-y-0.5 shadow-md"
                   >
-                    {t(`home.hero.cta_${slide.id + 1}`)}
+                    {slide.cta.label}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                   <Link
                     href="/shop"
-                    className="inline-flex items-center gap-2 rounded-xl border-2 border-[#4A2F1F]/25 bg-white/60 backdrop-blur-sm text-[#4A2F1F] px-6 py-3.5 text-xs font-bold uppercase tracking-wider hover:border-[#D46D2D] hover:text-[#D46D2D] transition-all hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#4A2F1F]/20 bg-transparent text-[#4A2F1F] px-8 py-3.5 text-xs font-bold uppercase tracking-widest hover:border-[#4A2F1F] hover:bg-white/50 transition-all hover:-translate-y-0.5"
                   >
-                    {t('home.hero.explore')}
+                    Explore All
                   </Link>
                 </motion.div>
 
@@ -398,10 +458,10 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.7 }}
-                  className="flex flex-wrap gap-4 mt-1"
+                  className="flex flex-wrap gap-5 mt-4"
                 >
                   {[t('home.hero.trust_1'), t('home.hero.trust_2'), t('home.hero.trust_3')].map((text) => (
-                    <span key={text} className="flex items-center gap-1.5 text-[0.68rem] font-semibold text-[#6B5744]">
+                    <span key={text} className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-[#4A2F1F]/70">
                       <CheckCircle className="h-3.5 w-3.5 text-[#4A9C6D]" /> {text}
                     </span>
                   ))}
@@ -411,54 +471,22 @@ export default function Home() {
               {/* ── Right: Product Image ── */}
               <div className="flex justify-center lg:justify-end order-1 lg:order-2">
                 <div className="relative">
-                  {/* Outer glow ring */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-[-20px] rounded-full border border-dashed border-[#C9A227]/30"
-                  />
-                  {/* Inner glow */}
-                  <div className="absolute inset-[-4px] rounded-full bg-gradient-to-br from-[#D46D2D]/15 to-[#C9A227]/10 blur-2xl" />
-
+                  {/* Subtle circle background (Image 1 style) */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] rounded-full border border-dashed border-[#C9A227]/40 pointer-events-none" />
+                  
+                  {/* Square Image Container */}
                   <motion.div
                     key={`img-${currentSlide}`}
-                    initial={{ opacity: 0, scale: 0.92 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative z-10"
+                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative z-10 w-72 h-72 sm:w-80 sm:h-80 lg:w-[480px] lg:h-[480px] overflow-hidden bg-white shadow-xl"
                   >
-                    <motion.img
-                      animate={{ y: [-10, 10, -10] }}
-                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                    <img
                       src={slide.image}
                       alt={slide.boldline}
-                      className="w-52 h-52 sm:w-72 sm:h-72 lg:w-[400px] lg:h-[400px] object-contain drop-shadow-2xl select-none"
+                      className="w-full h-full object-cover"
                     />
-                  </motion.div>
-
-                  {/* Floating accent badge */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="absolute -bottom-2 -left-4 sm:bottom-4 sm:-left-8 bg-white/90 backdrop-blur-md border border-[#4A2F1F]/10 rounded-2xl px-4 py-2.5 shadow-lg"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">⭐</span>
-                      <div>
-                        <div className="text-xs font-bold text-[#4A2F1F]">4.9 / 5.0</div>
-                        <div className="text-[0.6rem] text-[#6B5744]">{t('home.hero.reviews')}</div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Floating "Fresh Today" badge */}
-                  <motion.div
-                    animate={{ y: [-5, 5, -5] }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute -top-2 -right-2 sm:top-4 sm:-right-6 bg-[#4A2F1F] text-white rounded-full px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-wider shadow-lg"
-                  >
-                    {t('home.hero.fresh')}
                   </motion.div>
                 </div>
               </div>
@@ -466,8 +494,8 @@ export default function Home() {
           </AnimatePresence>
 
           {/* Slide dots */}
-          <div className="flex gap-2 mt-8 lg:mt-12">
-            {SLIDES.map((_, i) => (
+          <div className="flex gap-2 mt-8 lg:mt-12 w-full max-w-7xl mx-auto">
+            {activeSlides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentSlide(i)}

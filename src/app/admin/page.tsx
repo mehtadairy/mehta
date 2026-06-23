@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import { BUSINESS } from "@/lib/businessConfig";
 import {
     saveProducts,
     getOrders,
@@ -1601,7 +1602,7 @@ export default function AdminPanel() {
                                                             ) : (
                                                                 Array.from(new Set(orders.map(o => o.userName))).filter(name => {
                                                                     const query = customerSearchQuery.toLowerCase();
-                                                                    return name.toLowerCase().includes(query);
+                                                                    return name ? name.toLowerCase().includes(query) : false;
                                                                 }).map((name, idx) => {
                                                                     const customerOrders = orders.filter(o => o.userName === name);
                                                                     const customerPhone = customerOrders[0]?.userPhone || "N/A";
@@ -1609,7 +1610,7 @@ export default function AdminPanel() {
 
                                                                     return (
                                                                         <tr key={idx} className="border-b border-brand-beige/50">
-                                                                            <td className="py-3 font-bold text-brand-charcoal">{name}</td>
+                                                                            <td className="py-3 font-bold text-brand-charcoal">{name || "Unknown Customer"}</td>
                                                                             <td className="py-3 font-semibold text-muted-foreground">N/A</td>
                                                                             <td className="py-3 font-semibold">{customerPhone}</td>
                                                                             <td className="py-3 font-semibold">{customerOrders.length} order(s)</td>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Plus, Edit, Trash2, Check, X, UploadCloud, Loader2, Image as ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import imageCompression from "browser-image-compression";
 
 export default function AdminBanners({ banners, setBanners }: { banners: any[], setBanners: any }) {
   const [showForm, setShowForm] = useState(false);
@@ -40,13 +41,21 @@ export default function AdminBanners({ banners, setBanners }: { banners: any[], 
     setUploadError("");
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        fileType: "image/webp" as any
+      };
+      const compressedFile = await imageCompression(file, options);
+
+      const fileExt = "webp";
       const fileName = `banner-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `banners/${fileName}`;
 
       const { data, error } = await supabase.storage
         .from('products') // Storing in same bucket for simplicity
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        .upload(filePath, compressedFile, { cacheControl: '3600', upsert: false, contentType: 'image/webp' });
 
       if (error) throw error;
 
