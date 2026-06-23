@@ -1367,8 +1367,8 @@ function AccountContent() {
                                             order.shippingAddress
                                           ) : order.shippingAddress?.id === 'pickup' ? (
                                             <>
-                                              <span className="font-bold text-brand-orange">{order.shippingAddress?.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}</span><br />
-                                              {order.shippingAddress?.pickup_store === 'taleti' ? 'Taleti Road' : 'Navagadh'}, Palitana
+                                              <span className="font-bold text-brand-orange">{(order.shippingAddress as any)?.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}</span><br />
+                                              {(order.shippingAddress as any)?.pickup_store === 'taleti' ? 'Taleti Road' : 'Navagadh'}, Palitana
                                             </>
                                           ) : (
                                             <>
