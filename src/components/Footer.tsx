@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { BUSINESS } from "@/lib/businessConfig";
 import { Mail, Phone, MapPin, Send, ChevronUp, Award, Heart, Droplet, ShieldCheck, Truck, Clock, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/lib/context/LanguageContext";
@@ -171,17 +172,16 @@ export default function Footer() {
             </h4>
             <div className="flex flex-col gap-3 text-xs text-muted-foreground">
               <a
-                href="https://share.google/5x2FPvCFeEAeFtI3N"
+                href={BUSINESS.googleMapsShareUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="leading-relaxed hover:text-brand-orange transition-colors"
               >
-                Bhidbhanjan Road, Taleti Road, Navagadh, Palitana, Gujarat 364270
+                {BUSINESS.address.full}
               </a>
               <div>
                 <span className="block font-bold text-brand-charcoal text-[0.7rem] uppercase mt-1">Customer Care</span>
-                <a href="tel:+919913252232" className="block text-brand-orange font-bold mt-0.5 hover:underline">+91 99132 52232</a>
-                <span className="block text-brand-orange font-bold">+91 79 2640 1952</span>
+                <a href={`tel:${BUSINESS.phoneTel}`} className="block text-brand-orange font-bold mt-0.5 hover:underline">{BUSINESS.phone}</a>
               </div>
             </div>
           </motion.div>

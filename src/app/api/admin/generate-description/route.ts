@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { BUSINESS } from '@/lib/businessConfig';
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
 
     if (apiKey) {
       // Prompt for Gemini API
-      const prompt = `You are a professional copywriter for Mehta Dairy (formerly Mehta Sweet Mart), a premium Indian dairy and sweets brand since 1950.
+      const prompt = `You are a professional copywriter for ${BUSINESS.name}, a premium Indian dairy and sweets brand since ${BUSINESS.foundedYear}.
 Generate a structured marketing description and copy for a product with the following details:
 - Product Name: ${name}
 - Category: ${cleanCategory}
@@ -31,7 +32,7 @@ Your response MUST be a valid JSON object matching the following structure exact
     "Feature 2 highlighting freshness or purity",
     "Feature 3 highlighting occasion/usage (e.g. perfect for festivals, gifting)"
   ],
-  "whyChoose": "A compelling brand story statement (approx 30-50 words) about why customers should buy this specific item from Mehta Dairy (heritage since 1950, pure ingredients, strict hygiene, unmatched quality)."
+  "whyChoose": "A compelling brand story statement (approx 30-50 words) about why customers should buy this specific item from ${BUSINESS.shortName} (heritage since ${BUSINESS.foundedYear}, pure ingredients, strict hygiene, unmatched quality)."
 }`;
 
       try {
@@ -92,7 +93,7 @@ Your response MUST be a valid JSON object matching the following structure exact
     };
 
     const fallbackDesc = defaultDescriptions[category] || 
-      `Experience the authentic taste of ${name}, a premium delicacy from Mehta Dairy. Prepared under strict hygienic conditions using carefully selected ingredients, this fresh and delicious ${cleanCategory} item brings the warmth of traditional Gujarati flavors straight to your home.`;
+      `Experience the authentic taste of ${name}, a premium delicacy from ${BUSINESS.shortName}. Prepared under strict hygienic conditions using carefully selected ingredients, this fresh and delicious ${cleanCategory} item brings the warmth of traditional Gujarati flavors straight to your home.`;
 
     const ingredientsString = ingList ? ` prepared using premium ${ingList}` : '';
     const keyFeatures = [
@@ -102,7 +103,7 @@ Your response MUST be a valid JSON object matching the following structure exact
       `100% vegetarian product with zero artificial preservatives`
     ];
 
-    const whyChoose = `Mehta Dairy has been a symbol of trust, purity, and heritage since 1950. We choose the finest local ingredients and combine them with strict quality controls to deliver premium sweets and dairy that taste exactly like home.`;
+    const whyChoose = `${BUSINESS.shortName} has been a symbol of trust, purity, and heritage since ${BUSINESS.foundedYear}. We choose the finest local ingredients and combine them with strict quality controls to deliver premium sweets and dairy that taste exactly like home.`;
 
     return NextResponse.json({
       success: true,

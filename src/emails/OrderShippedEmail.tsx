@@ -13,6 +13,7 @@ import {
   Column,
 } from '@react-email/components';
 import * as React from 'react';
+import { BUSINESS } from '@/lib/businessConfig';
 
 interface OrderShippedEmailProps {
   customerName: string;
@@ -38,7 +39,7 @@ export const OrderShippedEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logoText}>Mehta Dairy</Text>
+            <Text style={logoText}>{BUSINESS.name}</Text>
           </Section>
 
           <Section style={contentSection}>
@@ -74,7 +75,7 @@ export const OrderShippedEmail = ({
 
           <Section style={footer}>
             <Text style={footerText}>
-              © {new Date().getFullYear()} Mehta Dairy & Sweet Mart. All rights reserved.
+              © {new Date().getFullYear()} {BUSINESS.name}. All rights reserved.
             </Text>
           </Section>
         </Container>

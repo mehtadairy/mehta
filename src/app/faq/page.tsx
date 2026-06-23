@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MessageCircle, Phone, Mail } from "lucide-react";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const FAQS = [
   {
@@ -63,7 +64,7 @@ const FAQS = [
       },
       {
         q: "Can I cancel or modify my order?",
-        a: "Orders can be cancelled or modified within 2 hours of placing them. After that, the order enters preparation. Please contact us immediately via WhatsApp (+91 99132 52232) if you need to make changes.",
+        a: `Orders can be cancelled or modified within 2 hours of placing them. After that, the order enters preparation. Please contact us immediately via WhatsApp (${BUSINESS.phone}) if you need to make changes.`,
       },
       {
         q: "What is your return or refund policy?",
@@ -190,7 +191,7 @@ export default function FAQPage() {
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
                 <a
-                  href="https://wa.me/919913252232"
+                  href={BUSINESS.whatsappUrl("")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-[#25D366] text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl hover:bg-[#1ebe57] transition-all shadow"
@@ -198,7 +199,7 @@ export default function FAQPage() {
                   <MessageCircle className="h-4 w-4" /> WhatsApp Us
                 </a>
                 <a
-                  href="tel:+919913252232"
+                  href={`tel:${BUSINESS.phoneTel}`}
                   className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl hover:bg-white/15 transition-all"
                 >
                   <Phone className="h-4 w-4" /> Call Us

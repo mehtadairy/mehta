@@ -553,18 +553,8 @@ export default function ProductDetails() {
                   Buy Now
                 </motion.button>
 
-                {/* WHATSAPP INQUIRY */}
-                <div className="relative flex items-center my-1">
-                  <div className="flex-grow h-px bg-brand-beige"></div>
-                  <span className="flex-shrink-0 mx-3 text-[0.62rem] font-bold text-muted-foreground uppercase tracking-wider">or</span>
-                  <div className="flex-grow h-px bg-brand-beige"></div>
-                </div>
 
-                <WhatsAppOrderBtn 
-                  productName={product.name}
-                  quantity={quantity}
-                  className="w-full text-xs py-3.5"
-                />
+
 
               </div>
 

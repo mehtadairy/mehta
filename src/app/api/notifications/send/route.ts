@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import webpush from 'web-push';
+import { BUSINESS } from '@/lib/businessConfig';
 
 // Configuration
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     const payload = JSON.stringify({
-      title: title || 'Mehta Dairy Update',
+      title: title || `${BUSINESS.shortName} Update`,
       body: body || 'You have a new notification.',
       url: url || '/account',
     });

@@ -7,6 +7,7 @@ import { Gift, Building2, Heart, Star, ChevronRight } from "lucide-react";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const GIFT_CATEGORIES = [
   {
@@ -67,7 +68,7 @@ export default function GiftBoxesPage() {
               <h1 className="font-serif text-4xl lg:text-6xl font-bold mb-6 leading-tight">
                 The Art of Gifting <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-brand-orange">
-                  by Mehta Dairy
+                  by {BUSINESS.shortName}
                 </span>
               </h1>
               <p className="text-white/80 max-w-2xl mx-auto text-sm lg:text-base leading-relaxed mb-10">
@@ -79,7 +80,7 @@ export default function GiftBoxesPage() {
                   Explore Collections
                 </a>
                 <WhatsAppOrderBtn 
-                  messagePrefix="Hello Mehta Dairy, I'm interested in bulk corporate gifting."
+                  messagePrefix={`Hello ${BUSINESS.shortName}, I'm interested in bulk corporate gifting.`}
                   className="w-full sm:w-auto"
                 />
               </div>
@@ -124,7 +125,7 @@ export default function GiftBoxesPage() {
                   </div>
 
                   <WhatsAppOrderBtn 
-                    messagePrefix={`Hello Mehta Dairy, I want to inquire about the ${cat.title}.`}
+                    messagePrefix={`Hello ${BUSINESS.shortName}, I want to inquire about the ${cat.title}.`}
                     className="w-full sm:w-max !bg-brand-charcoal hover:!bg-black !text-white !shadow-none"
                   />
                 </div>
@@ -155,8 +156,8 @@ export default function GiftBoxesPage() {
               <div className="bg-brand-cream p-6 rounded-2xl text-center border border-brand-beige">
                 <h4 className="font-serif font-bold text-brand-charcoal mb-2">Speak to our Gifting Expert</h4>
                 <p className="text-xs text-muted-foreground mb-4">Get a customized quote within 24 hours.</p>
-                <a href="tel:+919876543210" className="bg-white border border-brand-beige text-brand-charcoal hover:border-brand-orange font-bold py-3 px-6 rounded-xl block w-full transition-colors text-sm mb-3">
-                  Call +91 98765 43210
+                <a href={`tel:${BUSINESS.phoneTel}`} className="bg-white border border-brand-beige text-brand-charcoal hover:border-brand-orange font-bold py-3 px-6 rounded-xl block w-full transition-colors text-sm mb-3">
+                  Call {BUSINESS.phone}
                 </a>
                 <WhatsAppOrderBtn 
                   messagePrefix="Hello, I need help customizing a gift box order."

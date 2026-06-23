@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { supabase } from '@/lib/supabaseClient';
+import { BUSINESS } from '@/lib/businessConfig';
 import * as React from 'react';
 
 // Email Templates
@@ -49,7 +50,7 @@ export async function sendReactEmail(to: string, subject: string, reactComponent
 
   try {
     const data = await resend.emails.send({
-      from: `Mehta Sweet Mart <${SENDER_EMAIL}>`,
+      from: `${BUSINESS.name} <${SENDER_EMAIL}>`,
       to,
       subject,
       react: reactComponent,
@@ -152,7 +153,7 @@ export async function triggerOrderConfirmation(order: any, customerEmail?: strin
   // 2. SMS Customer
   if (customerPhone) {
     // In production, ensure this EXACT text matches an approved MSG91 DLT template
-    const smsMessage = `Mehta Dairy:\n\nYour order #${order.order_number} has been confirmed.\n\nAmount: ₹${order.total}\n\nThank you for shopping with us.`;
+    const smsMessage = `${BUSINESS.shortName}:\n\nYour order #${order.order_number} has been confirmed.\n\nAmount: ₹${order.total}\n\nThank you for shopping with us.`;
     const templateId = process.env.MSG91_TEMPLATE_CONFIRM || 'template_mock_id';
     await sendMSG91SMS(customerPhone, smsMessage, templateId, eventType, order.id);
   }
@@ -205,7 +206,7 @@ export async function triggerOrderShipped(order: any, trackingNumber: string, co
   }
 
   if (customerPhone) {
-    const smsMessage = `Mehta Dairy:\n\nOrder #${order.order_number} has been shipped.\n\nTracking ID: ${trackingNumber}\n\nThank you.`;
+    const smsMessage = `${BUSINESS.shortName}:\n\nOrder #${order.order_number} has been shipped.\n\nTracking ID: ${trackingNumber}\n\nThank you.`;
     const templateId = process.env.MSG91_TEMPLATE_SHIPPED || 'template_mock_id';
     await sendMSG91SMS(customerPhone, smsMessage, templateId, eventType, order.id);
   }
@@ -224,7 +225,7 @@ export async function triggerOrderDelivered(order: any, customerEmail?: string, 
   }
 
   if (customerPhone) {
-    const smsMessage = `Mehta Dairy:\n\nOrder #${order.order_number} has been delivered.\n\nThank you for choosing Mehta Dairy.`;
+    const smsMessage = `${BUSINESS.shortName}:\n\nOrder #${order.order_number} has been delivered.\n\nThank you for choosing ${BUSINESS.shortName}.`;
     const templateId = process.env.MSG91_TEMPLATE_DELIVERED || 'template_mock_id';
     await sendMSG91SMS(customerPhone, smsMessage, templateId, eventType, order.id);
   }

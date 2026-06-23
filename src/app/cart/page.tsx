@@ -9,6 +9,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { getCoupons, Coupon, generateSlug } from "@/lib/types";
 import ProductRecommendations from "@/components/ProductRecommendations";
+import { BUSINESS } from "@/lib/businessConfig";
 import { 
   ShoppingBasket, 
   Trash2, 
@@ -241,7 +242,7 @@ export default function Cart() {
                   </div>
 
                   <WhatsAppOrderBtn 
-                    messagePrefix={`Hello Mehta Dairy,\n\nI want to place an order for the items in my cart.\nCart Total: ₹${totalPayable}`}
+                    messagePrefix={`Hello ${BUSINESS.shortName},\n\nI want to place an order for the items in my cart.\nCart Total: ₹${totalPayable}`}
                     className="w-full text-sm py-3.5"
                   />
                 </div>

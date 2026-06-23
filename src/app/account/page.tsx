@@ -62,6 +62,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import ProductCard from "@/components/ProductCard";
+import { BUSINESS } from "@/lib/businessConfig";
 import { 
   getProfile, 
   saveProfile, 
@@ -1249,7 +1250,7 @@ function AccountContent() {
                                 <div className="flex justify-between items-start">
                                   <div>
                                     <h4 className="font-serif text-base font-bold text-[#4A2F1F] leading-tight max-w-[200px] truncate">
-                                      {order.items.length > 0 ? order.items[0].productName : "Mehta Dairy Order"}
+                                      {order.items.length > 0 ? order.items[0].productName : `${BUSINESS.shortName} Order`}
                                       {order.items.length > 1 ? ` +${order.items.length - 1} items` : ""}
                                     </h4>
                                     <span className="text-[0.65rem] text-muted-foreground font-bold">Order #{order.orderNumber}</span>
@@ -1398,8 +1399,8 @@ function AccountContent() {
                                             order.shippingAddress
                                           ) : order.shippingAddress?.id === 'pickup' ? (
                                             <>
-                                              <span className="font-bold text-brand-orange">{(order.shippingAddress as any)?.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}</span><br />
-                                              {(order.shippingAddress as any)?.pickup_store === 'taleti' ? 'Taleti Road' : 'Navagadh'}, Palitana
+                                              <span className="font-bold text-brand-orange">{(order.shippingAddress as any)?.pickup_store === 'taleti' ? BUSINESS.branches.taleti.name : BUSINESS.branches.navagadh.name}</span><br />
+                                              {(order.shippingAddress as any)?.pickup_store === 'taleti' ? BUSINESS.branches.taleti.address : BUSINESS.branches.navagadh.address}
                                             </>
                                           ) : (
                                             <>
@@ -1929,7 +1930,7 @@ function AccountContent() {
                           </div>
                           <div>
                             <h4 className="text-xs font-bold text-brand-charcoal">Order #{orders[0].orderNumber} Update</h4>
-                            <p className="text-[0.65rem] text-muted-foreground mt-1">Your order is currently <strong>{orders[0].status}</strong>. Thank you for shopping with Mehta Dairy!</p>
+                            <p className="text-[0.65rem] text-muted-foreground mt-1">Your order is currently <strong>{orders[0].status}</strong>. Thank you for shopping with {BUSINESS.shortName}!</p>
                             <span className="text-[0.55rem] text-muted-foreground/60 mt-2 block font-bold tracking-wider uppercase">Just Now</span>
                           </div>
                         </div>
@@ -1939,7 +1940,7 @@ function AccountContent() {
                           <Star className="h-5 w-5 fill-brand-orange/20" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-brand-charcoal">Welcome to Mehta Dairy Premium</h4>
+                          <h4 className="text-xs font-bold text-brand-charcoal">Welcome to {BUSINESS.shortName} Premium</h4>
                           <p className="text-[0.65rem] text-muted-foreground mt-1">Explore our latest collection of luxury Indian sweets, carefully crafted since 1972.</p>
                           <span className="text-[0.55rem] text-muted-foreground/60 mt-2 block font-bold tracking-wider uppercase">2 Days Ago</span>
                         </div>

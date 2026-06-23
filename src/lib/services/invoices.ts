@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabaseClient";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
@@ -45,25 +46,25 @@ export function generateInvoicePDF(order: any): jsPDF {
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("MEHTA DAIRY", margin, 24);
+  doc.text(BUSINESS.shortName.toUpperCase(), margin, 24);
 
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
-  doc.text("Premium Sweets, Farsan & Gifting Since 1952", margin, 29);
+  doc.text("Premium Sweets, Farsan & Gifting Since 1972", margin, 29);
 
   // Business info (Right side)
   doc.setFontSize(9);
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
   doc.setFont("Helvetica", "bold");
-  doc.text("Mehta Sweet Mart", pageWidth - margin, 20, { align: "right" });
+  doc.text(BUSINESS.name, pageWidth - margin, 20, { align: "right" });
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
   doc.text("GSTIN: 24AAAAM5252M1Z9", pageWidth - margin, 24, { align: "right" });
-  doc.text("Near Bhidbhanjan Mahadev Mandir, Taleti Road, Navagadh", pageWidth - margin, 28, { align: "right" });
-  doc.text("Palitana, Gujarat - 364270", pageWidth - margin, 32, { align: "right" });
-  doc.text("Contact: +91 99132 52232", pageWidth - margin, 36, { align: "right" });
+  doc.text(BUSINESS.address.full, pageWidth - margin, 28, { align: "right" });
+  doc.text("", pageWidth - margin, 32, { align: "right" });
+  doc.text(`Contact: ${BUSINESS.phone}`, pageWidth - margin, 32, { align: "right" });
 
   // Horizontal separator
   doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
@@ -100,7 +101,7 @@ export function generateInvoicePDF(order: any): jsPDF {
   const addr = order.shipping_address;
   let addressStr = "Self Outlet Pickup";
   if (addr && addr.id === 'pickup') {
-    addressStr = `Store Pickup: ${addr.pickup_store === 'taleti' ? 'Taleti Road Branch' : 'Navagadh Main Branch'}, Palitana`;
+    addressStr = `Store Pickup: ${addr.pickup_store === 'taleti' ? BUSINESS.branches.taleti.name : BUSINESS.branches.navagadh.name}, ${BUSINESS.address.city}`;
   } else if (addr && addr.street) {
     addressStr = `${addr.street}, ${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}, ${addr.state} - ${addr.pincode}`;
   }
@@ -204,13 +205,13 @@ export function generateInvoicePDF(order: any): jsPDF {
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("Thank you for shopping at Mehta Dairy!", pageWidth / 2, footerY + 8, { align: "center" });
+  doc.text(`Thank you for shopping at ${BUSINESS.shortName}!`, pageWidth / 2, footerY + 8, { align: "center" });
 
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(120, 120, 120);
   doc.text("This is a computer-generated invoice and does not require a physical signature.", pageWidth / 2, footerY + 14, { align: "center" });
-  doc.text("For support, please contact help@mehtasweetmart.com or call our helpline.", pageWidth / 2, footerY + 18, { align: "center" });
+  doc.text(`For support, please contact ${BUSINESS.email} or call ${BUSINESS.phone}.`, pageWidth / 2, footerY + 18, { align: "center" });
 
   return doc;
 }
@@ -400,7 +401,7 @@ export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBuff
       try {
         const emailHtml = `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h2 style="color: #D46D2D; text-align: center;">Mehta Dairy Invoice</h2>
+            <h2 style="color: #D46D2D; text-align: center;">${BUSINESS.shortName} Invoice</h2>
             <h3 style="text-align: center;">Thank You for Your Order!</h3>
             <p>Dear ${order.user_name || "Customer"},</p>
             <p>Your order has been confirmed. Please find your invoice <strong>${invoice.invoice_number}</strong> attached to this email.</p>
@@ -410,14 +411,14 @@ export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBuff
               <tr style="background-color: #f9f9f9;"><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Grand Total:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: #D46D2D; font-weight: bold;">₹${Number(order.total).toFixed(2)}</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Payment Method:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${order.payment_method}</td></tr>
             </table>
-            <p style="text-align: center; color: #888; font-size: 11px;">Mehta Sweet Mart © 1952-2026. All rights reserved.</p>
+            <p style="text-align: center; color: #888; font-size: 11px;">${BUSINESS.name} © 1972-${new Date().getFullYear()}. All rights reserved.</p>
           </div>
         `;
 
         const res = await resend.emails.send({
-          from: `Mehta Sweet Mart <${SENDER_EMAIL}>`,
+          from: `${BUSINESS.name} <${SENDER_EMAIL}>`,
           to: email,
-          subject: `Your Mehta Dairy Invoice - Order #${order.order_number}`,
+          subject: `Your ${BUSINESS.shortName} Invoice - Order #${order.order_number}`,
           html: emailHtml,
           attachments: [
             {

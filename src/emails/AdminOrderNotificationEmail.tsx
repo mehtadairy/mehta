@@ -13,6 +13,7 @@ import {
   Link
 } from '@react-email/components';
 import * as React from 'react';
+import { BUSINESS } from '@/lib/businessConfig';
 
 interface AdminOrderNotificationEmailProps {
   orderNumber: string;
@@ -44,7 +45,7 @@ export const AdminOrderNotificationEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logoText}>Mehta Dairy - Admin</Text>
+            <Text style={logoText}>{BUSINESS.shortName} - Admin</Text>
           </Section>
 
           <Section style={contentSection}>

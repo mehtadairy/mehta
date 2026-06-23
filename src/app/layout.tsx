@@ -8,7 +8,9 @@ import GlobalScrollManager from "@/components/ScrollToTop";
 import MobileNavBar from "@/components/MobileNavBar";
 import { LanguageProvider } from "@/lib/context/LanguageContext";
 import { LocationProvider } from "@/lib/context/LocationContext";
-
+import { Toaster } from 'sonner';
+import { Analytics } from "@vercel/analytics/react";
+import { BUSINESS } from '@/lib/businessConfig';
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -31,27 +33,27 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Mehta Sweet Mart | Premium Sweets, Farsan, Namkeen & Gift Boxes",
-  description: "Experience the ultimate luxury of authentic Indian sweets, handmade delicacies, crispy farsan, and premium gift boxes from Mehta Sweet Mart since 1952.",
-  keywords: ["Sweets", "Farsan", "Namkeen", "Indian Sweets", "Gift Boxes", "Mehta Dairy", "Rajkot Sweets", "Ahmedabad Sweets"],
+  title: `${BUSINESS.name} | Premium Sweets, Farsan, Namkeen & Gift Boxes`,
+  description: `Experience the ultimate luxury of authentic Indian sweets, handmade delicacies, crispy farsan, and premium gift boxes from ${BUSINESS.name} since ${BUSINESS.foundedYear}.`,
+  keywords: ["Sweets", "Farsan", "Namkeen", "Indian Sweets", "Gift Boxes", BUSINESS.shortName, "Palitana Sweets", "Gujarat Sweets"],
   openGraph: {
-    title: "Mehta Sweet Mart | Premium Sweets",
-    description: "Experience the ultimate luxury of authentic Indian sweets, handmade delicacies, and premium gift boxes from Mehta Sweet Mart since 1952.",
+    title: `${BUSINESS.name} | Premium Sweets`,
+    description: `Experience the ultimate luxury of authentic Indian sweets, handmade delicacies, and premium gift boxes from ${BUSINESS.name} since ${BUSINESS.foundedYear}.`,
     url: "https://mehtadairy.com",
-    siteName: "Mehta Sweet Mart",
+    siteName: BUSINESS.name,
     locale: "en_IN",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mehta Sweet Mart | Premium Sweets",
+    title: `${BUSINESS.name} | Premium Sweets`,
     description: "Authentic Indian sweets and farsan.",
   },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Mehta Sweet Mart",
+    title: BUSINESS.name,
   },
   formatDetection: {
     telephone: false,

@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BUSINESS } from "@/lib/businessConfig";
 
 // Shared easing curve — premium, no bounce
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -49,7 +50,7 @@ const staggerCard = {
 
 export default function About() {
   // Split headline into individual letters for animation
-  const headline = "MEHTA DAIRY";
+  const headline = BUSINESS.shortName.toUpperCase();
 
   return (
     <div className="bg-[#FAF6EE] min-h-screen text-[#2C2C2C] selection:bg-[#D97706]/20">
@@ -207,9 +208,9 @@ export default function About() {
 
               {/* Paragraphs stagger */}
               {[
-                <>Founded in 1972 by <strong className="text-[#4A2F1F]">Shri Khantilal Tribhovandas Mehta</strong>, Mehta Dairy began with a simple vision: serving fresh sweets and authentic flavors to the people of Palitana.</>,
+                <>Founded in {BUSINESS.foundedYear} by <strong className="text-[#4A2F1F]">Shri Khantilal Tribhovandas Mehta</strong>, {BUSINESS.shortName} began with a simple vision: serving fresh sweets and authentic flavors to the people of Palitana.</>,
                 <>Over the decades, the business has become a trusted destination for families, visitors, and Jain pilgrims seeking quality sweets, namkeen, sharbat, and traditional delicacies.</>,
-                <>Today, under the leadership of <strong className="text-[#4A2F1F]">Shri Jaydeepbhai Bhaveshbhai Mehta</strong>, Mehta Dairy continues its commitment to quality while embracing modern technology and online ordering.</>,
+                <>Today, under the leadership of <strong className="text-[#4A2F1F]">Shri Jaydeepbhai Bhaveshbhai Mehta</strong>, {BUSINESS.shortName} continues its commitment to quality while embracing modern technology and online ordering.</>,
               ].map((para, i) => (
                 <motion.p
                   key={i}
@@ -234,7 +235,7 @@ export default function About() {
             >
               <img
                 src="/store_entry_image.jpeg"
-                alt="Mehta Dairy Branding Wall Inside"
+                alt={`${BUSINESS.shortName} Branding Wall Inside`}
                 className="w-full h-auto rounded-xl object-cover transition-transform duration-700 group-hover:scale-103"
               />
             </motion.div>
@@ -273,15 +274,15 @@ export default function About() {
                 tag: "The Roots",
                 tagColor: "text-[#C9A227]",
                 name: "Shri Khantilal Tribhovandas Mehta",
-                role: "Founder of Mehta Dairy",
-                desc: "Established the business in 1972 with a vision of quality and trust, serving original milk formulations to Palitana's visitors and residents.",
+                role: `Founder of ${BUSINESS.shortName}`,
+                desc: `Established the business in ${BUSINESS.foundedYear} with a vision of quality and trust, serving original milk formulations to Palitana's visitors and residents.`,
               },
               {
                 tag: "Next Generation",
                 tagColor: "text-[#D97706]",
                 name: "Shri Jaydeepbhai Bhaveshbhai Mehta",
                 role: "Current CEO",
-                desc: "Leading the next generation while preserving the values and traditional recipes of Mehta Dairy, integrating safe digital checkout experiences.",
+                desc: `Leading the next generation while preserving the values and traditional recipes of ${BUSINESS.shortName}, integrating safe digital checkout experiences.`,
               },
             ].map((leader) => (
               <motion.div
@@ -337,7 +338,7 @@ export default function About() {
             />
 
             {[
-              { year: "1972", title: "Mehta Dairy Founded", desc: "Started serving pure, fresh, authentic sweets to the people of Palitana.", dot: "bg-[#4A2F1F]" },
+              { year: String(BUSINESS.foundedYear), title: `${BUSINESS.shortName} Founded`, desc: "Started serving pure, fresh, authentic sweets to the people of Palitana.", dot: "bg-[#4A2F1F]" },
               { year: "1980s", title: "Expanded Product Offerings", desc: "Introduced crunchy farsans, premium namkeens, and refreshing custom sharbats.", dot: "bg-[#C9A227]" },
               { year: "2000s", title: "Trusted By Generations", desc: "Established as the premier destination for visitors, pilgrims, and local Gujarati families.", dot: "bg-[#4A2F1F]" },
               { year: "2020s", title: "Modern Store Renovation", desc: "Renovated our physical store layouts to integrate beautiful modern glass displays and checkouts.", dot: "bg-[#C9A227]" },
@@ -378,7 +379,7 @@ export default function About() {
             className="text-center max-w-xl mx-auto mb-16"
           >
             <span className="text-[0.65rem] font-bold text-[#D97706] uppercase tracking-[0.2em]">Our Store Experience</span>
-            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Inside Mehta Dairy</h2>
+            <h2 className="font-serif text-3xl font-bold text-[#4A2F1F] mt-1">Inside {BUSINESS.shortName}</h2>
             <p className="text-xs text-muted-foreground mt-2 uppercase tracking-widest font-semibold text-[#C9A227]">
               A modern sweet shop built on traditional values.
             </p>
@@ -503,7 +504,7 @@ export default function About() {
               <div className="flex flex-col gap-2.5 text-xs font-semibold text-[#4A2F1F] mt-2">
                 {[
                   { Icon: MapPin, text: "Palitana, Gujarat, India." },
-                  { Icon: Phone, text: "+91 98989 81952" },
+                  { Icon: Phone, text: BUSINESS.phone },
                   { Icon: Clock, text: "9:00 AM - 10:00 PM (Daily)" },
                 ].map(({ Icon, text }, i) => (
                   <motion.span
@@ -530,7 +531,7 @@ export default function About() {
               <motion.a
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                href="https://wa.me/919898981952?text=Hello%20Mehta%20Dairy"
+                href={BUSINESS.whatsappUrl("Hello " + BUSINESS.shortName)}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white hover:bg-[#1ebd57] py-3 text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"

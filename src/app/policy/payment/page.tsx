@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, Landmark, Check, AlertCircle, Phone, MapPin, Loader2, Sparkles } from "lucide-react";
+import { BUSINESS } from "@/lib/businessConfig";
 
 export default function OnlinePaymentPolicy() {
   // Quick Pay States
@@ -80,7 +81,7 @@ export default function OnlinePaymentPolicy() {
         key: orderData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_your_key_id",
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Mehta Sweet Mart",
+        name: BUSINESS.razorpayName,
         description: paymentPurpose || "Quick Direct Payment",
         order_id: orderData.id,
         handler: function (response: any) {
@@ -164,7 +165,7 @@ export default function OnlinePaymentPolicy() {
 
                 <div className="text-xs text-muted-foreground leading-relaxed flex flex-col gap-4">
                   <p>
-                    Mehta Sweet Mart offers full integration with secure networks to process payments. All transactions are encrypted end-to-end to protect cardholder details.
+                    {BUSINESS.name} offers full integration with secure networks to process payments. All transactions are encrypted end-to-end to protect cardholder details.
                   </p>
 
                   <h3 className="font-serif text-sm font-bold text-brand-charcoal mt-2 uppercase tracking-wide">Supported Payment Methods</h3>
@@ -202,7 +203,7 @@ export default function OnlinePaymentPolicy() {
                   </div>
                   <div className="grid grid-cols-3 border-b border-brand-beige p-3">
                     <span className="font-bold text-brand-charcoal">Account Name</span>
-                    <span className="col-span-2 text-muted-foreground font-semibold">Mehta Sweet Mart</span>
+                    <span className="col-span-2 text-muted-foreground font-semibold">{BUSINESS.name}</span>
                   </div>
                   <div className="grid grid-cols-3 border-b border-brand-beige bg-brand-cream/10 p-3">
                     <span className="font-bold text-brand-charcoal">Account Number</span>
@@ -214,7 +215,7 @@ export default function OnlinePaymentPolicy() {
                   </div>
                   <div className="grid grid-cols-3 p-3 bg-brand-cream/10">
                     <span className="font-bold text-brand-charcoal">Branch</span>
-                    <span className="col-span-2 text-muted-foreground font-semibold"> Palitana, Gujarat 364270 </span>
+                    <span className="col-span-2 text-muted-foreground font-semibold"> {BUSINESS.address.short} </span>
                   </div>
                 </div>
               </motion.div>
@@ -230,16 +231,16 @@ export default function OnlinePaymentPolicy() {
                   <span className="font-bold text-brand-charcoal uppercase tracking-wider flex items-center gap-1.5">
                     <Phone className="h-4 w-4 text-brand-orange" /> Main Helpline Support
                   </span>
-                  <span>Contact Mehta Sweet Mart Support at:</span>
-                  <a href="tel:+919913252232" className="text-brand-orange font-black hover:underline text-sm">+91 99132 52232</a>
+                  <span>Contact {BUSINESS.name} Support at:</span>
+                  <a href={`tel:${BUSINESS.phoneTel}`} className="text-brand-orange font-black hover:underline text-sm">{BUSINESS.phone}</a>
                 </div>
 
                 <div className="flex flex-col gap-2 text-xs text-muted-foreground">
                   <span className="font-bold text-brand-charcoal uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-brand-orange" /> Main Outlet Address
                   </span>
-                  <span>Bhidbhanjan Road, Taleti Road, Navagadh,<br />Palitana, Gujarat 364270</span>
-                  <a href="https://share.google/5x2FPvCFeEAeFtI3N" target="_blank" rel="noreferrer" className="text-brand-orange font-black hover:underline">View on Google Maps</a>
+                  <span>{BUSINESS.address.full}</span>
+                  <a href={BUSINESS.googleMapsShareUrl} target="_blank" rel="noreferrer" className="text-brand-orange font-black hover:underline">View on Google Maps</a>
                 </div>
               </motion.div>
 

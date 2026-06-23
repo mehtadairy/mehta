@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { X, ChevronLeft, ChevronRight, Camera, Maximize2 } from "lucide-react";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const GALLERY_CATEGORIES = ["All", "Store Front", "Sweet Counter", "Sweet Making Process", "Dairy Production", "Gift Packaging"];
 
@@ -68,7 +69,7 @@ export default function GalleryPage() {
               </div>
               <h1 className="font-serif text-4xl md:text-5xl font-bold text-brand-charcoal mb-4">Our Heritage in Pictures</h1>
               <p className="text-muted-foreground text-sm max-w-2xl mx-auto leading-relaxed">
-                Take a visual journey through Mehta Dairy. From our bustling store front in Palitana to the meticulous sweet making process, experience the purity and tradition we've upheld since 1972.
+                Take a visual journey through {BUSINESS.shortName}. From our bustling store front in {BUSINESS.address.city} to the meticulous sweet making process, experience the purity and tradition we've upheld since {BUSINESS.foundedYear}.
               </p>
             </motion.div>
           </div>

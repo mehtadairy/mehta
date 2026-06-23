@@ -10,6 +10,7 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { BUSINESS } from '@/lib/businessConfig';
 
 interface PaymentReceivedEmailProps {
   customerName: string;
@@ -31,7 +32,7 @@ export const PaymentReceivedEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logoText}>Mehta Dairy</Text>
+            <Text style={logoText}>{BUSINESS.name}</Text>
           </Section>
 
           <Section style={contentSection}>
@@ -46,12 +47,12 @@ export const PaymentReceivedEmail = ({
 
             <Hr style={hr} />
             
-            <Text style={text}>Thank you for choosing Mehta Dairy.</Text>
+            <Text style={text}>Thank you for choosing {BUSINESS.name}.</Text>
           </Section>
 
           <Section style={footer}>
             <Text style={footerText}>
-              © {new Date().getFullYear()} Mehta Dairy & Sweet Mart. All rights reserved.
+              © {new Date().getFullYear()} {BUSINESS.name}. All rights reserved.
             </Text>
           </Section>
         </Container>

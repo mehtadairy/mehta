@@ -8,6 +8,7 @@ import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, Send, MessageSquare, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -40,16 +41,16 @@ const contactInfo = [
   {
     Icon: MapPin,
     label: "Store Address",
-    value: "Palitana, Bhavnagar District, Gujarat, India",
-    href: "https://maps.app.goo.gl/example",
+    value: BUSINESS.address.full,
+    href: BUSINESS.googleMapsUrl,
     color: "text-[#D46D2D]",
     bg: "bg-[#D46D2D]/10",
   },
   {
     Icon: Phone,
     label: "Customer Care",
-    value: "+91 98989 81952",
-    href: "tel:+919898981952",
+    value: BUSINESS.phone,
+    href: `tel:${BUSINESS.phoneTel}`,
     color: "text-[#D46D2D]",
     bg: "bg-[#D46D2D]/10",
   },
@@ -57,22 +58,22 @@ const contactInfo = [
     Icon: MessageSquare,
     label: "WhatsApp",
     value: "Chat on WhatsApp",
-    href: "https://wa.me/919898981952?text=Hello%20Mehta%20Dairy",
+    href: BUSINESS.whatsappUrl("Hello Mehta Dairy!"),
     color: "text-[#25D366]",
     bg: "bg-[#25D366]/10",
   },
   {
     Icon: Mail,
     label: "Email",
-    value: "support@mehtadairy.com",
-    href: "mailto:support@mehtadairy.com",
+    value: BUSINESS.email,
+    href: `mailto:${BUSINESS.email}`,
     color: "text-[#4285F4]",
     bg: "bg-[#4285F4]/10",
   },
   {
     Icon: Clock,
     label: "Store Hours",
-    value: "Daily: 9:00 AM – 10:00 PM IST",
+    value: BUSINESS.storeHours,
     href: null,
     color: "text-[#D4AF37]",
     bg: "bg-[#D4AF37]/10",
@@ -151,8 +152,8 @@ export default function Contact() {
   };
 
   const handleWhatsApp = () => {
-    const text = `Hello Mehta Dairy, I have a query regarding ${inquiryType}.`;
-    window.open(`https://wa.me/919898981952?text=${encodeURIComponent(text)}`, "_blank");
+    const text = `Hello ${BUSINESS.shortName}, I have a query regarding ${inquiryType}.`;
+    window.open(BUSINESS.whatsappUrl(text), "_blank");
   };
 
   // Now: determine open status
@@ -250,8 +251,8 @@ export default function Contact() {
               <div className="bg-white rounded-3xl border border-[#EAE0D3] p-7 shadow-sm flex flex-col gap-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="font-serif text-xl font-bold text-[#2A1E17]">Mehta Dairy</h2>
-                    <p className="text-xs text-[#7E6B5A] mt-0.5">Palitana, Gujarat</p>
+                    <h2 className="font-serif text-xl font-bold text-[#2A1E17]">{BUSINESS.shortName}</h2>
+                    <p className="text-xs text-[#7E6B5A] mt-0.5">{BUSINESS.address.city}, {BUSINESS.address.state}</p>
                   </div>
                   <span className="text-[0.6rem] font-bold bg-[#D4AF37]/15 text-[#B89324] px-2.5 py-1 rounded-full uppercase tracking-wider">
                     Since 1972
@@ -296,7 +297,7 @@ export default function Contact() {
 
               {/* WhatsApp instant CTA */}
               <WhatsAppOrderBtn 
-                messagePrefix="Hello Mehta Dairy, I have a general inquiry."
+                messagePrefix={`Hello ${BUSINESS.shortName}, I have a general inquiry.`}
                 className="w-full text-sm py-4 rounded-2xl shadow-md"
               />
 
@@ -508,11 +509,11 @@ export default function Contact() {
             <div className="rounded-3xl overflow-hidden border border-[#EAE0D3] shadow-md bg-white">
               {/* Map Embed */}
               <div className="relative bg-[#FAF6EE] h-64 flex flex-col items-center">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d118944.37520021966!2d71.74818987158223!3d21.51268686561168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3958bcda7611ffc1%3A0x643dc52f85bd8648!2sMehta%20Dairy!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
+                <iframe src={BUSINESS.googleMapsEmbedUrl} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
               </div>
               {/* CTA bar */}
               <a
-                href="https://share.google/5x2FPvCFeEAeFtI3N"
+                href={BUSINESS.googleMapsShareUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 bg-[#4A2F1F] text-white font-bold text-sm py-4 hover:bg-[#D46D2D] transition-colors"
@@ -522,7 +523,7 @@ export default function Contact() {
             </div>
             <div className="mt-4 flex justify-center">
               <a
-                href="https://wa.me/919913252232?text=Hello%20Mehta%20Dairy!%20I%20need%20directions%20to%20your%20store."
+                href={BUSINESS.whatsappUrl(`Hello ${BUSINESS.shortName}! I need directions to your store.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-[#1ebe57] transition-colors shadow"

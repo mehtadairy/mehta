@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion } from "framer-motion";
 import { Eye, Shield, Lock, Phone, MapPin } from "lucide-react";
+import { BUSINESS } from "@/lib/businessConfig";
 
 export default function PrivacyPolicy() {
   return (
@@ -39,7 +40,7 @@ export default function PrivacyPolicy() {
             <div className="prose prose-sm sm:prose-base max-w-none text-brand-charcoal/90 leading-relaxed flex flex-col gap-6">
 
               <p className="text-xs text-muted-foreground">
-                At Mehta Sweet Mart, we respect your privacy and are committed to protecting the personal details you share with us. This policy details how we collect, store, and utilize your information across our website and mobile checkout portal.
+                At {BUSINESS.name}, we respect your privacy and are committed to protecting the personal details you share with us. This policy details how we collect, store, and utilize your information across our website and mobile checkout portal.
               </p>
 
               <div>
@@ -62,7 +63,7 @@ export default function PrivacyPolicy() {
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   We integrate directly with **Razorpay Secure Checkout Gateways** for all online transactions.
-                  Mehta Sweet Mart **does not collect, store, or process** credit card numbers, CVVs, net banking credentials, or UPI PINs. All financial inputs are encrypted directly by Razorpay according to PCI-DSS standards.
+                  {BUSINESS.name} **does not collect, store, or process** credit card numbers, CVVs, net banking credentials, or UPI PINs. All financial inputs are encrypted directly by Razorpay according to PCI-DSS standards.
                 </p>
               </div>
 
@@ -86,15 +87,15 @@ export default function PrivacyPolicy() {
                     <Phone className="h-4 w-4 text-brand-orange" /> Phone Support
                   </span>
                   <span>Contact Customer Relations:</span>
-                  <a href="tel:+919913252232" className="text-brand-orange font-bold hover:underline">+91 99132 52232</a>
+                  <a href={`tel:${BUSINESS.phoneTel}`} className="text-brand-orange font-bold hover:underline">{BUSINESS.phone}</a>
                 </div>
 
                 <div className="flex flex-col gap-2 p-4 rounded-2xl bg-brand-cream/20 border border-brand-beige/35">
                   <span className="font-bold text-brand-charcoal uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-brand-orange" /> Main Outlet Address
                   </span>
-                  <span>Bhidbhanjan Road, Taleti Road, Navagadh,<br />Palitana, Gujarat 364270</span>
-                  <a href="https://maps.app.goo.gl/C4a16R63uQ2j4jWq7" target="_blank" rel="noreferrer" className="text-brand-orange font-bold hover:underline">View on Google Maps</a>
+                  <span>{BUSINESS.address.full}</span>
+                  <a href={BUSINESS.googleMapsUrl} target="_blank" rel="noreferrer" className="text-brand-orange font-bold hover:underline">View on Google Maps</a>
                 </div>
               </div>
 

@@ -16,6 +16,7 @@ import {
   Box,
   ChevronRight
 } from "lucide-react";
+import { BUSINESS } from "@/lib/businessConfig";
 
 // Types
 type TrackingStatus = "Confirmed" | "Preparing" | "Packed" | "Shipped" | "Delivered";
@@ -38,7 +39,7 @@ const MOCK_ORDER: OrderTrackingDetails = {
   status: "Shipped",
   date: "Oct 24, 2026",
   estDelivery: "Oct 26, 2026",
-  address: "123 Heritage Lane, Navrangpura, Ahmedabad, Gujarat 380009",
+  address: BUSINESS.address.full,
   paymentStatus: "Paid",
   items: [
     { name: "Kesar Peda", weight: "500 GM", qty: 1, img: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=200" },

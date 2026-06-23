@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductRecommendations from "@/components/ProductRecommendations";
+import { BUSINESS } from "@/lib/businessConfig";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -81,7 +82,7 @@ export default function Checkout() {
   const { nearestBranch } = useLocation();
 
   useEffect(() => {
-    if (nearestBranch === "Taleti Road Branch") {
+    if (nearestBranch === BUSINESS.branches.taleti.name) {
       setSelectedPickupStore("taleti");
     } else {
       setSelectedPickupStore("navagadh");
@@ -493,10 +494,10 @@ export default function Checkout() {
             id: 'pickup', 
             name: 'Self Pickup', 
             phone: 'N/A', 
-            street: selectedPickupStore === 'navagadh' ? 'Navagadh Main Branch (Since 1972)' : 'Taleti Road Branch', 
-            city: 'Palitana', 
-            state: 'Gujarat', 
-            pincode: '364270', 
+            street: selectedPickupStore === 'navagadh' ? BUSINESS.branches.navagadh.name : BUSINESS.branches.taleti.name, 
+            city: BUSINESS.address.city, 
+            state: BUSINESS.address.state, 
+            pincode: BUSINESS.address.pincode, 
             isDefault: false,
             pickup_store: selectedPickupStore
           };
@@ -851,11 +852,11 @@ export default function Checkout() {
                         </span>
                       </div>
                       <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">
-                        Navagadh Main Branch (Since 1972)
-                        {nearestBranch === "Navagadh Main Branch" && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
+                        {BUSINESS.branches.navagadh.name}
+                        {nearestBranch === BUSINESS.branches.navagadh.name && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
                       </h4>
                       <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Navagadh, Palitana, Gujarat
+                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> {BUSINESS.branches.navagadh.address}
                       </p>
                       
                       {selectedPickupStore === 'navagadh' && (
@@ -863,7 +864,7 @@ export default function Checkout() {
                           <h5 className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider mb-1">Pickup Details</h5>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📍</span>
-                            Navagadh Main Branch
+                            {BUSINESS.branches.navagadh.name}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">🕒</span>
@@ -871,11 +872,11 @@ export default function Checkout() {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📞</span>
-                            +91 9316688014
+                            {BUSINESS.branches.navagadh.phone}
                           </div>
                           
                           <a 
-                            href="https://maps.google.com/?q=Navagadh,Palitana" 
+                            href={BUSINESS.branches.navagadh.googleMapsUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -902,11 +903,11 @@ export default function Checkout() {
                         </div>
                       )}
                       <h4 className="font-serif font-bold text-brand-charcoal text-sm sm:text-base mt-2">
-                        Taleti Road Branch
-                        {nearestBranch === "Taleti Road Branch" && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
+                        {BUSINESS.branches.taleti.name}
+                        {nearestBranch === BUSINESS.branches.taleti.name && <span className="ml-2 text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Closest to you</span>}
                       </h4>
                       <p className="text-xs text-muted-foreground mt-1 mb-4 flex items-start gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Taleti Road, Palitana, Gujarat
+                        <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> {BUSINESS.branches.taleti.address}
                       </p>
                       
                       {selectedPickupStore === 'taleti' && (
@@ -914,7 +915,7 @@ export default function Checkout() {
                           <h5 className="text-[0.65rem] font-bold text-brand-charcoal uppercase tracking-wider mb-1">Pickup Details</h5>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📍</span>
-                            Taleti Road Branch
+                            {BUSINESS.branches.taleti.name}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">🕒</span>
@@ -922,11 +923,11 @@ export default function Checkout() {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-brand-charcoal font-medium">
                             <span className="w-5 h-5 flex items-center justify-center bg-white rounded-md shadow-sm border border-brand-orange/20">📞</span>
-                            +91 9316688014
+                            {BUSINESS.branches.taleti.phone}
                           </div>
                           
                           <a 
-                            href="https://maps.google.com/?q=Taleti+Road,Palitana" 
+                            href={BUSINESS.branches.taleti.googleMapsUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}

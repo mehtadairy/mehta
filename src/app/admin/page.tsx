@@ -622,7 +622,7 @@ export default function AdminPanel() {
                             <span className="text-white text-[0.7rem] font-black">M</span>
                         </div>
                         <div>
-                            <span className="text-xs font-bold text-white">Mehta Dairy</span>
+                            <span className="text-xs font-bold text-white">{BUSINESS.shortName}</span>
                             <span className="text-[0.6rem] text-white/40 ml-2 uppercase tracking-widest">Admin Console</span>
                         </div>
                     </div>

@@ -14,6 +14,7 @@ import {
   Column,
 } from '@react-email/components';
 import * as React from 'react';
+import { BUSINESS } from '@/lib/businessConfig';
 
 interface OrderConfirmationEmailProps {
   customerName: string;
@@ -36,7 +37,7 @@ export const OrderConfirmationEmail = ({
   deliveryAddress = "123 Street, City",
   items = []
 }: OrderConfirmationEmailProps) => {
-  const previewText = `Your Mehta Dairy Order #${orderNumber} is confirmed!`;
+  const previewText = `Your ${BUSINESS.shortName} Order #${orderNumber} is confirmed!`;
 
   return (
     <Html>
@@ -45,8 +46,8 @@ export const OrderConfirmationEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logoText}>Mehta Dairy</Text>
-            <Text style={tagline}>CRAFTING PREMIUM SWEETS SINCE 1952</Text>
+            <Text style={logoText}>{BUSINESS.name}</Text>
+            <Text style={tagline}>CRAFTING PREMIUM SWEETS SINCE {BUSINESS.foundedYear}</Text>
           </Section>
 
           <Section style={contentSection}>
@@ -112,7 +113,7 @@ export const OrderConfirmationEmail = ({
             </Section>
             
             <Section style={buttonContainer}>
-              <Link href="https://wa.me/919999999999?text=Hello Mehta Dairy, I need help with my order #${orderNumber}" style={whatsappButton}>
+              <Link href={BUSINESS.whatsappUrl(`Hello ${BUSINESS.shortName}, I need help with my order #${orderNumber}`)} style={whatsappButton}>
                 Chat with us on WhatsApp
               </Link>
             </Section>
@@ -123,7 +124,7 @@ export const OrderConfirmationEmail = ({
               If you have any questions, reply to this email or contact our support team.
             </Text>
             <Text style={footerText}>
-              © {new Date().getFullYear()} Mehta Dairy & Sweet Mart. All rights reserved.
+              © {new Date().getFullYear()} {BUSINESS.name}. All rights reserved.
             </Text>
           </Section>
         </Container>
