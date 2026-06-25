@@ -619,12 +619,11 @@ export default function AdminPanel() {
             <header className="sticky top-0 z-40 bg-[#1A1310] border-b border-white/10">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="h-7 w-7 rounded-lg bg-[#D46D2D] flex items-center justify-center">
-                            <span className="text-white text-[0.7rem] font-black">M</span>
+                        <div className="h-10 w-auto flex items-center justify-center">
+                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain drop-shadow-md" />
                         </div>
-                        <div>
-                            <span className="text-xs font-bold text-white">{BUSINESS.shortName}</span>
-                            <span className="text-[0.6rem] text-white/40 ml-2 uppercase tracking-widest">Admin Console</span>
+                        <div className="flex flex-col justify-center">
+                            <span className="text-[0.65rem] text-white/60 uppercase tracking-widest font-bold">Admin Console</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

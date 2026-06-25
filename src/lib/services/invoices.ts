@@ -3,6 +3,8 @@ import autoTable from "jspdf-autotable";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabaseClient";
 import { BUSINESS } from "@/lib/businessConfig";
+import fs from "fs";
+import path from "path";
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
@@ -37,64 +39,78 @@ export function generateInvoicePDF(order: any): jsPDF {
   const goldColor: [number, number, number] = [197, 168, 128]; // #C5A880 (Gold)
   const lightBeige: [number, number, number] = [244, 239, 230]; // #F4EFE6
 
-  // 1. Header Section
   // Background top accent bar
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.rect(0, 0, pageWidth, 8, "F");
 
-  // Logo text
-  doc.setFont("Helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(BUSINESS.shortName.toUpperCase(), margin, 24);
+  // Read and add Logo
+  try {
+    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    const logoBuffer = fs.readFileSync(logoPath);
+    const logoBase64 = logoBuffer.toString("base64");
+    // The image width/height should be proportional. Assuming 40x15 roughly.
+    doc.addImage(logoBase64, "PNG", margin, 15, 35, 16);
+  } catch (error) {
+    console.error("Failed to load invoice logo:", error);
+    // Fallback to text if logo is missing
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(BUSINESS.shortName.toUpperCase(), margin, 24);
+  }
 
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
-  doc.text("Premium Sweets, Farsan & Gifting Since 1972", margin, 29);
+  doc.text("Premium Sweets, Farsan & Gifting Since 1972", margin, 35);
 
   // Business info (Right side)
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
   doc.setFont("Helvetica", "bold");
-  doc.text(BUSINESS.name, pageWidth - margin, 20, { align: "right" });
+  doc.text(BUSINESS.name.toUpperCase(), pageWidth - margin, 20, { align: "right" });
   doc.setFont("Helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(80, 80, 80);
-  doc.text("GSTIN: 24AAAAM5252M1Z9", pageWidth - margin, 24, { align: "right" });
-  doc.text(BUSINESS.address.full, pageWidth - margin, 28, { align: "right" });
-  doc.text("", pageWidth - margin, 32, { align: "right" });
-  doc.text(`Contact: ${BUSINESS.phone}`, pageWidth - margin, 32, { align: "right" });
+  doc.text("GSTIN: 24AAAAM5252M1Z9", pageWidth - margin, 25, { align: "right" });
+  doc.text(BUSINESS.address.full, pageWidth - margin, 30, { align: "right" });
+  doc.text(`Contact: ${BUSINESS.phoneTel}`, pageWidth - margin, 35, { align: "right" });
 
   // Horizontal separator
   doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.8);
   doc.line(margin, 42, pageWidth - margin, 42);
 
   // 2. Invoice Details Block
+  doc.setFillColor(252, 250, 248); // Very light warm beige
+  doc.rect(margin, 46, (pageWidth - margin * 2) / 2 - 5, 34, "F");
+  
   doc.setFontSize(14);
   doc.setFont("Helvetica", "bold");
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("TAX INVOICE", margin, 52);
+  doc.text("TAX INVOICE", margin + 5, 54);
 
   doc.setFontSize(9);
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text(`Invoice No: ${order.invoice_number}`, margin, 58);
+  doc.text(`Invoice No: ${order.invoice_number}`, margin + 5, 61);
   doc.setFont("Helvetica", "normal");
-  doc.text(`Invoice Date: ${new Date(order.invoice_created_at || order.created_at).toLocaleDateString()}`, margin, 63);
-  doc.text(`Order Ref: ${order.order_number}`, margin, 68);
+  doc.text(`Invoice Date: ${new Date(order.invoice_created_at || order.created_at).toLocaleDateString()}`, margin + 5, 67);
+  doc.text(`Order Ref: ${order.order_number}`, margin + 5, 73);
 
   // Bill To (Right side)
-  const rightColX = pageWidth / 2 + 10;
+  const rightColX = pageWidth / 2 + 5;
+  doc.setFillColor(250, 248, 245);
+  doc.rect(rightColX, 46, (pageWidth - margin * 2) / 2 - 5, 34, "F");
+
   doc.setFont("Helvetica", "bold");
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("BILL & DELIVER TO", rightColX, 52);
+  doc.text("BILL & DELIVER TO", rightColX + 5, 54);
   doc.setFont("Helvetica", "normal");
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text(`Customer: ${order.user_name || "Valued Customer"}`, rightColX, 58);
-  doc.text(`Phone: ${order.user_phone || "N/A"}`, rightColX, 63);
+  doc.text(`Customer: ${order.user_name || "Valued Customer"}`, rightColX + 5, 61);
+  doc.text(`Phone: ${order.user_phone || "N/A"}`, rightColX + 5, 67);
   if (order.user_email) {
-    doc.text(`Email: ${order.user_email}`, rightColX, 68);
+    doc.text(`Email: ${order.user_email}`, rightColX + 5, 73);
   }
 
   // Address text wrapping
@@ -105,8 +121,8 @@ export function generateInvoicePDF(order: any): jsPDF {
   } else if (addr && addr.street) {
     addressStr = `${addr.street}, ${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}, ${addr.state} - ${addr.pincode}`;
   }
-  const splitAddress = doc.splitTextToSize(`Address: ${addressStr}`, pageWidth / 2 - margin - 5);
-  doc.text(splitAddress, rightColX, 73);
+  const splitAddress = doc.splitTextToSize(`Address: ${addressStr}`, pageWidth / 2 - margin - 15);
+  doc.text(splitAddress, rightColX + 5, 78);
 
   // 3. Products Table
   const tableColumn = ["Item Description", "Qty", "Weight / Option", "Unit Price", "Total Price"];
@@ -126,10 +142,11 @@ export function generateInvoicePDF(order: any): jsPDF {
   autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
-    startY: 85,
-    theme: "striped",
-    styles: { fontSize: 8.5, cellPadding: 3, textColor: [31, 30, 28] },
+    startY: 90,
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 4, textColor: [31, 30, 28], lineColor: [230, 225, 215], lineWidth: 0.1 },
     headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [252, 250, 248] },
     columnStyles: {
       0: { cellWidth: 70 },
       1: { halign: "center", cellWidth: 15 },

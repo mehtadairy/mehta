@@ -257,13 +257,15 @@ export default function Header() {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between relative">
 
-          {/* Custom Circular Badge Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="relative flex h-14 w-14 sm:h-17 sm:w-17 items-center justify-center rounded-full bg-[#0a4d8c] border-2 sm:border-3 border-[#d4af37] shadow-xl text-center flex-col p-1 leading-none group transition-transform hover:scale-105 select-none">
-              <span className="text-[0.35rem] sm:text-[0.4rem] font-bold text-white tracking-[0.12em] uppercase">Since 1952</span>
-              <span className="font-serif text-[0.65rem] sm:text-[0.75rem] font-black text-[#f3efe7] tracking-wider my-0.5 sm:my-0.8">MEHTA</span>
-              <span className="text-[0.3rem] sm:text-[0.32rem] font-bold text-[#d4af37] uppercase tracking-[0.05em] leading-tight">Sweet Mart</span>
-            </div>
+          {/* Custom Logo */}
+          <Link href="/" className="flex items-center transition-transform hover:scale-105">
+            <img 
+              src="/logo.png" 
+              alt="Mehta Dairy" 
+              className={`w-auto object-contain drop-shadow-md transition-all duration-300 ${
+                scrolled || !isHomepage ? "h-14 sm:h-16" : "h-20 sm:h-28"
+              }`} 
+            />
           </Link>
 
           {/* Desktop Navigation Floating Capsule */}

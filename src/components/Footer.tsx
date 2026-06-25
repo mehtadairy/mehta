@@ -90,9 +90,9 @@ export default function Footer() {
             variants={colVariants}
             className="flex flex-col gap-4"
           >
-            <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
-              {t('footer.our_story')}
-            </h4>
+            <div className="mb-3">
+              <img src="/logo.png" alt="Mehta Dairy" className="h-20 w-auto object-contain drop-shadow-md" />
+            </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {t('footer.about')}
             </p>
