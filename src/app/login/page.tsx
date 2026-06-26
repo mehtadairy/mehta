@@ -54,6 +54,9 @@ function LoginContent() {
     setError('');
     setIsLoading(true);
     try {
+      // Clear any existing stale sessions before initiating a new Google login
+      await supabase.auth.signOut();
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

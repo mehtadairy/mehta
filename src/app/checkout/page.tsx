@@ -91,6 +91,7 @@ export default function Checkout() {
 
   // Address creation form
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newFlat, setNewFlat] = useState("");
@@ -388,7 +389,23 @@ export default function Checkout() {
     setNewLng(null);
     setLocationStatus("idle");
     setPincodeStatus({ type: '', message: '' });
+    setEditingAddressId(null);
     setShowNewAddressForm(true);
+  };
+
+  const handleEditAddress = (addr: Address) => {
+    setNewName(addr.name);
+    setNewPhone(addr.phone);
+    const splitStreet = addr.street.split(', ');
+    setNewFlat(splitStreet[0] || "");
+    setNewArea(splitStreet.slice(1).join(', ') || "");
+    setNewLandmark(addr.landmark || "");
+    setNewCity(addr.city);
+    setNewState(addr.state);
+    setNewPincode(addr.pincode);
+    setEditingAddressId(addr.id);
+    setShowNewAddressForm(true);
+    setPincodeStatus({ type: '', message: '' });
   };
 
   // Address Submit
@@ -402,38 +419,69 @@ export default function Checkout() {
     let newAddr: Address;
 
     if (isLoggedIn && customerId) {
-      const { data, error } = await supabase.from('addresses').insert([{
-        customer_id: customerId,
-        full_name: newName,
-        mobile: newPhone,
-        address: `${newFlat}, ${newArea}`,
-        landmark: newLandmark || null,
-        city: newCity,
-        state: newState,
-        pincode: newPincode,
-        is_default: addresses.length === 0
-      }]).select().single();
+      if (editingAddressId && !editingAddressId.startsWith('guest-')) {
+        // Update existing address
+        const { error } = await supabase.from('addresses').update({
+          full_name: newName,
+          mobile: newPhone,
+          address: `${newFlat}, ${newArea}`,
+          landmark: newLandmark || null,
+          city: newCity,
+          state: newState,
+          pincode: newPincode,
+        }).eq('id', editingAddressId);
 
-      if (error) {
-        alert("Failed to save address to profile: " + error.message);
-        return;
+        if (error) {
+          alert("Failed to update address: " + error.message);
+          return;
+        }
+
+        newAddr = {
+          id: editingAddressId,
+          name: newName,
+          phone: newPhone,
+          street: `${newFlat}, ${newArea}`,
+          landmark: newLandmark || "",
+          city: newCity,
+          state: newState,
+          pincode: newPincode,
+          isDefault: addresses.find(a => a.id === editingAddressId)?.isDefault || false
+        };
+      } else {
+        // Insert new address
+        const { data, error } = await supabase.from('addresses').insert([{
+          customer_id: customerId,
+          full_name: newName,
+          mobile: newPhone,
+          address: `${newFlat}, ${newArea}`,
+          landmark: newLandmark || null,
+          city: newCity,
+          state: newState,
+          pincode: newPincode,
+          is_default: addresses.length === 0
+        }]).select().single();
+
+        if (error) {
+          alert("Failed to save address to profile: " + error.message);
+          return;
+        }
+
+        newAddr = {
+          id: data.id,
+          name: data.full_name,
+          phone: data.mobile,
+          street: data.address,
+          landmark: data.landmark,
+          city: data.city,
+          state: data.state,
+          pincode: data.pincode,
+          isDefault: data.is_default
+        };
       }
-
-      newAddr = {
-        id: data.id,
-        name: data.full_name,
-        phone: data.mobile,
-        street: data.address,
-        landmark: data.landmark,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        isDefault: data.is_default
-      };
     } else {
-      // Guest Checkout: Just create local address object
+      // Guest Checkout: Just create/update local address object
       newAddr = {
-        id: `guest-addr-${Date.now()}`,
+        id: editingAddressId || `guest-addr-${Date.now()}`,
         name: newName,
         phone: newPhone,
         street: `${newFlat}, ${newArea}`,
@@ -445,7 +493,13 @@ export default function Checkout() {
       };
     }
 
-    const updated = [...addresses, newAddr];
+    let updated = [];
+    if (editingAddressId) {
+      updated = addresses.map(a => a.id === editingAddressId ? newAddr : a);
+    } else {
+      updated = [...addresses, newAddr];
+    }
+    
     setAddresses(updated);
     setSelectedAddressId(newAddr.id);
 
@@ -459,6 +513,7 @@ export default function Checkout() {
     setNewState("");
     setNewPincode("");
     setPincodeStatus({ type: '', message: '' });
+    setEditingAddressId(null);
     setShowNewAddressForm(false);
   };
 
@@ -518,6 +573,7 @@ export default function Checkout() {
         order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         user_name: userName,
         user_phone: userPhone,
+        user_email: userEmail,
         subtotal: cartSubtotal,
         discount: discountAmount,
         coupon_code: null,
@@ -1249,7 +1305,7 @@ export default function Checkout() {
                               </span>
                               <button 
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); /* TODO: Edit Address */ }}
+                                onClick={(e) => { e.stopPropagation(); handleEditAddress(addr); }}
                                 className="text-[0.65rem] font-bold text-brand-orange hover:underline px-2 py-1"
                               >
                                 Edit

@@ -10,39 +10,49 @@ export default function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
+    let isSubscribed = true;
+
     const handleAuthCallback = async () => {
       try {
-        // Exchange code/session (handled by supabase client automatically on fetch session)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) throw sessionError;
-        if (!session) {
-          // If no session immediately, listen for state changes
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-            if (newSession) {
-              subscription.unsubscribe();
-              await syncUserProfile(newSession);
-            } else {
-              // Timeout or error if no session after 5 seconds
-              const timer = setTimeout(() => {
-                subscription.unsubscribe();
-                setErrorMsg("No active session found. Please try logging in again.");
-              }, 5000);
-              return () => clearTimeout(timer);
-            }
-          });
-          return;
-        }
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (!isSubscribed) return;
 
-        await syncUserProfile(session);
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            if (session) {
+              isSubscribed = false;
+              subscription.unsubscribe();
+              
+              // ALWAYS fetch the secure, authenticated user directly from the server.
+              const { data: { user }, error: userError } = await supabase.auth.getUser();
+              
+              if (userError) {
+                setErrorMsg(userError.message || "Failed to verify user session.");
+                return;
+              }
+              if (!user) {
+                setErrorMsg("No user found for this session.");
+                return;
+              }
+              
+              await syncUserProfile(user);
+            } else if (event === 'INITIAL_SESSION') {
+              // Wait a bit in case the hash is still parsing
+              setTimeout(() => {
+                if (isSubscribed) {
+                  setErrorMsg("No active session found. Please try logging in again.");
+                  subscription.unsubscribe();
+                }
+              }, 4000);
+            }
+          }
+        });
       } catch (err: any) {
         console.error("Auth callback error:", err);
         setErrorMsg(err.message || "Authentication failed. Please try again.");
       }
     };
 
-    const syncUserProfile = async (session: any) => {
-      const user = session.user;
+    const syncUserProfile = async (user: any) => {
       const email = user.email;
       const name = user.user_metadata?.full_name || user.user_metadata?.name || "Google User";
 
