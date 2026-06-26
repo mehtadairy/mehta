@@ -82,11 +82,11 @@ export async function POST(request: Request) {
       console.error("Failed to insert payment log:", paymentError);
     }
 
-    // 6. Generate Invoice & send email confirmation
+    // 6. Generate Invoice & send email confirmation (Asynchronous to prevent 504 timeout on Vercel)
     try {
-      await createInvoice(finalOrderData.id);
+      createInvoice(finalOrderData.id).catch(err => console.error("Async invoice error:", err));
     } catch (invoiceErr) {
-      console.error("Failed to generate invoice in payment verification route:", invoiceErr);
+      console.error("Failed to trigger invoice generation:", invoiceErr);
     }
 
     return NextResponse.json({ 

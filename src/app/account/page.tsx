@@ -376,6 +376,13 @@ function AccountContent() {
         return;
       }
 
+      // If we still don't have a profile but we have a user, something went wrong or they need to complete profile
+      if (!customerProfile && user) {
+         setIsAuthChecking(false);
+         router.push("/complete-profile?redirect=/account");
+         return;
+      }
+
       if (customerProfile && customerId) {
         if (!customerProfile.phone) {
           setIsAuthChecking(false);
@@ -2059,7 +2066,7 @@ function AccountContent() {
 
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Email OTP Verification Modal */}
