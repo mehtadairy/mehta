@@ -231,34 +231,54 @@ function ReorderContent() {
   // 1. Check Auth & Handle QR code redirects
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setAuthChecked(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let finalCustomerId = null;
+      let finalUserPhone = null;
+      let finalUserName = "Customer";
 
-      if (session) {
-        let userEmail = session.user.email || localStorage.getItem("mehta_user_email") || undefined;
-        let userPhone = session.user.phone || localStorage.getItem("mehta_user_phone") || undefined;
-
-        // If we have an email but no phone, try fetching from customers table just like the account page does
-        if (userEmail && (!userPhone || userPhone === 'null')) {
-          const { data: customer } = await supabase.from('customers').select('phone').eq('email', userEmail).maybeSingle();
-          if (customer?.phone) {
-            userPhone = customer.phone;
-            localStorage.setItem("mehta_user_phone", customer.phone);
+      if (user) {
+        // Logged in with Google or Supabase Auth
+        const { data: customer } = await supabase.from('customers').select('id, phone, name').eq('auth_user_id', user.id).single();
+        if (customer) {
+           finalCustomerId = customer.id;
+           finalUserPhone = customer.phone;
+           finalUserName = customer.name || user.user_metadata?.full_name || "Customer";
+           setAuthChecked(true);
+           setSession({ user });
+        }
+      } else {
+        // Fallback for OTP users
+        const phone = localStorage.getItem("mehta_user_phone");
+        if (phone && phone !== 'null') {
+          try {
+            const res = await fetch(`/api/user/profile?phone=${phone}`);
+            const data = await res.json();
+            if (data.success && data.profile) {
+              finalCustomerId = data.profile.id;
+              finalUserPhone = data.profile.phone;
+              finalUserName = data.profile.name || "Customer";
+              setAuthChecked(true);
+              setSession({ user: { phone: finalUserPhone } }); // mock session for UI
+            }
+          } catch (err) {
+            console.error("Error fetching OTP profile:", err);
           }
         }
+      }
 
-        setCustomerName(session.user.user_metadata?.full_name || session.user.user_metadata?.name || "Customer");
-        fetchDashboardData(userEmail, userPhone);
+      if (finalCustomerId || finalUserPhone) {
+        setCustomerName(finalUserName);
+        fetchDashboardData(finalCustomerId, finalUserPhone);
         
         if (queryId) {
-          // If they came from QR code and are logged in, automatically try to find and open that order
           fetchSpecificOrder(queryId, true);
         }
       } else {
         // Not logged in
+        setSession(null);
+        setAuthChecked(true);
         if (queryId) {
-          // Came from QR code -> redirect to login with return path
           router.push(`/login?redirect=/reorder?id=${queryId}`);
         }
       }
@@ -267,17 +287,17 @@ function ReorderContent() {
   }, [queryId, router]);
 
   // 2. Fetch Logged-In Dashboard Data
-  const fetchDashboardData = async (email: string | undefined, phone: string | undefined) => {
+  const fetchDashboardData = async (customerId: string | null, phone: string | null) => {
     try {
       // Fetch Orders
       let query = supabase.from('orders').select('*, invoices(*), order_items(*)').order('created_at', { ascending: false });
-      if (email && phone) {
-        query = query.or(`user_email.eq.${email},user_phone.eq.${phone}`);
-      } else if (email) {
-        query = query.eq('user_email', email);
+      
+      if (customerId) {
+        query = query.eq('customer_id', customerId);
       } else if (phone) {
         query = query.eq('user_phone', phone);
       }
+      
       const { data: ordersData } = await query;
       
       if (ordersData) {

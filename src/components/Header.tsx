@@ -258,11 +258,11 @@ export default function Header() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between relative">
 
           {/* Custom Logo */}
-          <Link href="/" className="flex items-center transition-transform hover:scale-105">
+          <Link href="/" className="shrink-0 z-10 flex items-center transition-transform hover:scale-105">
             <img 
               src="/logo.png" 
               alt="Mehta Dairy" 
-              className={`w-auto object-contain drop-shadow-md transition-all duration-300 ${
+              className={`w-auto max-w-[200px] object-contain drop-shadow-md transition-all duration-300 ${
                 scrolled || !isHomepage ? "h-12 sm:h-14" : "h-16 sm:h-20"
               }`} 
             />

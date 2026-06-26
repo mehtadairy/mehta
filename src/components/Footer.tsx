@@ -72,10 +72,10 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden">
+    <footer className="bg-[#0a4d8c] border-t border-[#0a4d8c] text-white overflow-hidden">
 
 
-      {/* Upper Footer: Cream background */}
+      {/* Upper Footer: Blue background */}
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -90,10 +90,10 @@ export default function Footer() {
             variants={colVariants}
             className="flex flex-col gap-4"
           >
-            <div className="mb-3">
-              <img src="/logo.png" alt="Mehta Dairy" className="h-20 w-auto object-contain drop-shadow-md" />
+            <div className="mb-3 bg-white/10 p-2 rounded inline-block">
+              <img src="/logo.png" alt="Mehta Dairy" className="h-20 w-auto object-contain drop-shadow-md brightness-0 invert" />
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-white/80 leading-relaxed">
               {t('footer.about')}
             </p>
           </motion.div>
@@ -104,10 +104,10 @@ export default function Footer() {
             variants={colVariants}
             className="flex flex-col gap-4"
           >
-            <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
               {t('home.category.explore')}
             </h4>
-            <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
+            <ul className="flex flex-col gap-2.5 text-xs text-white/80 font-semibold">
               {[
                 { href: "/shop", label: t('footer.products') },
                 { href: "/about", label: t('header.about') },
@@ -137,10 +137,10 @@ export default function Footer() {
             variants={colVariants}
             className="flex flex-col gap-4"
           >
-            <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
               {t('footer.legal')}
             </h4>
-            <ul className="flex flex-col gap-2.5 text-xs text-muted-foreground font-semibold">
+            <ul className="flex flex-col gap-2.5 text-xs text-white/80 font-semibold">
               {[
                 { href: "/policy/refund", label: t('footer.refund') },
                 { href: "/policy/privacy", label: t('footer.privacy') },
@@ -168,10 +168,10 @@ export default function Footer() {
             variants={colVariants}
             className="flex flex-col gap-4"
           >
-            <h4 className="font-serif text-sm font-bold text-brand-charcoal uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
               Contact
             </h4>
-            <div className="flex flex-col gap-3 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-3 text-xs text-white/80">
               <a
                 href={BUSINESS.googleMapsShareUrl}
                 target="_blank"
@@ -181,7 +181,7 @@ export default function Footer() {
                 {BUSINESS.address.full}
               </a>
               <div>
-                <span className="block font-bold text-brand-charcoal text-[0.7rem] uppercase mt-1">Customer Care</span>
+                <span className="block font-bold text-white text-[0.7rem] uppercase mt-1">Customer Care</span>
                 <a href={`tel:${BUSINESS.phoneTel}`} className="block text-brand-orange font-bold mt-0.5 hover:underline">{BUSINESS.phone}</a>
               </div>
             </div>

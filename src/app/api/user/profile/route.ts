@@ -5,19 +5,25 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get('phone');
-    const email = searchParams.get('email');
-
-    if (!phone && !email) {
-      return NextResponse.json({ success: false, message: 'Phone or Email is required' }, { status: 400 });
+    
+    // Check for authenticated session (Google Auth)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
     }
+    
+    const { data: { user } } = await supabase.auth.getUser();
 
     let query = supabase.from('customers').select('*');
-    if (phone && phone !== 'null' && phone !== 'undefined') {
+    
+    if (user) {
+      // STRICT: If authenticated, only fetch their exact profile
+      query = query.eq('auth_user_id', user.id);
+    } else if (phone && phone !== 'null' && phone !== 'undefined') {
+      // OTP Fallback
       query = query.eq('phone', phone);
-    } else if (email) {
-      query = query.eq('email', email);
     } else {
-      return NextResponse.json({ success: false, message: 'Valid Phone or Email is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Unauthorized or missing phone' }, { status: 400 });
     }
 
     const { data: profile, error } = await query.single();
@@ -42,8 +48,15 @@ export async function PUT(request: Request) {
   try {
     const { phone, email, name, newPhone, newEmail } = await request.json();
 
-    if (!phone && !email) {
-      return NextResponse.json({ success: false, message: 'Phone or Email is required' }, { status: 400 });
+    // Check for authenticated session
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user && !phone) {
+      return NextResponse.json({ success: false, message: 'Unauthorized or missing phone' }, { status: 400 });
     }
 
     const updatePayload: any = { name };
@@ -51,8 +64,9 @@ export async function PUT(request: Request) {
     if (newEmail !== undefined) updatePayload.email = newEmail;
 
     let query = supabase.from('customers').update(updatePayload);
-    if (email) {
-      query = query.eq('email', email);
+    
+    if (user) {
+      query = query.eq('auth_user_id', user.id);
     } else {
       query = query.eq('phone', phone);
     }

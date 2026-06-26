@@ -10,8 +10,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Phone number is required' }, { status: 400 });
     }
 
-    if (!userId && !email) {
-      return NextResponse.json({ success: false, error: 'User identifier is required' }, { status: 400 });
+    // Check for authenticated session (Google Auth)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+    }
+    
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized. Must be logged in to complete profile.' }, { status: 401 });
     }
 
     // Since we are validating purely via MSG91 widget frontend callback, 
@@ -20,32 +28,24 @@ export async function POST(req: Request) {
     // Check if the phone is already used by someone else
     const { data: existingPhoneUser, error: phoneError } = await supabase
       .from('customers')
-      .select('id')
+      .select('id, auth_user_id')
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
 
-    if (existingPhoneUser && existingPhoneUser.id !== userId) {
+    if (existingPhoneUser && existingPhoneUser.auth_user_id !== user.id) {
       // It's possible to merge accounts, or just throw an error.
-      // For now, let's allow updating if it matches or throw if used by someone else.
       return NextResponse.json({ success: false, error: 'Phone number already registered to another account. Please use a different number.' }, { status: 400 });
     }
 
-    // Update the customer record
-    let updateQuery = supabase
+    // Update the customer record using the secure auth_user_id
+    const { error: updateError } = await supabase
       .from('customers')
       .update({ 
         phone: phone,
         phone_verified: true,
         auth_provider: 'google' // They came from Google originally but are verifying phone now
-      });
-
-    if (userId) {
-      updateQuery = updateQuery.eq('id', userId);
-    } else {
-      updateQuery = updateQuery.eq('email', email);
-    }
-
-    const { error: updateError } = await updateQuery;
+      })
+      .eq('auth_user_id', user.id);
 
     if (updateError) {
       console.error("Supabase update error:", updateError);

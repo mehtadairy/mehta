@@ -328,105 +328,109 @@ function AccountContent() {
       const email = localStorage.getItem("mehta_user_email");
       setIsLoggedIn(loggedInStatus);
 
-      // Verify active Supabase OAuth session on mount to handle session persistence
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && !loggedInStatus) {
-        // Recover session if found
-        const user = session.user;
-        const userEmail = user.email || "";
-        const userName = user.user_metadata?.full_name || user.user_metadata?.name || "Google User";
+      // Verify active Supabase session
+      const { data: { user } } = await supabase.auth.getUser();
+      let customerId: string | null = null;
+      let customerProfile: any = null;
 
-        const { data: customer } = await supabase.from('customers').select('*').eq('email', userEmail).maybeSingle();
-
-        localStorage.setItem("mehta_logged_in", "true");
-        localStorage.setItem("mehta_user_name", customer?.name || userName);
-        if (userEmail) localStorage.setItem("mehta_user_email", userEmail);
-        if (customer?.phone) {
-          localStorage.setItem("mehta_user_phone", customer.phone);
-        }
+      if (user) {
+        // GOOGLE AUTH USER
         setIsLoggedIn(true);
-        window.dispatchEvent(new Event("authUpdated"));
-      }
+        localStorage.setItem("mehta_logged_in", "true");
 
-      if (!loggedInStatus && !session?.user) {
+        // Fetch securely via auth_user_id
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (customer) {
+          customerProfile = customer;
+          customerId = customer.id;
+          localStorage.setItem("mehta_user_name", customer.name || user.user_metadata?.full_name || "");
+          if (customer.email) localStorage.setItem("mehta_user_email", customer.email);
+          if (customer.phone) localStorage.setItem("mehta_user_phone", customer.phone);
+        }
+      } else if (loggedInStatus && phone && phone !== 'null') {
+        // OTP USER FALLBACK
+        try {
+          const res = await fetch(`/api/user/profile?phone=${phone}`);
+          const data = await res.json();
+          if (data.success && data.profile) {
+            customerProfile = data.profile;
+            customerId = data.profile.id;
+          }
+        } catch (err) {
+          console.error("Error fetching OTP profile:", err);
+        }
+      } else {
+        // NO SESSION
         setIsAuthChecking(false);
-        // Redirect to new Login Page
         router.push("/login?redirect=/account");
         return;
       }
 
-      if (loggedInStatus && (phone || email)) {
-        // Fetch Profile from API (by phone first, fallback to email)
-        const queryParam = phone && phone !== 'null' ? `phone=${phone}` : `email=${email}`;
-        fetch(`/api/user/profile?${queryParam}`)
-          .then(res => res.json())
-          .then(async data => {
-            if (data.success && data.profile) {
-              const { data: addrs } = await supabase.from('addresses').select('*').eq('customer_id', data.profile.id);
-              const mappedAddrs = addrs?.map(a => ({
-                id: a.id,
-                name: a.full_name,
-                phone: a.mobile,
-                street: a.address,
-                landmark: a.landmark,
-                city: a.city,
-                state: a.state,
-                pincode: a.pincode,
-                isDefault: a.is_default
-              })) || [];
+      if (customerProfile && customerId) {
+        // Load Addresses
+        const { data: addrs } = await supabase.from('addresses').select('*').eq('customer_id', customerId);
+        const mappedAddrs = addrs?.map(a => ({
+          id: a.id,
+          name: a.full_name,
+          phone: a.mobile,
+          street: a.address,
+          landmark: a.landmark,
+          city: a.city,
+          state: a.state,
+          pincode: a.pincode,
+          isDefault: a.is_default
+        })) || [];
 
-              setProfile({ ...data.profile, saved_addresses: mappedAddrs });
-              setEditName(data.profile.name || localStorage.getItem("mehta_user_name") || "");
-              setEditPhone(data.profile.phone || phone || "");
-              setEditEmail(data.profile.email || email || "");
+        setProfile({ ...customerProfile, saved_addresses: mappedAddrs });
+        setEditName(customerProfile.name || localStorage.getItem("mehta_user_name") || "");
+        setEditPhone(customerProfile.phone || phone || "");
+        setEditEmail(customerProfile.email || email || "");
 
-              if (data.profile.phone && data.profile.phone !== phone) {
-                localStorage.setItem("mehta_user_phone", data.profile.phone);
-              }
-            }
-          })
-          .catch(err => console.error("Error fetching profile:", err));
+        // Load Orders securely by customer_id if available, fallback to phone if OTP
+        let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)');
+        // If we know the customer ID, use it. Otherwise, fallback to phone (OTP).
+        if (customerId) {
+           orderQuery = orderQuery.eq('customer_id', customerId);
+        } else {
+           orderQuery = orderQuery.eq('user_phone', customerProfile.phone);
+        }
+        
+        const { data: userOrders, error: ordersError } = await orderQuery.order('created_at', { ascending: false });
 
-        // Load Orders if phone is available
-        if (phone && phone !== 'null') {
-          const { data: userOrders, error: ordersError } = await supabase
-            .from('orders')
-            .select('*, order_items(*), invoices(*)')
-            .eq('user_phone', phone)
-            .order('created_at', { ascending: false });
-
-          if (!ordersError && userOrders) {
-            const formattedOrders = userOrders.map((o: any) => ({
-              id: o.id,
-              orderNumber: o.order_number,
-              date: new Date(o.created_at).toLocaleDateString(),
-              status: o.status,
-              total: o.total,
-              subtotal: o.subtotal,
-              discount: o.discount,
-              couponCode: o.coupon_code,
-              deliveryCharge: o.delivery_charge,
-              shippingAddress: o.shipping_address,
-              paymentMethod: o.payment_method,
-              paymentStatus: o.payment_status,
-              paymentId: o.payment_id,
-              userName: o.user_name,
-              userPhone: o.user_phone,
-              userEmail: o.user_email,
-              invoice: o.invoices && o.invoices.length > 0 ? o.invoices[0] : null,
-              items: o.order_items ? o.order_items.map((i: any) => ({
-                productId: i.product_id,
-                productName: i.product_name,
-                weight: i.weight,
-                quantity: i.quantity,
-                price: i.price,
-                image: i.image
-              })) : []
-            }));
-            setOrders(formattedOrders as any);
-          } else {
-            setOrders(getOrders());
-          }
+        if (!ordersError && userOrders) {
+          const formattedOrders = userOrders.map((o: any) => ({
+            id: o.id,
+            orderNumber: o.order_number,
+            date: new Date(o.created_at).toLocaleDateString(),
+            status: o.status,
+            total: o.total,
+            subtotal: o.subtotal,
+            discount: o.discount,
+            couponCode: o.coupon_code,
+            deliveryCharge: o.delivery_charge,
+            shippingAddress: o.shipping_address,
+            paymentMethod: o.payment_method,
+            paymentStatus: o.payment_status,
+            paymentId: o.payment_id,
+            userName: o.user_name,
+            userPhone: o.user_phone,
+            userEmail: o.user_email,
+            invoice: o.invoices && o.invoices.length > 0 ? o.invoices[0] : null,
+            items: o.order_items ? o.order_items.map((i: any) => ({
+              productId: i.product_id,
+              productName: i.product_name,
+              weight: i.weight,
+              quantity: i.quantity,
+              price: i.price,
+              image: i.image
+            })) : []
+          }));
+          setOrders(formattedOrders as any);
         } else {
           setOrders([]);
         }
@@ -436,11 +440,8 @@ function AccountContent() {
         const allProducts = await fetchProducts();
         const w = storedWishlist.map((id: string) => allProducts.find(prod => prod.id === id)).filter(Boolean);
         setWishlistItems(w);
-        setIsLoading(false);
-        setIsAuthChecking(false);
-      } else {
-        setIsAuthChecking(false);
       }
+      
       setIsLoading(false);
       setIsAuthChecking(false);
     };

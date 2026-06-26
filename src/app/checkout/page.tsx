@@ -207,22 +207,33 @@ export default function Checkout() {
 
     // Addresses load
     const loadAddrs = async () => {
-      const phone = localStorage.getItem("mehta_user_phone");
-      const email = localStorage.getItem("mehta_user_email");
-      if (!phone && !email) return;
-      
-      let customerId = localStorage.getItem("mehta_user_id");
-      if (!customerId) {
-        let query = supabase.from('customers').select('id');
-        if (phone) {
-          query = query.eq('phone', phone);
-        } else if (email) {
-          query = query.eq('email', email);
-        }
-        const { data: customer } = await query.maybeSingle();
+      const { data: { user } } = await supabase.auth.getUser();
+      let customerId: string | null = null;
+
+      if (user) {
+        // Securely fetch customer ID using auth_user_id
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+        
         if (customer) {
           customerId = customer.id;
-          localStorage.setItem("mehta_user_id", customer.id);
+        }
+      } else {
+        // Fallback for OTP users
+        const phone = localStorage.getItem("mehta_user_phone");
+        if (phone && phone !== 'null') {
+          try {
+            const res = await fetch(`/api/user/profile?phone=${phone}`);
+            const data = await res.json();
+            if (data.success && data.profile) {
+              customerId = data.profile.id;
+            }
+          } catch (err) {
+            console.error("Failed to fetch OTP customer for addresses", err);
+          }
         }
       }
 
@@ -568,7 +579,21 @@ export default function Checkout() {
             return v.toString(16);
           });
 
-      const orderPayload = {
+      // SECURELY RESOLVE CUSTOMER ID
+      let finalCustomerId = null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+         const { data: cust } = await supabase.from('customers').select('id').eq('auth_user_id', user.id).single();
+         if (cust) finalCustomerId = cust.id;
+      } else if (userPhone) {
+         try {
+           const res = await fetch(`/api/user/profile?phone=${userPhone}`);
+           const data = await res.json();
+           if (data.success && data.profile) finalCustomerId = data.profile.id;
+         } catch(e) {}
+      }
+
+      const orderPayload: any = {
         id: orderId,
         order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         user_name: userName,
@@ -584,6 +609,7 @@ export default function Checkout() {
         payment_status: 'Pending',
         status: 'Pending'
       };
+      if (finalCustomerId) orderPayload.customer_id = finalCustomerId;
 
       const orderItems = cart.map(item => ({
         order_id: orderId,
