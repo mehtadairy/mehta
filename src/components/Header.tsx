@@ -263,7 +263,7 @@ export default function Header() {
               src="/logo.png" 
               alt="Mehta Dairy" 
               className={`w-auto object-contain drop-shadow-md transition-all duration-300 ${
-                scrolled || !isHomepage ? "h-14 sm:h-16" : "h-20 sm:h-28"
+                scrolled || !isHomepage ? "h-12 sm:h-14" : "h-16 sm:h-20"
               }`} 
             />
           </Link>

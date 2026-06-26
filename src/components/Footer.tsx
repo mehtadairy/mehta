@@ -72,7 +72,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden pb-20">
+    <footer className="bg-brand-cream border-t border-brand-beige text-brand-charcoal overflow-hidden">
 
 
       {/* Upper Footer: Cream background */}
@@ -191,7 +191,7 @@ export default function Footer() {
       </motion.div>
 
       {/* Bottom Footer: Navy blue */}
-      <div className="bg-[#0a4d8c] text-white py-6">
+      <div className="bg-[#0a4d8c] text-white pt-6 pb-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <motion.div
             initial={{ opacity: 0 }}

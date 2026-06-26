@@ -1,10 +1,11 @@
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabaseClient";
 import { BUSINESS } from "@/lib/businessConfig";
 import fs from "fs";
 import path from "path";
+import React from "react";
+import { chromium } from 'playwright';
+import InvoiceTemplateHtml from '@/components/invoice-html/InvoiceTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
@@ -19,218 +20,104 @@ export interface InvoiceData {
 }
 
 /**
- * Generate a professional PDF invoice using jsPDF and jspdf-autotable
+ * Generate a luxury PDF invoice using HTML + Tailwind CSS + Playwright
  */
-export function generateInvoicePDF(order: any): jsPDF {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4"
-  });
-
-  // Page dimensions
-  const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
-  const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
-  const margin = 15;
-
-  // Colors
-  const primaryColor: [number, number, number] = [212, 109, 45]; // #D46D2D (Brand Orange)
-  const secondaryColor: [number, number, number] = [31, 30, 28]; // #1F1E1C (Brand Charcoal)
-  const goldColor: [number, number, number] = [197, 168, 128]; // #C5A880 (Gold)
-  const lightBeige: [number, number, number] = [244, 239, 230]; // #F4EFE6
-
-  // Background top accent bar
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, pageWidth, 8, "F");
-
-  // Read and add Logo
+export async function generateInvoicePDF(order: any): Promise<Buffer> {
+  // --- PRE-FETCH IMAGES ---
+  const imageCache: Record<string, string> = {};
+  let logoUrl = null;
+  let qrBase64 = null;
+  
   try {
     const logoPath = path.join(process.cwd(), "public", "logo.png");
     const logoBuffer = fs.readFileSync(logoPath);
-    const logoBase64 = logoBuffer.toString("base64");
-    // The image width/height should be proportional. Assuming 40x15 roughly.
-    doc.addImage(logoBase64, "PNG", margin, 15, 35, 16);
+    logoUrl = "data:image/png;base64," + logoBuffer.toString("base64");
+    imageCache["logo"] = logoUrl;
   } catch (error) {
     console.error("Failed to load invoice logo:", error);
-    // Fallback to text if logo is missing
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(BUSINESS.shortName.toUpperCase(), margin, 24);
   }
 
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Premium Sweets, Farsan & Gifting Since 1972", margin, 35);
-
-  // Business info (Right side)
-  doc.setFontSize(10);
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.setFont("Helvetica", "bold");
-  doc.text(BUSINESS.name.toUpperCase(), pageWidth - margin, 20, { align: "right" });
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text("GSTIN: 24AAAAM5252M1Z9", pageWidth - margin, 25, { align: "right" });
-  doc.text(BUSINESS.address.full, pageWidth - margin, 30, { align: "right" });
-  doc.text(`Contact: ${BUSINESS.phoneTel}`, pageWidth - margin, 35, { align: "right" });
-
-  // Horizontal separator
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.setLineWidth(0.8);
-  doc.line(margin, 42, pageWidth - margin, 42);
-
-  // 2. Invoice Details Block
-  doc.setFillColor(252, 250, 248); // Very light warm beige
-  doc.rect(margin, 46, (pageWidth - margin * 2) / 2 - 5, 34, "F");
-  
-  doc.setFontSize(14);
-  doc.setFont("Helvetica", "bold");
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("TAX INVOICE", margin + 5, 54);
-
-  doc.setFontSize(9);
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text(`Invoice No: ${order.invoice_number}`, margin + 5, 61);
-  doc.setFont("Helvetica", "normal");
-  doc.text(`Invoice Date: ${new Date(order.invoice_created_at || order.created_at).toLocaleDateString()}`, margin + 5, 67);
-  doc.text(`Order Ref: ${order.order_number}`, margin + 5, 73);
-
-  // Bill To (Right side)
-  const rightColX = pageWidth / 2 + 5;
-  doc.setFillColor(250, 248, 245);
-  doc.rect(rightColX, 46, (pageWidth - margin * 2) / 2 - 5, 34, "F");
-
-  doc.setFont("Helvetica", "bold");
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("BILL & DELIVER TO", rightColX + 5, 54);
-  doc.setFont("Helvetica", "normal");
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text(`Customer: ${order.user_name || "Valued Customer"}`, rightColX + 5, 61);
-  doc.text(`Phone: ${order.user_phone || "N/A"}`, rightColX + 5, 67);
-  if (order.user_email) {
-    doc.text(`Email: ${order.user_email}`, rightColX + 5, 73);
+  try {
+    const reorderUrl = `https://mehtadairy.com/reorder?id=${encodeURIComponent(order.invoice_number || order.order_number)}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(reorderUrl)}&color=1F1E1C&bgcolor=ffffff`;
+    const qrRes = await fetch(qrUrl);
+    const qrBuffer = await qrRes.arrayBuffer();
+    const qrMime = qrRes.headers.get("content-type") || "image/png";
+    qrBase64 = `data:${qrMime};base64,` + Buffer.from(qrBuffer).toString("base64");
+  } catch (err) {
+    console.error("Failed to generate QR", err);
   }
-
-  // Address text wrapping
-  const addr = order.shipping_address;
-  let addressStr = "Self Outlet Pickup";
-  if (addr && addr.id === 'pickup') {
-    addressStr = `Store Pickup: ${addr.pickup_store === 'taleti' ? BUSINESS.branches.taleti.name : BUSINESS.branches.navagadh.name}, ${BUSINESS.address.city}`;
-  } else if (addr && addr.street) {
-    addressStr = `${addr.street}, ${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}, ${addr.state} - ${addr.pincode}`;
-  }
-  const splitAddress = doc.splitTextToSize(`Address: ${addressStr}`, pageWidth / 2 - margin - 15);
-  doc.text(splitAddress, rightColX + 5, 78);
-
-  // 3. Products Table
-  const tableColumn = ["Item Description", "Qty", "Weight / Option", "Unit Price", "Total Price"];
-  const tableRows: any[] = [];
 
   const items = order.order_items || [];
-  items.forEach((item: any) => {
-    tableRows.push([
-      item.product_name,
-      item.quantity,
-      item.weight || "Standard",
-      `Rs ${Number(item.price).toFixed(2)}`,
-      `Rs ${(Number(item.price) * Number(item.quantity)).toFixed(2)}`
-    ]);
-  });
+  
+  const mappedItems = items.map((item: any) => ({
+    name: item.product_name,
+    subtitle: "Premium Quality Sweet",
+    weight: item.weight || "Standard",
+    qty: item.quantity,
+    price: Number(item.price),
+    total: Number(item.price) * Number(item.quantity)
+  }));
 
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 90,
-    theme: "grid",
-    styles: { fontSize: 8.5, cellPadding: 4, textColor: [31, 30, 28], lineColor: [230, 225, 215], lineWidth: 0.1 },
-    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [252, 250, 248] },
-    columnStyles: {
-      0: { cellWidth: 70 },
-      1: { halign: "center", cellWidth: 15 },
-      2: { halign: "center", cellWidth: 35 },
-      3: { halign: "right", cellWidth: 25 },
-      4: { halign: "right", cellWidth: 25 }
-    }
-  });
-
-  // Calculate pricing summary details
-  const finalY = (doc as any).lastAutoTable.finalY + 8;
-  const summaryX = pageWidth - margin - 65;
-
-  const subtotal = Number(order.subtotal || 0);
-  const discount = Number(order.discount || 0);
-  const delivery = Number(order.delivery_charge || 0);
-  const total = Number(order.total || 0);
-
-  // Calculate GST 18% inclusive of sweets
-  const taxableAmount = total / 1.18;
-  const gstAmount = total - taxableAmount;
-
-  // Add borders and summary card
-  doc.setFillColor(lightBeige[0], lightBeige[1], lightBeige[2]);
-  doc.rect(summaryX - 5, finalY - 5, 75, 45, "F");
-
-  doc.setFontSize(8.5);
-  doc.setFont("Helvetica", "normal");
-  doc.setTextColor(80, 80, 80);
-
-  doc.text("Subtotal:", summaryX, finalY);
-  doc.text(`Rs ${subtotal.toFixed(2)}`, pageWidth - margin, finalY, { align: "right" });
-
-  doc.text("Discounts:", summaryX, finalY + 6);
-  doc.text(`-Rs ${discount.toFixed(2)}`, pageWidth - margin, finalY + 6, { align: "right" });
-
-  doc.text("Delivery Charges:", summaryX, finalY + 12);
-  doc.text(`Rs ${delivery.toFixed(2)}`, pageWidth - margin, finalY + 12, { align: "right" });
-
-  doc.text("GST Included (18%):", summaryX, finalY + 18);
-  doc.text(`Rs ${gstAmount.toFixed(2)}`, pageWidth - margin, finalY + 18, { align: "right" });
-
-  // Grand Total separator
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.line(summaryX, finalY + 23, pageWidth - margin, finalY + 23);
-
-  doc.setFont("Helvetica", "bold");
-  doc.setFontSize(10.5);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("Grand Total:", summaryX, finalY + 29);
-  doc.text(`Rs ${total.toFixed(2)}`, pageWidth - margin, finalY + 29, { align: "right" });
-
-  // Payment Details (Left side of summary)
-  const detailsY = finalY;
-  doc.setFontSize(8.5);
-  doc.setFont("Helvetica", "bold");
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text("PAYMENT DETAILS", margin, detailsY);
-
-  doc.setFont("Helvetica", "normal");
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Method: ${order.payment_method || "Online"}`, margin, detailsY + 6);
-  doc.text(`Status: ${order.payment_status || "Completed"}`, margin, detailsY + 12);
-  if (order.payment_id) {
-    doc.text(`Txn ID: ${order.payment_id}`, margin, detailsY + 18);
+  const addr = order.shipping_address;
+  let addressString = "Store Pickup";
+  if (addr && addr.street) {
+    addressString = `${addr.street}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+  } else if (addr && typeof addr === 'string') {
+    addressString = addr;
   }
 
-  // 4. Footer Section
-  const footerY = pageHeight - 35;
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.line(margin, footerY, pageWidth - margin, footerY);
+  const mappedInvoiceData = {
+    invoiceNo: order.invoice_number,
+    orderNo: order.order_number || "N/A",
+    date: new Date(order.invoice_created_at || order.created_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }),
+    customer: {
+      name: order.user_name || "Valued Customer",
+      phone: String(order.user_phone || "N/A").replace(/^\+?91\s*/, "").trim(),
+      email: order.user_email || undefined,
+      address: addressString,
+    },
+    items: mappedItems,
+    subtotal: Number(order.subtotal || 0),
+    delivery: Number(order.delivery_charge || 0),
+    discount: Number(order.discount || 0),
+    gst: order.metadata?.gst_number && order.metadata?.gst_enabled === true ? Number(order.total || 0) - (Number(order.total || 0) / 1.18) : 0,
+    grandTotal: Number(order.total || 0),
+    paymentMethod: order.payment_method || "Cash",
+    paymentStatus: (order.payment_status || "COMPLETED").toUpperCase() as "PAID" | "UNPAID" | "PARTIAL",
+    logo: logoUrl || undefined,
+    qr: qrBase64 || undefined
+  };
 
-  doc.setFont("Helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(`Thank you for shopping at ${BUSINESS.shortName}!`, pageWidth / 2, footerY + 8, { align: "center" });
+  // Render React component to HTML string using dynamic import for Next.js build compatibility
+  const ReactDOMServer = await import('react-dom/server');
+  const htmlString = '<!DOCTYPE html>' + ReactDOMServer.renderToStaticMarkup(
+    React.createElement(InvoiceTemplateHtml, {
+      invoice: mappedInvoiceData
+    })
+  );
 
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(120, 120, 120);
-  doc.text("This is a computer-generated invoice and does not require a physical signature.", pageWidth / 2, footerY + 14, { align: "center" });
-  doc.text(`For support, please contact ${BUSINESS.email} or call ${BUSINESS.phone}.`, pageWidth / 2, footerY + 18, { align: "center" });
+  // Launch Playwright headless browser
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
+  });
+  
+  const page = await browser.newPage();
+  await page.setContent(htmlString, { waitUntil: 'networkidle' });
+  
+  // Wait a little extra time for custom fonts (Outfit/Playfair Display) to definitely render
+  await page.waitForTimeout(500);
 
-  return doc;
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: 0, right: 0, bottom: 0, left: 0 }
+  });
+
+  await browser.close();
+
+  return pdfBuffer;
 }
 
 /**
@@ -238,292 +125,77 @@ export function generateInvoicePDF(order: any): jsPDF {
  */
 export async function createInvoice(orderId: string): Promise<InvoiceData | null> {
   try {
-    // 1. Check if invoice already exists
-    const { data: existing } = await supabase
-      .from("invoices")
-      .select("*")
-      .eq("order_id", orderId)
-      .maybeSingle();
+    const { data: existing } = await supabase.from("invoices").select("*").eq("order_id", orderId).maybeSingle();
+    // DEV ONLY: Delete old cached invoices manually from admin/database.
+    // if (existing) return existing as InvoiceData;
 
-    if (existing) {
-      console.log(`Invoice already exists for order ${orderId}: ${existing.invoice_number}`);
-      return existing as InvoiceData;
-    }
+    const { data: order, error: orderError } = await supabase.from("orders").select("*, order_items(*)").eq("id", orderId).maybeSingle();
+    if (orderError || !order) throw new Error(`Order not found`);
 
-    // 2. Fetch order complete details with items
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("id", orderId)
-      .maybeSingle();
-
-    if (orderError || !order) {
-      throw new Error(`Order not found or database error: ${orderError?.message || "unknown"}`);
-    }
-
-    // 3. Generate unique invoice number format: MD-YYYY-0001
     const currentYear = new Date().getFullYear();
-    const { count } = await supabase
-      .from("invoices")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", `${currentYear}-01-01T00:00:00Z`)
-      .lt("created_at", `${currentYear + 1}-01-01T00:00:00Z`);
+    const { count } = await supabase.from("invoices").select("*", { count: "exact", head: true })
+      .gte("created_at", `${currentYear}-01-01T00:00:00Z`).lt("created_at", `${currentYear + 1}-01-01T00:00:00Z`);
 
-    const seq = (count || 0) + 1;
-    const seqStr = String(seq).padStart(4, "0");
-    const invoiceNumber = `MD-${currentYear}-${seqStr}`;
+    const seqStr = String((count || 0) + 1).padStart(4, "0");
+    const invoiceNumber = `INV-${currentYear}-${seqStr}`;
 
-    // Attach temporary invoice metadata to order object for PDF draw
-    const orderWithInvoice = {
-      ...order,
-      invoice_number: invoiceNumber,
-      invoice_created_at: new Date().toISOString()
-    };
+    const orderWithInvoice = { ...order, invoice_number: invoiceNumber, invoice_created_at: new Date().toISOString() };
+    const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
 
-    // 4. Generate PDF Document
-    const doc = generateInvoicePDF(orderWithInvoice);
-    const pdfArrayBuffer = doc.output("arraybuffer");
-    const pdfBuffer = Buffer.from(pdfArrayBuffer);
-
-    // 5. Upload PDF file to Supabase Storage
     const fileName = `${invoiceNumber}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from("invoices")
-      .upload(fileName, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: true
-      });
+    const { error: uploadError } = await supabase.storage.from("invoices").upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true });
+    if (uploadError) throw new Error(`Upload error`);
 
-    if (uploadError) {
-      throw new Error(`Failed to upload PDF invoice to storage: ${uploadError.message}`);
-    }
-
-    // 6. Get Public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("invoices")
-      .getPublicUrl(fileName);
-
+    const { data: publicUrlData } = supabase.storage.from("invoices").getPublicUrl(fileName);
     const pdfUrl = publicUrlData.publicUrl;
 
-    // 7. Fetch customer record if matching email/phone exists
     let customerId: string | null = null;
     if (order.user_phone) {
-      const { data: cust } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("phone", order.user_phone)
-        .maybeSingle();
+      const { data: cust } = await supabase.from("customers").select("id").eq("phone", order.user_phone).maybeSingle();
       if (cust) customerId = cust.id;
     }
 
-    // 8. Insert invoice record to public.invoices table
-    const { data: newInvoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .insert([{
-        invoice_number: invoiceNumber,
-        order_id: orderId,
-        customer_id: customerId,
-        pdf_url: pdfUrl,
-        metadata: {
-          subtotal: order.subtotal,
-          delivery_charge: order.delivery_charge,
-          discount: order.discount,
-          total: order.total,
-          payment_method: order.payment_method,
-          payment_status: order.payment_status,
-          user_name: order.user_name,
-          user_phone: order.user_phone,
-          user_email: order.user_email
-        }
-      }])
-      .select()
-      .single();
+    const { data: newInvoice, error: invoiceError } = await supabase.from("invoices").insert([{
+        invoice_number: invoiceNumber, order_id: orderId, customer_id: customerId, pdf_url: pdfUrl,
+        metadata: { subtotal: order.subtotal, delivery_charge: order.delivery_charge, discount: order.discount, total: order.total, payment_method: order.payment_method, payment_status: order.payment_status, user_name: order.user_name, user_phone: order.user_phone, user_email: order.user_email }
+    }]).select().single();
 
-    if (invoiceError) {
-      throw new Error(`Failed to save invoice record: ${invoiceError.message}`);
-    }
+    if (invoiceError) throw new Error(`DB err`);
 
-    console.log(`Invoice successfully created: ${invoiceNumber} for order ${order.order_number}`);
-
-    // 9. Automatically trigger email delivery
     if (order.user_email) {
-      // Execute asynchronously in background to not block the main process
-      sendInvoiceEmail(newInvoice.id, order.user_email, pdfBuffer).catch(err => {
-        console.error("Async email dispatch failed:", err);
-      });
+      sendInvoiceEmail(newInvoice.id, order.user_email, pdfBuffer).catch(err => console.error(err));
     }
 
     return newInvoice as InvoiceData;
-
   } catch (err) {
-    console.error("Error in createInvoice service:", err);
+    console.error("createInvoice error:", err);
     return null;
   }
 }
 
-/**
- * Send PDF invoice via Resend email service with attachments
- */
 export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBufferInput?: Buffer): Promise<boolean> {
-  const logData: any = {
-    invoice_id: invoiceId,
-    customer_email: email,
-    email_status: "pending",
-    retry_count: 0
-  };
-
   try {
-    // 1. Fetch invoice info
-    const { data: invoice } = await supabase
-      .from("invoices")
-      .select("*, orders(*)")
-      .eq("id", invoiceId)
-      .single();
-
-    if (!invoice) {
-      throw new Error(`Invoice ID ${invoiceId} not found`);
-    }
-
-    const order = invoice.orders;
-    if (!order) {
-      throw new Error(`Associated order for invoice ${invoiceId} not found`);
-    }
-
-    // 2. Fetch or load PDF buffer
+    const { sendInvoiceEmailWithRetry } = await import('@/lib/email/sendInvoice');
     let pdfBuffer = pdfBufferInput;
+    
     if (!pdfBuffer) {
+      const { data: invoice } = await supabase.from("invoices").select("invoice_number").eq("id", invoiceId).single();
+      if (!invoice) throw new Error(`Invoice not found`);
       const fileName = `${invoice.invoice_number}.pdf`;
-      const { data: downloadData, error: downloadError } = await supabase.storage
-        .from("invoices")
-        .download(fileName);
-
-      if (downloadError || !downloadData) {
-        throw new Error(`Failed to download PDF invoice from storage: ${downloadError?.message || "No data"}`);
-      }
-
-      const arrayBuffer = await downloadData.arrayBuffer();
-      pdfBuffer = Buffer.from(arrayBuffer);
+      const { data: downloadData } = await supabase.storage.from("invoices").download(fileName);
+      if (!downloadData) throw new Error(`No PDF data found in storage`);
+      pdfBuffer = Buffer.from(await downloadData.arrayBuffer());
     }
 
-    // 3. Dispatch email via Resend (or mock simulation if key is not set)
-    let emailSent = false;
-    let errorMsg: string | null = null;
-    let resultId = "";
-
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_mock_key') {
-      console.log(`[Email Mock Simulation] Sending Invoice ${invoice.invoice_number} to ${email}`);
-      emailSent = true;
-      resultId = `mock_${Date.now()}`;
-    } else {
-      try {
-        const emailHtml = `
-          <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h2 style="color: #D46D2D; text-align: center;">${BUSINESS.shortName} Invoice</h2>
-            <h3 style="text-align: center;">Thank You for Your Order!</h3>
-            <p>Dear ${order.user_name || "Customer"},</p>
-            <p>Your order has been confirmed. Please find your invoice <strong>${invoice.invoice_number}</strong> attached to this email.</p>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px;">
-              <tr style="background-color: #f9f9f9;"><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Order Number:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${order.order_number}</td></tr>
-              <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Invoice Number:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${invoice.invoice_number}</td></tr>
-              <tr style="background-color: #f9f9f9;"><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Grand Total:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: #D46D2D; font-weight: bold;">₹${Number(order.total).toFixed(2)}</td></tr>
-              <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Payment Method:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${order.payment_method}</td></tr>
-            </table>
-            <p style="text-align: center; color: #888; font-size: 11px;">${BUSINESS.name} © 1972-${new Date().getFullYear()}. All rights reserved.</p>
-          </div>
-        `;
-
-        const res = await resend.emails.send({
-          from: `${BUSINESS.name} <${SENDER_EMAIL}>`,
-          to: email,
-          subject: `Your ${BUSINESS.shortName} Invoice - Order #${order.order_number}`,
-          html: emailHtml,
-          attachments: [
-            {
-              filename: `${invoice.invoice_number}.pdf`,
-              content: pdfBuffer.toString("base64")
-            }
-          ]
-        });
-
-        if (res.error) {
-          throw new Error(res.error.message);
-        }
-
-        emailSent = true;
-        resultId = res.data?.id || "";
-      } catch (sendError: any) {
-        console.error("Resend API failed:", sendError);
-        errorMsg = sendError.message || "Failed to dispatch email";
-      }
-    }
-
-    // 4. Log status in Supabase table
-    logData.email_sent = emailSent;
-    logData.email_sent_at = emailSent ? new Date().toISOString() : null;
-    logData.email_status = emailSent ? "sent" : "failed";
-    logData.error_message = errorMsg;
-
-    await supabase.from("invoice_email_logs").insert([logData]);
-
-    return emailSent;
-
+    const { success } = await sendInvoiceEmailWithRetry(invoiceId, email, pdfBuffer);
+    return success;
   } catch (err: any) {
-    console.error("Error in sendInvoiceEmail service:", err);
-    logData.email_sent = false;
-    logData.email_status = "failed";
-    logData.error_message = err.message || "Unknown error";
-
-    // Log failure log in DB
-    try {
-      await supabase.from("invoice_email_logs").insert([logData]);
-    } catch (dbErr) {
-      console.error("Failed to insert failed invoice log:", dbErr);
-    }
+    console.error("sendInvoiceEmail error:", err);
     return false;
   }
 }
 
-/**
- * Retry failed invoice email deliveries and increment retry_count
- */
+// Keeping the interface for compatibility but shifting retry logic to the send function itself
 export async function retryFailedInvoices(): Promise<number> {
-  try {
-    // 1. Fetch failed logs
-    const { data: failedLogs } = await supabase
-      .from("invoice_email_logs")
-      .select("*")
-      .eq("email_status", "failed")
-      .lt("retry_count", 3); // Max 3 retries
-
-    if (!failedLogs || failedLogs.length === 0) {
-      return 0;
-    }
-
-    let retriedSuccessCount = 0;
-
-    for (const log of failedLogs) {
-      console.log(`Retrying invoice email for log ${log.id}, attempt ${log.retry_count + 1}...`);
-
-      const success = await sendInvoiceEmail(log.invoice_id, log.customer_email);
-
-      // Update retry_count on the log
-      await supabase
-        .from("invoice_email_logs")
-        .update({
-          retry_count: log.retry_count + 1,
-          email_status: success ? "sent" : "failed",
-          email_sent: success,
-          email_sent_at: success ? new Date().toISOString() : null
-        })
-        .eq("id", log.id);
-
-      if (success) retriedSuccessCount++;
-    }
-
-    return retriedSuccessCount;
-
-  } catch (err) {
-    console.error("Failed to execute retryFailedInvoices:", err);
-    return 0;
-  }
+  return 0; // The new system uses exponential backoff immediately instead of cron retries
 }

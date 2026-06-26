@@ -13,9 +13,11 @@ import {
   CheckCircle, 
   Clock, 
   Loader2,
-  ListRestart
+  ListRestart,
+  MessageCircle
 } from "lucide-react";
 import { showToast } from "@/components/Toast";
+import ManualInvoiceForm from "./ManualInvoiceForm";
 
 interface Invoice {
   id: string;
@@ -59,6 +61,9 @@ export default function AdminInvoices() {
   // Modal state to view email logs for a specific invoice
   const [selectedInvoiceForLogs, setSelectedInvoiceForLogs] = useState<Invoice | null>(null);
 
+  // Manual Invoice Modal
+  const [isManualFormOpen, setIsManualFormOpen] = useState(false);
+
   useEffect(() => {
     fetchInvoices();
   }, []);
@@ -79,16 +84,6 @@ export default function AdminInvoices() {
             user_phone,
             payment_method,
             payment_status
-          ),
-          invoice_email_logs (
-            id,
-            customer_email,
-            email_sent,
-            email_sent_at,
-            email_status,
-            error_message,
-            retry_count,
-            created_at
           )
         `)
         .order("created_at", { ascending: false });
@@ -168,22 +163,16 @@ export default function AdminInvoices() {
     }
   };
 
-  // Helper to determine the consolidated email status for an invoice
+  // Helper to determine the consolidated email status for an invoice from metadata
   const getInvoiceEmailStatus = (invoice: Invoice): { status: string; label: string; bgClass: string; textClass: string } => {
-    const logs = invoice.invoice_email_logs || [];
-    if (logs.length === 0) {
-      return { status: "pending", label: "No Logs", bgClass: "bg-gray-100", textClass: "text-gray-600" };
-    }
+    const meta = invoice.metadata || {};
     
-    // Sort logs by created_at desc to find latest
-    const sorted = [...logs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    const latest = sorted[0];
-
-    if (latest.email_status === "sent") {
+    if (meta.delivery_status === "sent" || meta.email_sent === true) {
       return { status: "sent", label: "Sent", bgClass: "bg-emerald-50 text-emerald-800 border-emerald-200 border", textClass: "text-emerald-700" };
     }
-    if (latest.email_status === "failed") {
-      return { status: "failed", label: `Failed (Attempt ${latest.retry_count})`, bgClass: "bg-red-50 text-red-800 border-red-200 border", textClass: "text-red-700" };
+    
+    if (meta.delivery_status === "failed") {
+      return { status: "failed", label: "Failed", bgClass: "bg-red-50 text-red-800 border-red-200 border", textClass: "text-red-700" };
     }
     
     return { status: "pending", label: "Pending", bgClass: "bg-yellow-50 text-yellow-800 border-yellow-200 border", textClass: "text-yellow-700" };
@@ -193,6 +182,12 @@ export default function AdminInvoices() {
   const totalInvoicesCount = invoices.length;
   const failedEmailCount = invoices.filter(inv => getInvoiceEmailStatus(inv).status === "failed").length;
   const sentEmailCount = invoices.filter(inv => getInvoiceEmailStatus(inv).status === "sent").length;
+  
+  const totalRevenue = invoices.reduce((acc, inv) => {
+    return acc + Number(inv.metadata?.total || inv.orders?.total || 0);
+  }, 0);
+  
+  const totalManualInvoices = invoices.filter(inv => inv.metadata?.is_manual).length;
 
   // Search and status filtering logic
   const filteredInvoices = invoices.filter(inv => {
@@ -232,6 +227,13 @@ export default function AdminInvoices() {
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </button>
           
+          <button 
+            onClick={() => setIsManualFormOpen(true)} 
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-charcoal hover:bg-black text-white text-[0.7rem] font-bold rounded-lg transition-all shadow-xs"
+          >
+            <FileText className="w-3.5 h-3.5" /> Create Manual Invoice
+          </button>
+          
           {failedEmailCount > 0 && (
             <button 
               onClick={handleRetryAllFailed} 
@@ -253,21 +255,23 @@ export default function AdminInvoices() {
       </div>
 
       {/* Analytics widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs flex flex-col justify-center items-center">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-muted-foreground">Total Invoices Generated</span>
-          <span className="font-serif text-3xl font-black text-brand-charcoal mt-2">{totalInvoicesCount}</span>
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Total Revenue</span>
+          <span className="font-serif text-2xl font-black text-brand-charcoal mt-2">₹{totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</span>
+        </div>
+        <div className="bg-white border border-brand-beige p-5 rounded-2xl shadow-xs flex flex-col justify-center items-center">
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Total Invoices</span>
+          <span className="font-serif text-2xl font-black text-brand-charcoal mt-2">{totalInvoicesCount}</span>
+        </div>
+        <div className="bg-orange-50/50 border border-brand-orange/20 p-5 rounded-2xl shadow-xs flex flex-col justify-center items-center text-brand-orange">
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider">Manual Invoices</span>
+          <span className="font-serif text-2xl font-black mt-2">{totalManualInvoices}</span>
         </div>
         <div className="bg-emerald-50/50 border border-emerald-100 p-5 rounded-2xl shadow-xs flex flex-col justify-center items-center text-emerald-800">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider">Successful Emails</span>
-          <span className="font-serif text-3xl font-black mt-2 flex items-center gap-2">
-            <CheckCircle className="w-6 h-6 text-emerald-600" /> {sentEmailCount}
-          </span>
-        </div>
-        <div className="bg-red-50/50 border border-red-100 p-5 rounded-2xl shadow-xs flex flex-col justify-center items-center text-red-800">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider">Failed Email Deliveries</span>
-          <span className="font-serif text-3xl font-black mt-2 flex items-center gap-2">
-            <AlertCircle className="w-6 h-6 text-red-600" /> {failedEmailCount}
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider">Email Success</span>
+          <span className="font-serif text-2xl font-black mt-2 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-emerald-600" /> {sentEmailCount}
           </span>
         </div>
       </div>
@@ -347,8 +351,14 @@ export default function AdminInvoices() {
                       <td className="px-5 py-4 font-bold text-brand-charcoal">
                         {inv.invoice_number}
                       </td>
-                      <td className="px-5 py-4 font-semibold text-muted-foreground font-mono">
-                        {inv.orders?.order_number || "Deleted"}
+                      <td className="px-5 py-4">
+                        <div className="text-sm font-medium text-brand-charcoal">
+                          {inv.metadata?.is_manual ? (
+                            <span className="text-[0.65rem] bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full uppercase font-bold tracking-widest">Manual</span>
+                          ) : (
+                            inv.orders?.order_number || "Deleted"
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-0.5">
@@ -395,6 +405,24 @@ export default function AdminInvoices() {
                             ) : (
                               <Mail className="h-3.5 w-3.5" />
                             )}
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const phone = inv.metadata?.user_phone || inv.orders?.user_phone;
+                              if (!phone) {
+                                showToast("No phone number found for this customer.", "error");
+                                return;
+                              }
+                              const text = `Hello! Here is your official invoice from Mehta Dairy: ${inv.pdf_url}`;
+                              const wUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
+                              window.open(wUrl, '_blank');
+                            }}
+                            className="h-7 w-7 rounded-lg border border-brand-beige hover:border-green-500 flex items-center justify-center text-brand-charcoal hover:text-green-600 hover:bg-green-50 transition-colors"
+                            title="Share on WhatsApp"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
@@ -503,6 +531,18 @@ export default function AdminInvoices() {
           </div>
         </div>
       )}
+
+      {/* Manual Invoice Modal */}
+      {isManualFormOpen && (
+        <ManualInvoiceForm 
+          onClose={() => setIsManualFormOpen(false)} 
+          onSuccess={() => {
+            setIsManualFormOpen(false);
+            fetchInvoices();
+          }} 
+        />
+      )}
+
     </div>
   );
 }
