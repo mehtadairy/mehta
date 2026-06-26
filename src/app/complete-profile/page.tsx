@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Phone, ArrowRight, ShieldCheck, Mail, User } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -118,8 +119,14 @@ export default function CompleteProfilePage() {
           await handleSuccess(data);
         },
         (err: any) => {
-          setIsLoading(false);
-          setError(err?.message || 'Invalid OTP. Please try again.');
+          const errMsg = err?.message || 'Invalid OTP. Please try again.';
+          if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
+            // MSG91 considers it verified already, so proceed
+            handleSuccess({ message: "Already verified" });
+          } else {
+            setIsLoading(false);
+            setError(errMsg);
+          }
         }
       );
     }
@@ -130,9 +137,17 @@ export default function CompleteProfilePage() {
       const mobileNumber = phone.replace(/\D/g, '').slice(-10);
       const userId = localStorage.getItem("mehta_user_id");
       
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/auth/complete-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId, email, phone: mobileNumber, authData: data })
       });
       

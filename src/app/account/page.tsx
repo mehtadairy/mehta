@@ -151,6 +151,10 @@ function AccountContent() {
   const [emailOtp, setEmailOtp] = useState("");
   const [isEmailOtpSending, setIsEmailOtpSending] = useState(false);
 
+  const [showPhoneOtpModal, setShowPhoneOtpModal] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [isPhoneOtpSending, setIsPhoneOtpSending] = useState(false);
+
   const handleGoogleLogin = async () => {
     // Moved to Login Page
   };
@@ -211,6 +215,32 @@ function AccountContent() {
       const savedAvatar = localStorage.getItem("mehta_avatar_url");
       if (savedAvatar) {
         setProfileAvatar(savedAvatar);
+      }
+    }
+
+    // Load MSG91 Widget
+    const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
+    const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
+    
+    if (widgetId && tokenAuth) {
+      const scriptId = 'msg91-widget-sdk-account';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://verify.msg91.com/otp-provider.js';
+        script.async = true;
+        script.onload = () => {
+          // @ts-ignore
+          if (typeof window !== 'undefined' && window.initSendOTP) {
+            // @ts-ignore
+            window.initSendOTP({
+              widgetId: widgetId,
+              tokenAuth: tokenAuth,
+              exposeMethods: true,
+            });
+          }
+        };
+        document.body.appendChild(script);
       }
     }
   }, []);
@@ -376,11 +406,15 @@ function AccountContent() {
         return;
       }
 
-      // If we still don't have a profile but we have a user, something went wrong or they need to complete profile
+      // If we still don't have a profile but we have a user (RLS issue during signup)
       if (!customerProfile && user) {
-         setIsAuthChecking(false);
-         router.push("/complete-profile?redirect=/account");
-         return;
+         customerProfile = {
+           id: user.id,
+           name: user.user_metadata?.full_name || "Google User",
+           email: user.email,
+           phone: null
+         };
+         customerId = user.id;
       }
 
       if (customerProfile && customerId) {
@@ -479,41 +513,24 @@ function AccountContent() {
 
   // OTP Login Functions moved to /login/page.tsx
 
-  // Update Profile Info
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editName) return;
-
-    if (editEmail && editEmail !== profile?.email) {
-      // Need to verify email first
-      setIsEmailOtpSending(true);
-      try {
-        const { error } = await supabase.auth.signInWithOtp({ email: editEmail });
-        if (error) throw error;
-        setShowEmailOtpModal(true);
-      } catch (err: any) {
-        console.error("Failed to send OTP", err);
-        alert(err.message || "Failed to send OTP to this email.");
-      } finally {
-        setIsEmailOtpSending(false);
-      }
-      return;
-    }
-
+  const updateProfileToDB = async (finalName: string, finalEmail: string, finalPhone: string, newAuthUserId?: string) => {
     const phone = localStorage.getItem("mehta_user_phone");
     const email = localStorage.getItem("mehta_user_email");
 
     try {
+      const bodyPayload: any = {
+        phone: phone || null,
+        email: email || null,
+        name: finalName,
+        newPhone: finalPhone,
+        newEmail: finalEmail
+      };
+      if (newAuthUserId) bodyPayload.newAuthUserId = newAuthUserId;
+
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: phone || null,
-          email: email || null,
-          name: editName,
-          newPhone: editPhone,
-          newEmail: editEmail
-        })
+        body: JSON.stringify(bodyPayload)
       });
       const data = await res.json();
 
@@ -535,6 +552,93 @@ function AccountContent() {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName) return;
+
+    // Check Phone Change First
+    if (editPhone && editPhone !== profile?.phone) {
+      setIsPhoneOtpSending(true);
+      // @ts-ignore
+      if (typeof window !== 'undefined' && window.sendOtp) {
+        // @ts-ignore
+        window.sendOtp(
+          `91${editPhone}`,
+          () => {
+            setIsPhoneOtpSending(false);
+            setShowPhoneOtpModal(true);
+          },
+          (err: any) => {
+            setIsPhoneOtpSending(false);
+            alert(err?.message || "Failed to send OTP to this phone number.");
+          }
+        );
+      } else {
+        setIsPhoneOtpSending(false);
+        // Mock success if MSG91 is missing
+        if (!process.env.NEXT_PUBLIC_MSG91_WIDGET_ID) {
+           setShowPhoneOtpModal(true);
+        } else {
+           alert("OTP service not ready.");
+        }
+      }
+      return;
+    }
+
+    if (editEmail && editEmail !== profile?.email) {
+      // Need to verify email first
+      setIsEmailOtpSending(true);
+      try {
+        const { error } = await supabase.auth.signInWithOtp({ email: editEmail });
+        if (error) throw error;
+        setShowEmailOtpModal(true);
+      } catch (err: any) {
+        console.error("Failed to send OTP", err);
+        alert(err.message || "Failed to send OTP to this email.");
+      } finally {
+        setIsEmailOtpSending(false);
+      }
+      return;
+    }
+
+    await updateProfileToDB(editName, editEmail, editPhone);
+  };
+
+  const handleVerifyPhoneOtp = () => {
+    setIsPhoneOtpSending(true);
+    
+    if (!process.env.NEXT_PUBLIC_MSG91_WIDGET_ID) {
+      // Mock Success
+      setShowPhoneOtpModal(false);
+      setIsPhoneOtpSending(false);
+      updateProfileToDB(editName, editEmail, editPhone);
+      return;
+    }
+
+    // @ts-ignore
+    if (typeof window !== 'undefined' && window.verifyOtp) {
+      // @ts-ignore
+      window.verifyOtp(
+        phoneOtp,
+        (data: any) => {
+          setShowPhoneOtpModal(false);
+          setIsPhoneOtpSending(false);
+          updateProfileToDB(editName, editEmail, editPhone);
+        },
+        (err: any) => {
+          setIsPhoneOtpSending(false);
+          const errMsg = err?.message || 'Invalid OTP.';
+          if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
+             setShowPhoneOtpModal(false);
+             updateProfileToDB(editName, editEmail, editPhone);
+          } else {
+             alert(errMsg);
+          }
+        }
+      );
+    }
+  };
+
   const handleVerifyEmailOtp = async () => {
     setIsEmailOtpSending(true);
     try {
@@ -547,25 +651,7 @@ function AccountContent() {
 
       // Successfully verified email!
       if (data.user && profile) {
-         await fetch('/api/user/profile', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone: profile.phone || null,
-              email: profile.email || null,
-              name: editName,
-              newPhone: editPhone,
-              newEmail: editEmail,
-              newAuthUserId: data.user.id
-            })
-         });
-         
-         const updatedProfile = { ...profile, email: editEmail, auth_user_id: data.user.id };
-         setProfile(updatedProfile);
-         localStorage.setItem("mehta_user_email", editEmail);
-         setProfileSuccess(true);
-         setTimeout(() => setProfileSuccess(false), 3000);
-         window.dispatchEvent(new Event("authUpdated"));
+         await updateProfileToDB(editName, editEmail, editPhone, data.user.id);
       }
 
       setShowEmailOtpModal(false);
@@ -2062,6 +2148,56 @@ function AccountContent() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Phone OTP Modal */}
+      {showPhoneOtpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-brand-cream border border-brand-beige rounded-2xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative"
+          >
+            <button
+              onClick={() => setShowPhoneOtpModal(false)}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-brand-charcoal transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-brand-orange/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Phone className="h-6 w-6 text-brand-orange" />
+              </div>
+              <h3 className="font-serif text-xl font-bold text-brand-charcoal">Verify Mobile Number</h3>
+              <p className="text-xs text-muted-foreground mt-2">
+                Enter the OTP sent to <span className="font-semibold text-brand-charcoal">+91 {editPhone}</span>
+              </p>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                maxLength={6}
+                value={phoneOtp}
+                onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
+                placeholder="0 0 0 0"
+                className="w-full text-center tracking-[1em] font-bold text-xl border-brand-beige bg-white rounded-xl py-3 focus:ring-brand-orange focus:border-brand-orange transition-all text-brand-charcoal"
+              />
+              <button
+                onClick={handleVerifyPhoneOtp}
+                disabled={phoneOtp.length < 4 || isPhoneOtpSending}
+                className="w-full rounded-xl bg-brand-orange hover:bg-brand-orange-hover px-4 py-3 text-sm font-bold text-white transition-all disabled:opacity-50 shadow-md"
+              >
+                {isPhoneOtpSending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
+                  </span>
+                ) : (
+                  "Verify & Save"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
 
       {/* Email OTP Verification Modal */}
