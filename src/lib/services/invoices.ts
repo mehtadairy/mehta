@@ -4,7 +4,6 @@ import { BUSINESS } from "@/lib/businessConfig";
 import fs from "fs";
 import path from "path";
 import React from "react";
-import { chromium } from 'playwright';
 import InvoiceTemplateHtml from '@/components/invoice-html/InvoiceTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
@@ -97,7 +96,8 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     })
   );
 
-  // Launch Playwright headless browser
+  // Launch Playwright headless browser dynamically to avoid module load crashes
+  const { chromium } = await import('playwright');
   const browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']

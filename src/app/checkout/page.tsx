@@ -687,7 +687,16 @@ export default function Checkout() {
                 orderItems
               })
             });
-            const verifyData = await verifyRes.json();
+            
+            let verifyData;
+            try {
+              verifyData = await verifyRes.json();
+            } catch (parseErr) {
+              console.error("Failed to parse verification response:", parseErr);
+              alert("Server error during verification. Please contact support if amount was deducted.");
+              setIsPaying(false);
+              return;
+            }
             
             if (verifyData.success) {
               await handleOrderSubmission('Razorpay', 'Paid', response.razorpay_payment_id, response.razorpay_order_id, orderPayload);
@@ -695,9 +704,9 @@ export default function Checkout() {
             } else {
               alert(verifyData.error || "Payment verification failed!");
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error("Verification error:", err);
-            alert("Error verifying payment transaction.");
+            alert("Error verifying payment transaction: " + (err?.message || "Unknown error"));
           } finally {
             setIsPaying(false);
           }
