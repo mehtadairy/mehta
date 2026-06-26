@@ -88,14 +88,14 @@ export async function sendInvoiceEmailWithRetry(
   while (attempt <= maxRetries) {
     try {
       const { data, error } = await resend.emails.send({
-        from: \`Mehta Dairy <\${SENDER_EMAIL}>\`,
+        from: `Mehta Dairy <${SENDER_EMAIL}>`,
         to: email,
         bcc: "orders@mehtadairy.com",
-        subject: \`Your Invoice \${invoice.invoice_number} from Mehta Dairy\`,
+        subject: `Your Invoice ${invoice.invoice_number} from Mehta Dairy`,
         html: htmlTemplate,
         attachments: [
           {
-            filename: \`\${invoice.invoice_number}.pdf\`,
+            filename: `${invoice.invoice_number}.pdf`,
             content: pdfBuffer.toString("base64"),
           },
         ],
@@ -117,7 +117,7 @@ export async function sendInvoiceEmailWithRetry(
 
     } catch (error: any) {
       attempt++;
-      console.error(\`Failed to send invoice \${invoice.invoice_number} (Attempt \${attempt}):\`, error);
+      console.error(`Failed to send invoice ${invoice.invoice_number} (Attempt ${attempt}):`, error);
       
       if (attempt > maxRetries) {
         // Ultimate failure: Record failure in metadata
@@ -126,7 +126,7 @@ export async function sendInvoiceEmailWithRetry(
           delivery_status: "failed",
           failed_reason: error.message
         });
-        return { success: false, message: \`Failed after \${maxRetries} attempts: \${error.message}\` };
+        return { success: false, message: `Failed after ${maxRetries} attempts: ${error.message}` };
       }
       
       // Exponential backoff: 1s, 2s, 4s...
