@@ -45,11 +45,11 @@ export async function POST(request: Request) {
       console.error("Failed to insert COD payment log:", paymentError);
     }
 
-    // Generate Invoice & send email confirmation (Asynchronous to prevent 504 timeout on Vercel)
+    // 5. Generate Invoice & send email confirmation synchronously (react-pdf is fast enough to not cause 504 timeout)
     try {
-      createInvoice(finalOrderData.id).catch(err => console.error("Async invoice error:", err));
+      await createInvoice(finalOrderData.id);
     } catch (invoiceErr) {
-      console.error("Failed to trigger invoice generation in COD route:", invoiceErr);
+      console.error("Failed to trigger invoice generation:", invoiceErr);
     }
 
     return NextResponse.json({ 
