@@ -4,7 +4,7 @@ import { BUSINESS } from "@/lib/businessConfig";
 import fs from "fs";
 import path from "path";
 import React from "react";
-import InvoiceTemplateHtml from '@/components/invoice-html/InvoiceTemplate';
+// import removed
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
@@ -88,34 +88,18 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     qr: qrBase64 || undefined
   };
 
-  // Render React component to HTML string using dynamic import for Next.js build compatibility
-  const ReactDOMServer = await import('react-dom/server');
-  const htmlString = '<!DOCTYPE html>' + ReactDOMServer.renderToStaticMarkup(
-    React.createElement(InvoiceTemplateHtml, {
-      invoice: mappedInvoiceData
-    })
-  );
-
-  // Launch Playwright headless browser dynamically to avoid module load crashes
-  const { chromium } = await import('playwright');
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
-  });
+  // Generate PDF using @react-pdf/renderer (Vercel compatible)
+  const { renderToStream } = await import('@react-pdf/renderer');
+  const InvoiceTemplate = (await import('@/components/invoice/InvoiceTemplate')).default;
   
-  const page = await browser.newPage();
-  await page.setContent(htmlString, { waitUntil: 'networkidle' });
+  const stream = await renderToStream(React.createElement(InvoiceTemplate, { invoice: mappedInvoiceData }));
   
-  // Wait a little extra time for custom fonts (Outfit/Playfair Display) to definitely render
-  await page.waitForTimeout(500);
-
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 }
-  });
-
-  await browser.close();
+  const chunks: any[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  
+  const pdfBuffer = Buffer.concat(chunks);
 
   return pdfBuffer;
 }
