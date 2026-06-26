@@ -146,6 +146,11 @@ function AccountContent() {
   const [isOtpInputFocused, setIsOtpInputFocused] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Email OTP State
+  const [showEmailOtpModal, setShowEmailOtpModal] = useState(false);
+  const [emailOtp, setEmailOtp] = useState("");
+  const [isEmailOtpSending, setIsEmailOtpSending] = useState(false);
+
   const handleGoogleLogin = async () => {
     // Moved to Login Page
   };
@@ -475,7 +480,23 @@ function AccountContent() {
   // Update Profile Info
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editName || !editPhone) return;
+    if (!editName) return;
+
+    if (editEmail && editEmail !== profile?.email) {
+      // Need to verify email first
+      setIsEmailOtpSending(true);
+      try {
+        const { error } = await supabase.auth.signInWithOtp({ email: editEmail });
+        if (error) throw error;
+        setShowEmailOtpModal(true);
+      } catch (err: any) {
+        console.error("Failed to send OTP", err);
+        alert(err.message || "Failed to send OTP to this email.");
+      } finally {
+        setIsEmailOtpSending(false);
+      }
+      return;
+    }
 
     const phone = localStorage.getItem("mehta_user_phone");
     const email = localStorage.getItem("mehta_user_email");
@@ -509,6 +530,47 @@ function AccountContent() {
       }
     } catch (err) {
       console.error("Failed to update profile", err);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    setIsEmailOtpSending(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: editEmail,
+        token: emailOtp,
+        type: 'email'
+      });
+      if (error) throw error;
+
+      // Successfully verified email!
+      if (data.user && profile) {
+         await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: profile.phone || null,
+              email: profile.email || null,
+              name: editName,
+              newPhone: editPhone,
+              newEmail: editEmail,
+              newAuthUserId: data.user.id
+            })
+         });
+         
+         const updatedProfile = { ...profile, email: editEmail, auth_user_id: data.user.id };
+         setProfile(updatedProfile);
+         localStorage.setItem("mehta_user_email", editEmail);
+         setProfileSuccess(true);
+         setTimeout(() => setProfileSuccess(false), 3000);
+         window.dispatchEvent(new Event("authUpdated"));
+      }
+
+      setShowEmailOtpModal(false);
+    } catch (err: any) {
+      alert(err.message || "Invalid OTP.");
+    } finally {
+      setIsEmailOtpSending(false);
     }
   };
 
@@ -1997,7 +2059,61 @@ function AccountContent() {
 
             </div>
           </div>
-        </section>
+        </div>
+      )}
+
+      {/* Email OTP Verification Modal */}
+      {showEmailOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="p-6 relative">
+              <button 
+                onClick={() => setShowEmailOtpModal(false)}
+                className="absolute top-4 right-4 p-2 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 bg-brand-orange/10 rounded-full flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-brand-orange" />
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold font-serif text-center text-brand-charcoal mb-2">
+                Verify Your Email
+              </h3>
+              <p className="text-center text-sm text-gray-600 mb-6">
+                We've sent a 6-digit code to <br/>
+                <span className="font-semibold text-brand-charcoal">{editEmail}</span>
+              </p>
+              
+              <div className="space-y-4">
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Enter 6-digit OTP" 
+                    value={emailOtp}
+                    onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full text-center tracking-widest text-lg font-bold border-2 border-brand-beige rounded-xl py-3 px-4 focus:outline-none focus:border-brand-orange"
+                  />
+                </div>
+                
+                <button 
+                  onClick={handleVerifyEmailOtp}
+                  disabled={emailOtp.length !== 6 || isEmailOtpSending}
+                  className="w-full bg-brand-orange hover:bg-brand-orange-hover text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                >
+                  {isEmailOtpSending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    "Verify Email"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <Footer />
