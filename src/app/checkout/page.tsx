@@ -219,10 +219,7 @@ export default function Checkout() {
           .single();
         
         if (customer) {
-          if (!customer.phone) {
-            router.push("/complete-profile?redirect=/checkout");
-            return;
-          }
+          // Redirect removed because mobile number is no longer compulsory
           customerId = customer.id;
         }
       } else {

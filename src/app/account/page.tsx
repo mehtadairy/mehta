@@ -384,11 +384,6 @@ function AccountContent() {
       }
 
       if (customerProfile && customerId) {
-        if (!customerProfile.phone) {
-          setIsAuthChecking(false);
-          router.push("/complete-profile?redirect=/account");
-          return;
-        }
         // Load Addresses
         const { data: addrs } = await supabase.from('addresses').select('*').eq('customer_id', customerId);
         const mappedAddrs = addrs?.map(a => ({

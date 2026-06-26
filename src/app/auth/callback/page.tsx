@@ -146,9 +146,7 @@ export default function AuthCallback() {
       const params = new URLSearchParams(window.location.search);
       const redirectUrl = params.get("redirect");
       
-      if (needsPhoneVerification) {
-        router.push("/complete-profile");
-      } else if (redirectUrl) {
+      if (redirectUrl) {
         router.push(redirectUrl);
       } else {
         router.push("/account");
