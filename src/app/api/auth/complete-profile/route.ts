@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
 
 export async function POST(req: Request) {
   try {
@@ -10,13 +13,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Phone number is required' }, { status: 400 });
     }
 
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
+
     // Check for authenticated session (Google Auth)
     const authHeader = request.headers.get('Authorization');
+    let user = null;
     if (authHeader) {
-      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+      const token = authHeader.replace('Bearer ', '');
+      const { data } = await supabase.auth.getUser(token);
+      user = data?.user;
     }
-    
-    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized. Must be logged in to complete profile.' }, { status: 401 });

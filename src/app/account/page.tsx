@@ -810,10 +810,10 @@ function AccountContent() {
                         </div>
                         <div className="z-10 flex-grow">
                           <h2 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">
-                            {profile?.name || "Aryan Rathod"}
+                            {profile?.name || "Customer"}
                           </h2>
                           <p className="text-[0.65rem] font-bold text-[#D46D2D] mb-1">
-                            {profile?.email || "aaryan.b.rathod99@gmail.com"}
+                            {profile?.email || profile?.phone || "No email provided"}
                           </p>
                           <p className="text-[0.6rem] font-bold text-[#2A1E17] uppercase tracking-widest">
                             MEMBER SINCE {new Date().getFullYear()}

@@ -1,18 +1,27 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get('phone');
     
+    // Create a fresh client for this request to avoid global state contamination
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
+
     // Check for authenticated session (Google Auth)
     const authHeader = request.headers.get('Authorization');
+    let user = null;
     if (authHeader) {
-      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+      const token = authHeader.replace('Bearer ', '');
+      const { data } = await supabase.auth.getUser(token);
+      user = data?.user;
     }
-    
-    const { data: { user } } = await supabase.auth.getUser();
 
     let query = supabase.from('customers').select('*');
     
@@ -48,12 +57,19 @@ export async function PUT(request: Request) {
   try {
     const { phone, email, name, newPhone, newEmail } = await request.json();
 
+    // Create a fresh client for this request
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
+
     // Check for authenticated session
     const authHeader = request.headers.get('Authorization');
+    let user = null;
     if (authHeader) {
-      supabase.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+      const token = authHeader.replace('Bearer ', '');
+      const { data } = await supabase.auth.getUser(token);
+      user = data?.user;
     }
-    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user && !phone) {
       return NextResponse.json({ success: false, message: 'Unauthorized or missing phone' }, { status: 400 });
