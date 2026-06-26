@@ -214,11 +214,15 @@ export default function Checkout() {
         // Securely fetch customer ID using auth_user_id
         const { data: customer } = await supabase
           .from('customers')
-          .select('id')
+          .select('id, phone')
           .eq('auth_user_id', user.id)
           .single();
         
         if (customer) {
+          if (!customer.phone) {
+            router.push("/complete-profile?redirect=/checkout");
+            return;
+          }
           customerId = customer.id;
         }
       } else {

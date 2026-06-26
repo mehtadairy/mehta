@@ -75,9 +75,23 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'Unauthorized or missing phone' }, { status: 400 });
     }
 
+    let fetchQuery = supabase.from('customers').select('*');
+    if (user) {
+      fetchQuery = fetchQuery.eq('auth_user_id', user.id);
+    } else {
+      fetchQuery = fetchQuery.eq('phone', phone);
+    }
+    const { data: existingCustomer, error: fetchError } = await fetchQuery.single();
+    
+    if (fetchError || !existingCustomer) {
+      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    }
+
     const updatePayload: any = { name };
-    if (newPhone) updatePayload.phone = newPhone;
-    if (newEmail !== undefined) updatePayload.email = newEmail;
+    // Only allow updating phone if it is currently not set
+    if (newPhone && !existingCustomer.phone) updatePayload.phone = newPhone;
+    // Only allow updating email if it is currently not set
+    if (newEmail !== undefined && !existingCustomer.email) updatePayload.email = newEmail;
 
     let query = supabase.from('customers').update(updatePayload);
     

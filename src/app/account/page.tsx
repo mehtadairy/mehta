@@ -372,6 +372,11 @@ function AccountContent() {
       }
 
       if (customerProfile && customerId) {
+        if (!customerProfile.phone) {
+          setIsAuthChecking(false);
+          router.push("/complete-profile?redirect=/account");
+          return;
+        }
         // Load Addresses
         const { data: addrs } = await supabase.from('addresses').select('*').eq('customer_id', customerId);
         const mappedAddrs = addrs?.map(a => ({
@@ -1080,15 +1085,20 @@ function AccountContent() {
                             id="editEmail"
                             value={editEmail}
                             onChange={(e) => setEditEmail(e.target.value)}
+                            readOnly={!!profile?.email}
                             placeholder=" "
-                            className="peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10 text-brand-charcoal"
+                            className={`peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none transition-all ${
+                              profile?.email 
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                                : 'focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 bg-brand-cream/10 text-brand-charcoal'
+                            }`}
                           />
                           <Mail className="absolute left-3.5 top-[25px] h-4 w-4 text-muted-foreground/75 peer-focus:text-brand-orange transition-colors" />
                           <label
                             htmlFor="editEmail"
                             className="absolute left-10 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-5.5 peer-placeholder-shown:text-muted-foreground/75 peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange cursor-text"
                           >
-                            Email Address
+                            Email Address {profile?.email && "(Verified)"}
                           </label>
                         </div>
 
@@ -1099,8 +1109,13 @@ function AccountContent() {
                             id="editPhone"
                             value={editPhone}
                             onChange={(e) => setEditPhone(e.target.value)}
+                            readOnly={!!profile?.phone}
                             placeholder=" "
-                            className="peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10 text-brand-charcoal"
+                            className={`peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none transition-all ${
+                              profile?.phone 
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                                : 'focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 bg-brand-cream/10 text-brand-charcoal'
+                            }`}
                             required
                           />
                           <Phone className="absolute left-3.5 top-[25px] h-4 w-4 text-muted-foreground/75 peer-focus:text-brand-orange transition-colors" />
@@ -1108,7 +1123,7 @@ function AccountContent() {
                             htmlFor="editPhone"
                             className="absolute left-10 top-1.5 text-[0.62rem] font-bold text-brand-charcoal uppercase tracking-wider transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-5.5 peer-placeholder-shown:text-muted-foreground/75 peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:text-brand-orange cursor-text"
                           >
-                            Phone Number
+                            Phone Number {profile?.phone && "(Verified)"}
                           </label>
                         </div>
                       </div>
