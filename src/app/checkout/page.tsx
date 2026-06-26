@@ -71,6 +71,17 @@ import { useLocation } from "@/lib/context/LocationContext";
 
 export default function Checkout() {
   const router = useRouter();
+
+  // Helper to ensure valid UUIDs even in non-secure HTTP contexts
+  const generateUUID = () => {
+    if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
   
   // Checkout States
   const [cart, setCart] = useState<any[]>([]);
@@ -572,13 +583,7 @@ export default function Checkout() {
       const userName = localStorage.getItem("mehta_user_name") || orderAddress.name || "Customer";
       const userPhone = localStorage.getItem("mehta_user_phone") || orderAddress.phone || "";
       const userEmail = localStorage.getItem("mehta_user_email") || "";
-      const orderId = typeof window !== "undefined" && window.crypto && window.crypto.randomUUID
-        ? window.crypto.randomUUID()
-        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-          });
+      const orderId = generateUUID();
 
       // SECURELY RESOLVE CUSTOMER ID
       let finalCustomerId = null;

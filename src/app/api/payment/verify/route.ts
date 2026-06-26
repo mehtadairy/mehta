@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     
     if (orderError) {
       console.error("Failed to insert order into Supabase:", orderError);
-      return NextResponse.json({ success: false, error: 'Failed to save order to database' }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Failed to save order to database: ' + (orderError.message || JSON.stringify(orderError)) }, { status: 500 });
     }
 
     // 4. Insert Order Items
