@@ -437,14 +437,9 @@ function AccountContent() {
         setEditPhone(customerProfile.phone || phone || "");
         setEditEmail(customerProfile.email || email || "");
 
-        // Load Orders securely by customer_id if available, fallback to phone if OTP
+        // Load Orders securely by phone
         let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)');
-        // If we know the customer ID, use it. Otherwise, fallback to phone (OTP).
-        if (customerId) {
-           orderQuery = orderQuery.eq('customer_id', customerId);
-        } else {
-           orderQuery = orderQuery.eq('user_phone', customerProfile.phone);
-        }
+        orderQuery = orderQuery.eq('user_phone', customerProfile.phone);
         
         const { data: userOrders, error: ordersError } = await orderQuery.order('created_at', { ascending: false });
 

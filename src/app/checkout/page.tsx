@@ -615,7 +615,6 @@ export default function Checkout() {
         payment_status: 'Pending',
         status: 'Pending'
       };
-      if (finalCustomerId) orderPayload.customer_id = finalCustomerId;
 
       const orderItems = cart.map(item => ({
         order_id: orderId,

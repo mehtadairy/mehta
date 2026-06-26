@@ -292,9 +292,7 @@ function ReorderContent() {
       // Fetch Orders
       let query = supabase.from('orders').select('*, invoices(*), order_items(*)').order('created_at', { ascending: false });
       
-      if (customerId) {
-        query = query.eq('customer_id', customerId);
-      } else if (phone) {
+      if (phone) {
         query = query.eq('user_phone', phone);
       }
       
