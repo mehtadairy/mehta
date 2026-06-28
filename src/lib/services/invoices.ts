@@ -88,18 +88,48 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     qr: qrBase64 || undefined
   };
 
-  // Generate PDF using @react-pdf/renderer (Vercel compatible)
-  const { renderToStream } = await import('@react-pdf/renderer');
-  const InvoiceTemplate = (await import('@/components/invoice/InvoiceTemplate')).default;
-  
-  const stream = await renderToStream(React.createElement(InvoiceTemplate, { invoice: mappedInvoiceData }));
-  
-  const chunks: any[] = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
+  // Render React component to HTML string using dynamic import for Next.js build compatibility
+  const ReactDOMServer = await import('react-dom/server');
+  const InvoiceTemplateHtml = (await import('@/components/invoice-html/InvoiceTemplate')).default;
+  const htmlString = '<!DOCTYPE html>' + ReactDOMServer.renderToStaticMarkup(
+    React.createElement(InvoiceTemplateHtml, {
+      invoice: mappedInvoiceData
+    })
+  );
+
+  // Launch Playwright headless browser
+  let browser;
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    // Vercel Serverless Environment (uses Sparticuz Chromium)
+    const chromium = (await import('@sparticuz/chromium-min')).default;
+    const { chromium: playwrightCore } = await import('playwright-core');
+    browser = await playwrightCore.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar'),
+      headless: chromium.headless,
+    });
+  } else {
+    // Local Development
+    const { chromium: playwright } = await import('playwright');
+    browser = await playwright.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
+    });
   }
   
-  const pdfBuffer = Buffer.concat(chunks);
+  const page = await browser.newPage();
+  await page.setContent(htmlString, { waitUntil: 'networkidle' });
+  
+  // Wait a little extra time for custom fonts (Outfit/Playfair Display) to definitely render
+  await page.waitForTimeout(500);
+
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: 0, right: 0, bottom: 0, left: 0 }
+  });
+
+  await browser.close();
 
   return pdfBuffer;
 }
