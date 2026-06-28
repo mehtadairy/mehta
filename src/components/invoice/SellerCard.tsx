@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Svg, Path } from '@react-pdf/renderer';
+import { View, Text, StyleSheet, Svg, Path, Circle } from '@react-pdf/renderer';
 import { styles as globalStyles, COLORS } from './invoiceStyles';
 
 const localStyles = StyleSheet.create({
@@ -40,7 +40,9 @@ export const SellerCard = () => (
 
     <View style={[localStyles.iconRow, { marginTop: 2 }]}>
       <Svg viewBox="0 0 24 24" style={localStyles.icon}>
-        <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Path d="M2 12h20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </Svg>
       <Text style={[globalStyles.cardLabel, { marginBottom: 0, color: COLORS.textDark }]}>www.mehtadairy.com</Text>
     </View>
