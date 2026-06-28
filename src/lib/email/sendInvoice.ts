@@ -240,6 +240,12 @@ export async function sendInvoiceEmailWithRetry(
       if (error) {
         console.warn(`Attempt ${attempt + 1}: Resend API error: ${error.message}`);
       } else {
+        // Update database invoice metadata here so Admin Panel shows "Sent"
+        const meta = invoice.metadata || {};
+        await supabase.from("invoices").update({
+          metadata: { ...meta, email_sent: true, delivery_status: "sent" }
+        }).eq("id", invoiceId);
+        
         return { success: true, message: `Email sent via Resend` };
       }
     } catch (err: any) {

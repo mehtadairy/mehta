@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Trash2, Save, FileText, Send, Loader2, X, Search } from "lucide-react";
 import { showToast } from "./Toast";
 import { supabase } from "@/lib/supabaseClient";
@@ -24,6 +25,11 @@ interface ManualInvoiceFormProps {
 export default function ManualInvoiceForm({ onClose, onSuccess }: ManualInvoiceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendEmail, setSendEmail] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Customer State
   const [customer, setCustomer] = useState({
@@ -171,8 +177,10 @@ export default function ManualInvoiceForm({ onClose, onSuccess }: ManualInvoiceF
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+  if (!isMounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
       <div className="bg-[#F8F6F3] w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between p-5 bg-white border-b border-brand-beige rounded-t-2xl">
@@ -412,6 +420,7 @@ export default function ManualInvoiceForm({ onClose, onSuccess }: ManualInvoiceF
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

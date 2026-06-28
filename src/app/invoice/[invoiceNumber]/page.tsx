@@ -68,8 +68,9 @@ async function getInvoiceData(invoiceNumber: string) {
   return mappedInvoiceData;
 }
 
-export default async function InvoicePage({ params }: { params: { invoiceNumber: string } }) {
-  const invoiceData = await getInvoiceData(params.invoiceNumber);
+export default async function InvoicePage({ params }: { params: Promise<{ invoiceNumber: string }> }) {
+  const { invoiceNumber } = await params;
+  const invoiceData = await getInvoiceData(invoiceNumber);
 
   if (!invoiceData) {
     return notFound();
