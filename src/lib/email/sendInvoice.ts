@@ -10,7 +10,6 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 export async function sendInvoiceEmailWithRetry(
   invoiceId: string, 
   email: string, 
-  pdfBuffer: Buffer,
   maxRetries = 3
 ): Promise<{ success: boolean; message: string }> {
   let attempt = 0;
@@ -46,8 +45,12 @@ export async function sendInvoiceEmailWithRetry(
       <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
         <h2 style="color: #F17A28; margin-top: 0; font-size: 24px;">Thank you for your order, ${userName}!</h2>
         <p style="font-size: 16px; line-height: 1.5; color: #555;">
-          Your order has been successfully placed. Your official invoice <strong>#${invoice.invoice_number}</strong> is attached to this email as a PDF.
+          Your order has been successfully placed. Your official invoice <strong>#${invoice.invoice_number}</strong> is ready. You can view and download it anytime using the button below.
         </p>
+
+        <div style="text-align: center; margin-top: 24px; margin-bottom: 24px;">
+          <a href="https://mehtadairy.com/invoice/${invoice.invoice_number}" style="display: inline-block; background-color: #F17A28; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 16px;">View & Download Invoice</a>
+        </div>
 
         <div style="background-color: #faf9f8; border: 1px solid #EAE3D2; padding: 20px; border-radius: 8px; margin: 24px 0;">
           <h3 style="margin-top: 0; font-size: 18px; border-bottom: 1px solid #EAE3D2; padding-bottom: 8px;">Order Summary</h3>
@@ -93,12 +96,6 @@ export async function sendInvoiceEmailWithRetry(
         bcc: "orders@mehtadairy.com",
         subject: `Your Invoice ${invoice.invoice_number} from Mehta Dairy`,
         html: htmlTemplate,
-        attachments: [
-          {
-            filename: `${invoice.invoice_number}.pdf`,
-            content: pdfBuffer.toString("base64"),
-          },
-        ],
       });
 
       if (error) {

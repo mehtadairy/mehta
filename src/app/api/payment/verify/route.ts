@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       console.error("Failed to insert payment log:", paymentError);
     }
 
-    // 6. Generate Invoice & send email confirmation synchronously (react-pdf is fast enough to not cause 504 timeout)
+    // 6. Generate Invoice & send email confirmation synchronously (DB insert only, very fast)
     try {
       await createInvoice(finalOrderData.id);
     } catch (invoiceErr) {

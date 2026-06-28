@@ -384,13 +384,15 @@ export default function AdminInvoices() {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex gap-2 justify-end">
-                          {inv.pdf_url && (
+                          {inv.invoice_number && (
                             <a
-                              href={`/api/invoices/download?invoiceId=${inv.id}`}
+                              href={`/invoice/${inv.invoice_number}`}
+                              target="_blank"
+                              rel="noreferrer"
                               className="h-7 w-7 rounded-lg border border-brand-beige hover:border-brand-gold flex items-center justify-center text-brand-charcoal hover:bg-brand-cream transition-colors"
-                              title="Download invoice PDF"
+                              title="View and print invoice"
                             >
-                              <Download className="h-3.5 w-3.5" />
+                              <FileText className="h-3.5 w-3.5" />
                             </a>
                           )}
                           <button

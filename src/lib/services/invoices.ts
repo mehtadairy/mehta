@@ -18,108 +18,7 @@ export interface InvoiceData {
   created_at: string;
 }
 
-/**
- * Generate a luxury PDF invoice using HTML + Tailwind CSS + Playwright
- */
-export async function generateInvoicePDF(order: any): Promise<Buffer> {
-  // --- PRE-FETCH IMAGES ---
-  const imageCache: Record<string, string> = {};
-  let logoUrl = null;
-  let qrBase64 = null;
-  
-  try {
-    const logoPath = path.join(process.cwd(), "public", "logo.png");
-    const logoBuffer = fs.readFileSync(logoPath);
-    logoUrl = "data:image/png;base64," + logoBuffer.toString("base64");
-    imageCache["logo"] = logoUrl;
-  } catch (error) {
-    console.error("Failed to load invoice logo:", error);
-  }
-
-  try {
-    const reorderUrl = `https://mehtadairy.com/reorder?id=${encodeURIComponent(order.invoice_number || order.order_number)}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(reorderUrl)}&color=1F1E1C&bgcolor=ffffff`;
-    const qrRes = await fetch(qrUrl);
-    const qrBuffer = await qrRes.arrayBuffer();
-    const qrMime = qrRes.headers.get("content-type") || "image/png";
-    qrBase64 = `data:${qrMime};base64,` + Buffer.from(qrBuffer).toString("base64");
-  } catch (err) {
-    console.error("Failed to generate QR", err);
-  }
-
-  const items = order.order_items || [];
-  
-  const mappedItems = items.map((item: any) => ({
-    name: item.product_name,
-    subtitle: "Premium Quality Sweet",
-    weight: item.weight || "Standard",
-    qty: item.quantity,
-    price: Number(item.price),
-    total: Number(item.price) * Number(item.quantity)
-  }));
-
-  const addr = order.shipping_address;
-  let addressString = "Store Pickup";
-  if (addr && addr.street) {
-    addressString = `${addr.street}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
-  } else if (addr && typeof addr === 'string') {
-    addressString = addr;
-  }
-
-  const mappedInvoiceData = {
-    invoiceNo: order.invoice_number,
-    orderNo: order.order_number || "N/A",
-    date: new Date(order.invoice_created_at || order.created_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }),
-    customer: {
-      name: order.user_name || "Valued Customer",
-      phone: String(order.user_phone || "N/A").replace(/^\+?91\s*/, "").trim(),
-      email: order.user_email || undefined,
-      address: addressString,
-    },
-    items: mappedItems,
-    subtotal: Number(order.subtotal || 0),
-    delivery: Number(order.delivery_charge || 0),
-    discount: Number(order.discount || 0),
-    gst: order.metadata?.gst_number && order.metadata?.gst_enabled === true ? Number(order.total || 0) - (Number(order.total || 0) / 1.18) : 0,
-    grandTotal: Number(order.total || 0),
-    paymentMethod: order.payment_method || "Cash",
-    paymentStatus: (order.payment_status || "COMPLETED").toUpperCase() as "PAID" | "UNPAID" | "PARTIAL",
-    logo: logoUrl || undefined,
-    qr: qrBase64 || undefined
-  };
-
-  // Render React component to HTML string using dynamic import for Next.js build compatibility
-  const ReactDOMServer = await import('react-dom/server');
-  const InvoiceTemplateHtml = (await import('@/components/invoice-html/InvoiceTemplate')).default;
-  const htmlString = '<!DOCTYPE html>' + ReactDOMServer.renderToStaticMarkup(
-    React.createElement(InvoiceTemplateHtml, {
-      invoice: mappedInvoiceData
-    })
-  );
-
-  // Launch Playwright headless browser dynamically to avoid module load crashes
-  const { chromium } = await import('playwright');
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
-  });
-  
-  const page = await browser.newPage();
-  await page.setContent(htmlString, { waitUntil: 'networkidle' });
-  
-  // Wait a little extra time for custom fonts (Outfit/Playfair Display) to definitely render
-  await page.waitForTimeout(500);
-
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 }
-  });
-
-  await browser.close();
-
-  return pdfBuffer;
-}
+// Backend PDF Generation has been removed in favor of client-side browser generation.
 
 /**
  * Core service to generate, save, upload, and email invoices for an order
@@ -140,15 +39,9 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     const seqStr = String((count || 0) + 1).padStart(4, "0");
     const invoiceNumber = `INV-${currentYear}-${seqStr}`;
 
-    const orderWithInvoice = { ...order, invoice_number: invoiceNumber, invoice_created_at: new Date().toISOString() };
-    const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
-
-    const fileName = `${invoiceNumber}.pdf`;
-    const { error: uploadError } = await supabase.storage.from("invoices").upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true });
-    if (uploadError) throw new Error(`Upload error`);
-
-    const { data: publicUrlData } = supabase.storage.from("invoices").getPublicUrl(fileName);
-    const pdfUrl = publicUrlData.publicUrl;
+    // No backend PDF generation needed!
+    // Simply insert metadata and email the link.
+    const pdfUrl = `https://mehtadairy.com/invoice/${invoiceNumber}`;
 
     let customerId: string | null = null;
     if (order.user_phone) {
@@ -164,7 +57,7 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     if (invoiceError) throw new Error(`DB err`);
 
     if (order.user_email) {
-      sendInvoiceEmail(newInvoice.id, order.user_email, pdfBuffer).catch(err => console.error(err));
+      sendInvoiceEmail(newInvoice.id, order.user_email).catch(err => console.error(err));
     }
 
     return newInvoice as InvoiceData;
@@ -174,21 +67,10 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
   }
 }
 
-export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBufferInput?: Buffer): Promise<boolean> {
+export async function sendInvoiceEmail(invoiceId: string, email: string): Promise<boolean> {
   try {
     const { sendInvoiceEmailWithRetry } = await import('@/lib/email/sendInvoice');
-    let pdfBuffer = pdfBufferInput;
-    
-    if (!pdfBuffer) {
-      const { data: invoice } = await supabase.from("invoices").select("invoice_number").eq("id", invoiceId).single();
-      if (!invoice) throw new Error(`Invoice not found`);
-      const fileName = `${invoice.invoice_number}.pdf`;
-      const { data: downloadData } = await supabase.storage.from("invoices").download(fileName);
-      if (!downloadData) throw new Error(`No PDF data found in storage`);
-      pdfBuffer = Buffer.from(await downloadData.arrayBuffer());
-    }
-
-    const { success } = await sendInvoiceEmailWithRetry(invoiceId, email, pdfBuffer);
+    const { success } = await sendInvoiceEmailWithRetry(invoiceId, email);
     return success;
   } catch (err: any) {
     console.error("sendInvoiceEmail error:", err);
