@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { generateInvoicePDF, sendInvoiceEmail } from '@/lib/services/invoices';
+import { sendInvoiceEmail } from '@/lib/services/invoices';
 
 export async function POST(request: Request) {
   try {
@@ -58,27 +58,9 @@ export async function POST(request: Request) {
       total
     };
 
-    // 1. Generate PDF
-    const pdfBuffer = await generateInvoicePDF(simulatedOrder);
-
-    // 2. Upload to storage
-    const fileName = `${invoiceNumber}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from("invoices")
-      .upload(fileName, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: true
-      });
-
-    if (uploadError) {
-      throw new Error(`Failed to upload PDF: ${uploadError.message}`);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("invoices")
-      .getPublicUrl(fileName);
-
-    const pdfUrl = publicUrlData.publicUrl;
+    // No backend PDF generation needed!
+    // Simply set the PDF URL to the public page
+    const pdfUrl = `https://mehtadairy.com/invoice/${invoiceNumber}`;
 
     // 3. Find existing customer if phone is provided
     let customerId = null;
