@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       // we need to adapt sendInvoiceEmail to support missing orders.
       // Wait, sendInvoiceEmail line 377: `.select("*, orders(*)")` and line 387: `if (!order) throw new Error`
       // I should update sendInvoiceEmail as well.
-      emailSent = await sendInvoiceEmail(newInvoice.id, customer_email, pdfBuffer);
+      emailSent = await sendInvoiceEmail(newInvoice.id, customer_email);
     }
 
     return NextResponse.json({ 
