@@ -223,7 +223,7 @@ function AccountContent() {
     const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
     
     if (widgetId && tokenAuth) {
-      const scriptId = 'msg91-widget-sdk-account';
+      const scriptId = 'msg91-widget-sdk';
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
         script.id = scriptId;
@@ -241,6 +241,17 @@ function AccountContent() {
           }
         };
         document.body.appendChild(script);
+      } else {
+        // Script exists, check if initialized
+        // @ts-ignore
+        if (typeof window !== 'undefined' && window.initSendOTP && !window.sendOtp) {
+          // @ts-ignore
+          window.initSendOTP({
+            widgetId: widgetId,
+            tokenAuth: tokenAuth,
+            exposeMethods: true,
+          });
+        }
       }
     }
   }, []);
@@ -574,7 +585,7 @@ function AccountContent() {
         if (!process.env.NEXT_PUBLIC_MSG91_WIDGET_ID) {
            setShowPhoneOtpModal(true);
         } else {
-           alert("OTP service not ready.");
+           alert("OTP service is still loading or not ready. Please wait a moment and try again. (If you have an ad-blocker, please disable it).");
         }
       }
       return;
