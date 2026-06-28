@@ -105,7 +105,11 @@ function LoginContent() {
         },
         (err: any) => {
           setIsLoading(false);
-          setError(err?.message || 'Failed to send OTP. Please try again.');
+          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to send OTP. Please try again.');
+          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
+          }
+          setError(errMsg);
         }
       );
     } else {
@@ -141,7 +145,11 @@ function LoginContent() {
         },
         (err: any) => {
           setIsLoading(false);
-          setError(err?.message || 'Invalid OTP. Please try again.');
+          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Invalid OTP. Please try again.');
+          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
+          }
+          setError(errMsg);
         }
       );
     }
@@ -161,7 +169,11 @@ function LoginContent() {
         },
         (err: any) => {
           setIsLoading(false);
-          setError(err?.message || 'Failed to resend OTP.');
+          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to resend OTP.');
+          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
+          }
+          setError(errMsg);
         }
       );
     } else {

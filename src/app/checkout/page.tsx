@@ -112,6 +112,9 @@ export default function Checkout() {
   const [newState, setNewState] = useState("");
   const [newPincode, setNewPincode] = useState("");
   const [pincodeError, setPincodeError] = useState("");
+  const [pickupName, setPickupName] = useState("");
+  const [pickupPhone, setPickupPhone] = useState("");
+  const [pickupEmail, setPickupEmail] = useState("");
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryDays, setDeliveryDays] = useState("");
   const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
@@ -215,6 +218,10 @@ export default function Checkout() {
     } else {
       // stay on page
     }
+
+    setPickupName(localStorage.getItem("mehta_user_name") || "");
+    setPickupPhone(localStorage.getItem("mehta_user_phone") || "");
+    setPickupEmail(localStorage.getItem("mehta_user_email") || "");
 
     // Addresses load
     const loadAddrs = async () => {
@@ -439,9 +446,11 @@ export default function Checkout() {
     const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
     let customerId = localStorage.getItem("mehta_user_id");
 
+    const isValidUUID = customerId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(customerId);
+
     let newAddr: Address;
 
-    if (isLoggedIn && customerId) {
+    if (isLoggedIn && customerId && isValidUUID) {
       if (editingAddressId && !editingAddressId.startsWith('guest-')) {
         // Update existing address
         const { error } = await supabase.from('addresses').update({
@@ -550,12 +559,19 @@ export default function Checkout() {
     const selectedAddrObj = addresses.find(a => a.id === selectedAddressId);
     let userPhone = localStorage.getItem("mehta_user_phone");
     
-    if (!userPhone || userPhone === 'null' || userPhone === 'undefined' || userPhone.trim() === '') {
-      if (selectedAddrObj && selectedAddrObj.phone) {
-        userPhone = selectedAddrObj.phone;
-      } else {
-        alert("Please enter a valid phone number in your shipping address.");
+    if (deliveryMethod === 'Pickup') {
+      if (!pickupName || !pickupPhone || pickupPhone.length < 10) {
+        alert("Please enter your Contact Details (Name and valid Phone) for Self Pickup.");
         return;
+      }
+    } else {
+      if (!userPhone || userPhone === 'null' || userPhone === 'undefined' || userPhone.trim() === '') {
+        if (selectedAddrObj && selectedAddrObj.phone) {
+          userPhone = selectedAddrObj.phone;
+        } else {
+          alert("Please enter a valid phone number in your shipping address.");
+          return;
+        }
       }
     }
     
@@ -580,9 +596,9 @@ export default function Checkout() {
             pickup_store: selectedPickupStore
           };
 
-      const userName = localStorage.getItem("mehta_user_name") || orderAddress.name || "Customer";
-      const userPhone = localStorage.getItem("mehta_user_phone") || orderAddress.phone || "";
-      const userEmail = localStorage.getItem("mehta_user_email") || "";
+      const userName = deliveryMethod === 'Pickup' ? pickupName : (localStorage.getItem("mehta_user_name") || orderAddress.name || "Customer");
+      const userPhone = deliveryMethod === 'Pickup' ? pickupPhone : (localStorage.getItem("mehta_user_phone") || orderAddress.phone || "");
+      const userEmail = deliveryMethod === 'Pickup' ? pickupEmail : (localStorage.getItem("mehta_user_email") || "");
       const orderId = generateUUID();
 
       // SECURELY RESOLVE CUSTOMER ID
@@ -1033,6 +1049,56 @@ export default function Checkout() {
                           </a>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup Contact Information (For Guests / Update Info) */}
+              {deliveryMethod === 'Pickup' && (
+                <div className="bg-white border border-brand-beige rounded-2xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-brand-beige pb-3">
+                    <h3 className="font-serif text-base font-bold text-brand-charcoal">
+                      Contact Information
+                    </h3>
+                  </div>
+                  <div className="flex flex-col gap-4 mt-2">
+                    <p className="text-[0.68rem] text-muted-foreground leading-relaxed">
+                      Please provide your contact details so we can verify your identity during pickup and send you the invoice.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Full Name *</label>
+                        <input 
+                          type="text" 
+                          placeholder="Your Name"
+                          value={pickupName}
+                          onChange={(e) => setPickupName(e.target.value)}
+                          className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
+                          required
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Phone Number *</label>
+                        <input 
+                          type="tel" 
+                          placeholder="Your Phone Number"
+                          value={pickupPhone}
+                          onChange={(e) => setPickupPhone(e.target.value)}
+                          className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
+                          required
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 sm:col-span-2">
+                        <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase">Email Address (Optional)</label>
+                        <input 
+                          type="email" 
+                          placeholder="For Invoice (e.g., you@gmail.com)"
+                          value={pickupEmail}
+                          onChange={(e) => setPickupEmail(e.target.value)}
+                          className="border border-brand-beige rounded-lg px-3 py-3 min-h-[44px] text-xs bg-white focus:outline-none focus:border-brand-orange"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -108,6 +108,12 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
     const pdfUrl = `https://mehtadairy.com/invoice/${invoiceNumber}`;
 
+    // Upload to Supabase Storage so it can be downloaded
+    await supabase.storage.from('invoices').upload(`${invoiceNumber}.pdf`, pdfBuffer, {
+      contentType: 'application/pdf',
+      upsert: true
+    });
+
     let customerId: string | null = null;
     if (order.user_phone) {
       const { data: cust } = await supabase.from("customers").select("id").eq("phone", order.user_phone).maybeSingle();
