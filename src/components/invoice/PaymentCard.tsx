@@ -55,13 +55,14 @@ export const PaymentCard = ({ method, status, date, qr, grandTotal }: PaymentCar
       <Text style={localStyles.sectionTitle}>Amount in Words:</Text>
       <Text style={localStyles.amountInWords}>Rupees {numberToWords(Math.round(grandTotal))}</Text>
       
-      <Text style={localStyles.sectionTitle}>Important Note:</Text>
-      <Text style={localStyles.noteText}>• Please refrigerate all milk sweets immediately upon delivery.</Text>
-      <Text style={localStyles.noteText}>• Consume within 3 days for best taste.</Text>
-
       {qr && (
-        <View style={{ marginTop: 12 }}>
-          <Image style={{ width: 80, height: 80 }} src={qr} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          <Image style={{ width: 60, height: 60, marginRight: 12 }} src={qr} />
+          <View>
+            <Text style={localStyles.noteText}>• Scan to Reorder</Text>
+            <Text style={localStyles.noteText}>• Track Order</Text>
+            <Text style={localStyles.noteText}>• View Online</Text>
+          </View>
         </View>
       )}
     </View>
