@@ -71,7 +71,7 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     paymentMethod: order.payment_method || "Cash",
     paymentStatus: (order.payment_status || "COMPLETED").toUpperCase() as "PAID" | "UNPAID" | "PARTIAL",
     logo: logoUrl || undefined,
-    qr: undefined // QR generation removed for React-PDF to avoid fetch delays
+    qr: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://mehtadairy.com/track/${order.id}`
   };
 
   // Dynamically import React-PDF to avoid edge runtime issues
