@@ -106,7 +106,7 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     browser = await playwrightCore.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar'),
-      headless: chromium.headless,
+      headless: true,
     });
   } else {
     // Local Development
