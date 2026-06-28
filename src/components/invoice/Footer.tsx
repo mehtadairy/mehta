@@ -8,27 +8,27 @@ const localStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 50,
-    backgroundColor: COLORS.lightBg,
+    height: 60,
+    backgroundColor: '#FDFBF9',
     ...globalStyles.row,
     ...globalStyles.spaceBetween,
     ...globalStyles.alignCenter,
     paddingHorizontal: 35,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: '#EAE3D2',
   },
 });
 
 export const Footer = () => (
   <View style={localStyles.footer} fixed>
     <View>
-      <Text style={globalStyles.cardLabel}>Goods once sold are not returnable.</Text>
-      <Text style={globalStyles.cardLabel}>Please keep this invoice. Support: +91 99132 52232</Text>
+      <Text style={[globalStyles.cardLabel, { color: '#4B5563', fontWeight: 600, fontSize: 9 }]}>Goods once sold are not returnable.</Text>
+      <Text style={[globalStyles.cardLabel, { color: '#4B5563' }]}>Please keep this invoice. Support: +91 99132 52232</Text>
     </View>
     <View style={{ alignItems: 'flex-end' }}>
-      <Text style={[globalStyles.cardLabel, globalStyles.textPrimary, { fontWeight: 'bold' }]}>Pure Ingredients.</Text>
-      <Text style={[globalStyles.cardLabel, globalStyles.textPrimary, { fontWeight: 'bold' }]}>Best Quality.</Text>
-      <Text style={[globalStyles.cardLabel, globalStyles.textPrimary, { fontWeight: 'bold' }]}>Timeless Taste.</Text>
+      <Text style={[globalStyles.cardLabel, { color: '#D97706', fontWeight: 700, fontSize: 9 }]}>Pure Ingredients.</Text>
+      <Text style={[globalStyles.cardLabel, { color: '#D97706', fontWeight: 700, fontSize: 9 }]}>Best Quality.</Text>
+      <Text style={[globalStyles.cardLabel, { color: '#D97706', fontWeight: 700, fontSize: 9 }]}>Timeless Taste.</Text>
     </View>
   </View>
 );

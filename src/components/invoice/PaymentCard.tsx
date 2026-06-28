@@ -4,57 +4,66 @@ import { styles as globalStyles, COLORS } from './invoiceStyles';
 
 const localStyles = StyleSheet.create({
   card: {
-    ...globalStyles.standardCard,
-    width: '40%',
+    width: '48%',
+    paddingRight: 10,
   },
-  pill: {
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    marginBottom: 8,
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#4B5563',
+    marginBottom: 4,
   },
-  pillText: {
-    color: '#ffffff',
+  amountInWords: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#111827',
+    marginBottom: 16,
+  },
+  noteText: {
     fontSize: 9,
-    fontWeight: 'bold',
-  },
+    color: '#4B5563',
+    marginBottom: 2,
+  }
 });
+
+function numberToWords(num: number): string {
+  if (num === 0) return "Zero";
+  const a = ["", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ", "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ", "Nineteen "];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const n = ("000000000" + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return "";
+  let str = "";
+  str += (Number(n[1]) != 0) ? (a[Number(n[1])] || b[n[1][0] as any] + " " + a[n[1][1] as any]) + "Crore " : "";
+  str += (Number(n[2]) != 0) ? (a[Number(n[2])] || b[n[2][0] as any] + " " + a[n[2][1] as any]) + "Lakh " : "";
+  str += (Number(n[3]) != 0) ? (a[Number(n[3])] || b[n[3][0] as any] + " " + a[n[3][1] as any]) + "Thousand " : "";
+  str += (Number(n[4]) != 0) ? (a[Number(n[4])] || b[n[4][0] as any] + " " + a[n[4][1] as any]) + "Hundred " : "";
+  str += (Number(n[5]) != 0) ? ((str != "") ? "and " : "") + (a[Number(n[5])] || b[n[5][0] as any] + " " + a[n[5][1] as any]) : "";
+  return str.trim() + " Only";
+}
 
 interface PaymentCardProps {
   method: string;
   status: "PAID" | "UNPAID" | "PARTIAL";
   date: string;
   qr?: string;
+  grandTotal: number;
 }
 
-export const PaymentCard = ({ method, status, date, qr }: PaymentCardProps) => {
-  let pillColor = COLORS.danger;
-  if (status === 'PAID') pillColor = COLORS.success;
-  else if (status === 'PARTIAL') pillColor = COLORS.warning;
-
+export const PaymentCard = ({ method, status, date, qr, grandTotal }: PaymentCardProps) => {
   return (
     <View style={localStyles.card}>
-      <Text style={globalStyles.cardTitle}>PAYMENT STATUS</Text>
+      <Text style={localStyles.sectionTitle}>Amount in Words:</Text>
+      <Text style={localStyles.amountInWords}>Rupees {numberToWords(Math.round(grandTotal))}</Text>
       
-      <View style={[localStyles.pill, { backgroundColor: pillColor }]}>
-        <Text style={localStyles.pillText}>{status}</Text>
-      </View>
-      
-      <Text style={globalStyles.cardLabel}>Method: {method}</Text>
-      <Text style={globalStyles.cardLabel}>Date: {date}</Text>
-      
-      <View style={globalStyles.divider} />
-      
-      <View style={{ ...globalStyles.row, ...globalStyles.alignCenter, marginTop: 4 }}>
-        {qr && <Image style={{ width: 80, height: 80, marginRight: 12 }} src={qr} />}
-        <View>
-          <Text style={globalStyles.cardLabel}>• Scan to Reorder</Text>
-          <Text style={globalStyles.cardLabel}>• Track Order</Text>
-          <Text style={globalStyles.cardLabel}>• View Online</Text>
+      <Text style={localStyles.sectionTitle}>Important Note:</Text>
+      <Text style={localStyles.noteText}>• Please refrigerate all milk sweets immediately upon delivery.</Text>
+      <Text style={localStyles.noteText}>• Consume within 3 days for best taste.</Text>
+
+      {qr && (
+        <View style={{ marginTop: 12 }}>
+          <Image style={{ width: 80, height: 80 }} src={qr} />
         </View>
-      </View>
+      )}
     </View>
   );
 };

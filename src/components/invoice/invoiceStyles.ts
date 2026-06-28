@@ -1,11 +1,12 @@
 import { StyleSheet, Font } from '@react-pdf/renderer';
 
-// Register fonts to support the ₹ (Rupee) symbol and premium look
 Font.register({
-  family: 'Roboto',
+  family: 'Poppins',
   fonts: [
-    { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf', fontWeight: 'normal' },
-    { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfChc9AMP6lbBP.ttf', fontWeight: 'bold' }
+    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf', fontWeight: 400 },
+    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Medium.ttf', fontWeight: 500 },
+    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-SemiBold.ttf', fontWeight: 600 },
+    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf', fontWeight: 700 }
   ]
 });
 
@@ -26,8 +27,10 @@ export const COLORS = {
 export const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.background,
-    fontFamily: 'Roboto',
-    paddingBottom: 50,
+    fontFamily: 'Poppins',
+    paddingBottom: 40,
+    fontSize: 9,
+    color: COLORS.textDark,
   },
   topStrip: {
     height: 12,
@@ -53,29 +56,24 @@ export const styles = StyleSheet.create({
   },
 
   // Typography
-  textBold: {
-    fontWeight: 'bold',
-  },
-  textPrimary: {
-    color: COLORS.primary,
-  },
-  textSecondary: {
-    color: COLORS.textLight,
-  },
-  textDark: {
-    color: COLORS.textDark,
-  },
+  textBold: { fontWeight: 700 },
+  textMedium: { fontWeight: 500 },
+  textSemiBold: { fontWeight: 600 },
+  textPrimary: { color: COLORS.primary },
+  textSecondary: { color: COLORS.textLight },
+  textDark: { color: COLORS.textDark },
 
   // Cards
   cardTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+    fontSize: 9,
+    fontWeight: 700,
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
     marginBottom: 8,
   },
   cardValue: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: 700,
     color: COLORS.textDark,
     marginBottom: 4,
   },
@@ -86,11 +84,11 @@ export const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   standardCard: {
-    backgroundColor: COLORS.lightBg,
+    backgroundColor: '#FDFBF9',
     borderRadius: 6,
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#EAE3D2',
   },
   
   // Specific sections

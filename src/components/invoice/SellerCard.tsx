@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from '@react-pdf/renderer';
+import { View, Text, StyleSheet, Svg, Path } from '@react-pdf/renderer';
 import { styles as globalStyles, COLORS } from './invoiceStyles';
 
 const localStyles = StyleSheet.create({
@@ -7,33 +7,42 @@ const localStyles = StyleSheet.create({
     ...globalStyles.standardCard,
     width: '48%',
     minHeight: 110,
-    ...globalStyles.row,
-    ...globalStyles.spaceBetween,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.goldenAccent,
-    textAlign: 'right',
-    marginTop: 20,
-    opacity: 0.8,
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  icon: {
+    width: 10,
+    height: 10,
+    marginRight: 4,
+    color: COLORS.textDark,
   }
 });
 
 export const SellerCard = () => (
   <View style={localStyles.card}>
-    <View>
-      <Text style={globalStyles.cardTitle}>SOLD BY</Text>
-      <Text style={globalStyles.cardValue}>Mehta Dairy & Sweet Mart</Text>
-      <Text style={globalStyles.cardLabel}>Since 1972</Text>
-      <Text style={globalStyles.cardLabel}>Taleti Rd, Navagadh, Jeshar,</Text>
-      <Text style={globalStyles.cardLabel}>Palitana, Gujarat 364270</Text>
-      <Text style={globalStyles.cardLabel}>+91 99132 52232</Text>
-      <Text style={globalStyles.cardLabel}>www.mehtadairy.com</Text>
-    </View>
+    <Text style={globalStyles.cardTitle}>SOLD BY</Text>
+    <Text style={[globalStyles.cardValue, { color: '#b45309', fontSize: 11 }]}>Mehta Dairy & Sweet Mart</Text>
     
-    <View style={{ width: '30%' }}>
-      <Text style={localStyles.badgeText}>50+{"\n"}YEARS OF{"\n"}TRUST</Text>
+    <View style={{ marginTop: 2 }}>
+      <Text style={globalStyles.cardLabel}>Taleti Rd, Navagadh, Jeshar,</Text>
+      <Text style={globalStyles.cardLabel}>Palitana, Gujarat - 364270</Text>
+    </View>
+
+    <View style={localStyles.iconRow}>
+      <Svg viewBox="0 0 24 24" style={localStyles.icon}>
+        <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
+      <Text style={[globalStyles.cardLabel, { marginBottom: 0, color: COLORS.textDark }]}>+91 99132 52232</Text>
+    </View>
+
+    <View style={[localStyles.iconRow, { marginTop: 2 }]}>
+      <Svg viewBox="0 0 24 24" style={localStyles.icon}>
+        <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
+      <Text style={[globalStyles.cardLabel, { marginBottom: 0, color: COLORS.textDark }]}>www.mehtadairy.com</Text>
     </View>
   </View>
 );

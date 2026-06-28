@@ -8,61 +8,60 @@ const localStyles = StyleSheet.create({
     ...globalStyles.spaceBetween,
     ...globalStyles.alignStart,
     ...globalStyles.container,
-    paddingTop: 20,
-    marginBottom: 20,
+    paddingTop: 24,
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAE3D2',
+    paddingBottom: 16,
   },
   logoContainer: {
-    width: 250,
+    width: '33%',
+    flexDirection: 'column',
   },
   logo: {
-    width: 240,
-    height: 60,
+    width: 220,
+    height: 55,
     objectFit: 'contain',
   },
-  sloganText: {
-    color: COLORS.goldenAccent,
-    fontSize: 9,
-    fontWeight: 'bold',
-    marginTop: 4,
-    textAlign: 'center',
-    width: 240,
+  fallbackLogoText: {
+    fontSize: 24,
+    fontWeight: 700,
+    color: COLORS.primary,
+    letterSpacing: -0.5,
   },
   titleContainer: {
-    flex: 1,
+    width: '33%',
     alignItems: 'center',
-    paddingTop: 10,
+    paddingTop: 4,
   },
   invoiceTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    letterSpacing: 1.5,
-  },
-  titleLine: {
-    width: 90,
-    height: 1,
-    backgroundColor: COLORS.goldenAccent,
-    marginVertical: 4,
+    fontSize: 18,
+    fontWeight: 700,
+    color: '#111827',
+    letterSpacing: 0.5,
   },
   metaContainer: {
-    width: 160,
+    width: '33%',
     alignItems: 'flex-end',
-    paddingTop: 8,
+    flexDirection: 'column',
   },
   metaRow: {
     ...globalStyles.row,
     marginBottom: 4,
+    justifyContent: 'flex-end',
   },
   metaLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    width: 70,
+    fontSize: 9,
+    fontWeight: 600,
+    color: '#111827',
+    width: 60,
+    textAlign: 'right',
   },
   metaValue: {
-    fontSize: 10,
-    color: COLORS.textDark,
-    width: 90,
+    fontSize: 9,
+    fontWeight: 500,
+    color: '#4B5563',
+    width: 70,
     textAlign: 'right',
   },
 });
@@ -76,32 +75,29 @@ interface InvoiceHeaderProps {
 
 export const InvoiceHeader = ({ invoiceNo, orderNo, date, logo }: InvoiceHeaderProps) => (
   <View style={localStyles.headerContainer}>
-    {/* Left: Logo & Slogan */}
+    {/* Left: Logo */}
     <View style={localStyles.logoContainer}>
-      {logo && <Image style={localStyles.logo} src={logo} />}
-      <Text style={localStyles.sloganText}>50+ YEARS OF TRUST & PURITY</Text>
+      {logo ? <Image style={localStyles.logo} src={logo} /> : <Text style={localStyles.fallbackLogoText}>Mehta Dairy</Text>}
     </View>
 
     {/* Center: Title */}
     <View style={localStyles.titleContainer}>
-      <View style={localStyles.titleLine} />
       <Text style={localStyles.invoiceTitle}>TAX INVOICE</Text>
-      <View style={localStyles.titleLine} />
     </View>
 
     {/* Right: Meta Details */}
     <View style={localStyles.metaContainer}>
       <View style={localStyles.metaRow}>
-        <Text style={localStyles.metaLabel}>Invoice No.</Text>
-        <Text style={localStyles.metaValue}>: {invoiceNo}</Text>
+        <Text style={localStyles.metaLabel}>Invoice No:</Text>
+        <Text style={localStyles.metaValue}>{invoiceNo}</Text>
       </View>
       <View style={localStyles.metaRow}>
-        <Text style={localStyles.metaLabel}>Order No.</Text>
-        <Text style={localStyles.metaValue}>: {orderNo}</Text>
+        <Text style={localStyles.metaLabel}>Order No:</Text>
+        <Text style={localStyles.metaValue}>{orderNo}</Text>
       </View>
       <View style={localStyles.metaRow}>
-        <Text style={localStyles.metaLabel}>Invoice Date</Text>
-        <Text style={localStyles.metaValue}>: {date}</Text>
+        <Text style={localStyles.metaLabel}>Date:</Text>
+        <Text style={localStyles.metaValue}>{date}</Text>
       </View>
     </View>
   </View>

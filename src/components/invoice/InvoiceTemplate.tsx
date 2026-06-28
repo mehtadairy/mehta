@@ -32,24 +32,22 @@ const InvoiceTemplate = ({ invoice }: InvoiceTemplateProps) => {
           logo={invoice.logo} 
         />
         
-        <View style={[globalStyles.row, globalStyles.spaceBetween, globalStyles.container]}>
-          <CustomerCard customer={invoice.customer} />
+        <View style={[globalStyles.row, globalStyles.spaceBetween, globalStyles.container, { marginBottom: 24 }]}>
           <SellerCard />
+          <CustomerCard customer={invoice.customer} />
         </View>
         
         <ProductTable items={invoice.items} />
         
-        <View style={[globalStyles.row, globalStyles.spaceBetween, globalStyles.container, { marginTop: 20 }]} wrap={false}>
-          <View style={[globalStyles.row, globalStyles.spaceBetween, { width: '52%' }]}>
-            <PaymentCard 
-              method={invoice.paymentMethod} 
-              status={invoice.paymentStatus} 
-              date={invoice.date} 
-              qr={invoice.qr} 
-            />
-            {invoice.gst > 0 && <GSTCard gstNumber="24XXXXXXXXXXX" />}
-          </View>
-          <View style={{ width: '45%' }}>
+        <View style={[globalStyles.row, globalStyles.spaceBetween, globalStyles.container, { marginTop: 32 }]} wrap={false}>
+          <PaymentCard 
+            method={invoice.paymentMethod} 
+            status={invoice.paymentStatus} 
+            date={invoice.date} 
+            qr={invoice.qr}
+            grandTotal={invoice.grandTotal}
+          />
+          <View style={{ width: '48%' }}>
             <TotalCard 
               subtotal={invoice.subtotal}
               delivery={invoice.delivery}

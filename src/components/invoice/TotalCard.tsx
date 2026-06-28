@@ -9,32 +9,35 @@ const localStyles = StyleSheet.create({
   totalRow: {
     ...globalStyles.row,
     ...globalStyles.spaceBetween,
-    marginBottom: 6,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDFBF9',
+    paddingBottom: 4,
   },
   grandTotalBox: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    marginTop: 4,
-    alignItems: 'center',
+    ...globalStyles.row,
+    ...globalStyles.spaceBetween,
+    ...globalStyles.alignCenter,
+    borderTopWidth: 2,
+    borderTopColor: '#EAE3D2',
+    marginTop: 8,
+    paddingTop: 12,
   },
   grandTotalLabel: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: 700,
   },
   grandTotalValue: {
-    color: '#ffffff',
-    fontSize: 30,
-    fontWeight: 'bold',
+    color: '#D97706',
+    fontSize: 18,
+    fontWeight: 700,
   },
   wordsText: {
-    fontSize: 7,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginTop: 6,
+    fontSize: 9,
+    color: '#4B5563',
+    fontWeight: 700,
+    marginTop: 16,
   },
 });
 
@@ -64,28 +67,29 @@ interface TotalCardProps {
 export const TotalCard = ({ subtotal, delivery, discount, gst, grandTotal }: TotalCardProps) => (
   <View style={localStyles.container}>
     <View style={localStyles.totalRow}>
-      <Text style={globalStyles.cardLabel}>Subtotal</Text>
-      <Text style={globalStyles.cardLabel}>₹{subtotal.toFixed(2)}</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Subtotal</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{subtotal.toFixed(2)}</Text>
     </View>
     <View style={localStyles.totalRow}>
-      <Text style={globalStyles.cardLabel}>Delivery Charges</Text>
-      <Text style={globalStyles.cardLabel}>₹{delivery.toFixed(2)}</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Delivery Charges</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{delivery.toFixed(2)}</Text>
     </View>
-    <View style={localStyles.totalRow}>
-      <Text style={globalStyles.cardLabel}>Discount</Text>
-      <Text style={globalStyles.cardLabel}>-₹{discount.toFixed(2)}</Text>
-    </View>
+    {discount > 0 && (
+      <View style={localStyles.totalRow}>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Discount</Text>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#10A314' }]}>-₹{discount.toFixed(2)}</Text>
+      </View>
+    )}
     {gst > 0 && (
       <View style={localStyles.totalRow}>
-        <Text style={globalStyles.cardLabel}>GST Included (18%)</Text>
-        <Text style={globalStyles.cardLabel}>₹{gst.toFixed(2)}</Text>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>GST Included (18%)</Text>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{gst.toFixed(2)}</Text>
       </View>
     )}
     
     <View style={localStyles.grandTotalBox}>
-      <Text style={localStyles.grandTotalLabel}>GRAND TOTAL</Text>
+      <Text style={localStyles.grandTotalLabel}>Grand Total</Text>
       <Text style={localStyles.grandTotalValue}>₹{grandTotal.toFixed(2)}</Text>
     </View>
-    <Text style={localStyles.wordsText}>Rupees {numberToWords(Math.round(grandTotal))}</Text>
   </View>
 );
