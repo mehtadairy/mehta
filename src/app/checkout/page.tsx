@@ -618,6 +618,7 @@ export default function Checkout() {
       const orderPayload: any = {
         id: orderId,
         order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+        customer_id: finalCustomerId,
         user_name: userName,
         user_phone: userPhone,
         user_email: userEmail,

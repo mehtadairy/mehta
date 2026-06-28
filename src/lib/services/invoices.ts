@@ -114,8 +114,8 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
       upsert: true
     });
 
-    let customerId: string | null = null;
-    if (order.user_phone) {
+    let customerId: string | null = order.customer_id || null;
+    if (!customerId && order.user_phone) {
       const { data: cust } = await supabase.from("customers").select("id").eq("phone", order.user_phone).maybeSingle();
       if (cust) customerId = cust.id;
     }
