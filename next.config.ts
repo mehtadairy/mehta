@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  serverExternalPackages: ['playwright-core', '@sparticuz/chromium-min', 'playwright'],
   images: {
     remotePatterns: [
       {
