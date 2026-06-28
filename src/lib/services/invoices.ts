@@ -18,7 +18,72 @@ export interface InvoiceData {
   created_at: string;
 }
 
-// Backend PDF Generation has been removed in favor of client-side browser generation.
+// Backend PDF Generation using React-PDF
+
+export async function generateInvoicePDF(order: any): Promise<Buffer> {
+  // --- PRE-FETCH IMAGES ---
+  let logoUrl = undefined;
+  
+  try {
+    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      logoUrl = "data:image/png;base64," + logoBuffer.toString("base64");
+    }
+  } catch (error) {
+    console.error("Failed to load invoice logo:", error);
+  }
+
+  const items = order.order_items || [];
+  const mappedItems = items.map((item: any) => ({
+    name: item.product_name || item.name,
+    subtitle: item.subtitle || "Premium Quality Sweet",
+    weight: item.weight || "Standard",
+    qty: item.quantity || item.qty,
+    price: Number(item.price),
+    total: Number(item.price) * Number(item.quantity || item.qty)
+  }));
+
+  const addr = order.shipping_address;
+  let addressString = "Store Pickup";
+  if (addr && addr.street) {
+    addressString = `${addr.street}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+  } else if (addr && typeof addr === 'string') {
+    addressString = addr;
+  }
+
+  const mappedInvoiceData = {
+    invoiceNo: order.invoice_number,
+    orderNo: order.order_number || "N/A",
+    date: new Date(order.invoice_created_at || order.created_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }),
+    customer: {
+      name: order.user_name || "Valued Customer",
+      phone: String(order.user_phone || "N/A").replace(/^\+?91\s*/, "").trim(),
+      email: order.user_email || undefined,
+      address: addressString,
+    },
+    items: mappedItems,
+    subtotal: Number(order.subtotal || 0),
+    delivery: Number(order.delivery_charge || 0),
+    discount: Number(order.discount || 0),
+    gst: order.metadata?.gst_number && order.metadata?.gst_enabled === true ? Number(order.total || 0) - (Number(order.total || 0) / 1.18) : 0,
+    grandTotal: Number(order.total || 0),
+    paymentMethod: order.payment_method || "Cash",
+    paymentStatus: (order.payment_status || "COMPLETED").toUpperCase() as "PAID" | "UNPAID" | "PARTIAL",
+    logo: logoUrl || undefined,
+    qr: undefined // QR generation removed for React-PDF to avoid fetch delays
+  };
+
+  // Dynamically import React-PDF to avoid edge runtime issues
+  const { renderToBuffer } = await import('@react-pdf/renderer');
+  const InvoiceTemplate = (await import('@/components/invoice/InvoiceTemplate')).default;
+  
+  const pdfBuffer = await renderToBuffer(
+    React.createElement(InvoiceTemplate, { invoice: mappedInvoiceData })
+  );
+
+  return pdfBuffer;
+}
 
 /**
  * Core service to generate, save, upload, and email invoices for an order
@@ -39,8 +104,8 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     const seqStr = String((count || 0) + 1).padStart(4, "0");
     const invoiceNumber = `INV-${currentYear}-${seqStr}`;
 
-    // No backend PDF generation needed!
-    // Simply insert metadata and email the link.
+    const orderWithInvoice = { ...order, invoice_number: invoiceNumber, invoice_created_at: new Date().toISOString() };
+    const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
     const pdfUrl = `https://mehtadairy.com/invoice/${invoiceNumber}`;
 
     let customerId: string | null = null;
@@ -57,7 +122,7 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     if (invoiceError) throw new Error(`DB err`);
 
     if (order.user_email) {
-      sendInvoiceEmail(newInvoice.id, order.user_email).catch(err => console.error(err));
+      sendInvoiceEmail(newInvoice.id, order.user_email, pdfBuffer).catch(err => console.error(err));
     }
 
     return newInvoice as InvoiceData;
@@ -67,10 +132,15 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
   }
 }
 
-export async function sendInvoiceEmail(invoiceId: string, email: string): Promise<boolean> {
+export async function sendInvoiceEmail(invoiceId: string, email: string, pdfBufferInput?: Buffer): Promise<boolean> {
   try {
     const { sendInvoiceEmailWithRetry } = await import('@/lib/email/sendInvoice');
-    const { success } = await sendInvoiceEmailWithRetry(invoiceId, email);
+    let pdfBuffer = pdfBufferInput;
+    if (!pdfBuffer) {
+      // If we don't have the buffer (e.g., manual resend), we'd need to regenerate it or fetch it.
+      // For now, if we don't have it, we just pass null/undefined, and let sendInvoice handle it.
+    }
+    const { success } = await sendInvoiceEmailWithRetry(invoiceId, email, pdfBuffer);
     return success;
   } catch (err: any) {
     console.error("sendInvoiceEmail error:", err);

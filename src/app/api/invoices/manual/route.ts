@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { sendInvoiceEmail } from '@/lib/services/invoices';
+import { generateInvoicePDF, sendInvoiceEmail } from '@/lib/services/invoices';
 
 export async function POST(request: Request) {
   try {
@@ -58,8 +58,10 @@ export async function POST(request: Request) {
       total
     };
 
-    // No backend PDF generation needed!
-    // Simply set the PDF URL to the public page
+    // Generate PDF Native React-PDF
+    const pdfBuffer = await generateInvoicePDF(simulatedOrder);
+    
+    // Set PDF URL to the public page
     const pdfUrl = `https://mehtadairy.com/invoice/${invoiceNumber}`;
 
     // 3. Find existing customer if phone is provided
@@ -101,7 +103,7 @@ export async function POST(request: Request) {
       // we need to adapt sendInvoiceEmail to support missing orders.
       // Wait, sendInvoiceEmail line 377: `.select("*, orders(*)")` and line 387: `if (!order) throw new Error`
       // I should update sendInvoiceEmail as well.
-      emailSent = await sendInvoiceEmail(newInvoice.id, customer_email);
+      emailSent = await sendInvoiceEmail(newInvoice.id, customer_email, pdfBuffer);
     }
 
     return NextResponse.json({ 
