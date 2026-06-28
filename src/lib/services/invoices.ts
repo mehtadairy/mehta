@@ -97,25 +97,12 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     })
   );
 
-  // Launch Playwright headless browser
-  let browser;
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    // Vercel Serverless Environment (uses Sparticuz Chromium)
-    const chromium = (await import('@sparticuz/chromium-min')).default;
-    const { chromium: playwrightCore } = await import('playwright-core');
-    browser = await playwrightCore.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar'),
-      headless: true,
-    });
-  } else {
-    // Local Development
-    const { chromium: playwright } = await import('playwright');
-    browser = await playwright.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
-    });
-  }
+  // Launch Playwright headless browser dynamically to avoid module load crashes
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none']
+  });
   
   const page = await browser.newPage();
   await page.setContent(htmlString, { waitUntil: 'networkidle' });

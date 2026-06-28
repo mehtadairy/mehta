@@ -12,12 +12,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['playwright-core', '@sparticuz/chromium-min', 'playwright'],
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/**/*': ['./node_modules/playwright-core/**/*'],
-    },
-  },
   images: {
     remotePatterns: [
       {
