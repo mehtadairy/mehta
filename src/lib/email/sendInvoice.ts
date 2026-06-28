@@ -52,10 +52,7 @@ export async function sendInvoiceEmailWithRetry(
   if (items && items.length > 0) {
     itemsHtml = items.map((item: any) => `
       <div style="display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #EAE3D2;">
-        <div style="flex-shrink: 0; width: 64px; height: 64px; background-color: #F8F5F0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #EAE3D2;">
-          <img src="https://mehtadairy.com/images/default-sweet.png" alt="${item.product_name || item.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://mehtadairy.com/logo.png'" />
-        </div>
-        <div style="flex-grow: 1; padding-left: 16px;">
+        <div style="flex-grow: 1;">
           <h4 style="margin: 0 0 4px 0; font-size: 15px; color: #2C2C2C;">${item.product_name || item.name}</h4>
           <p style="margin: 0; font-size: 13px; color: #777;">Variant: ${item.weight || "Standard"} | Qty: ${item.quantity || item.qty}</p>
         </div>
