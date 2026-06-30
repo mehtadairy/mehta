@@ -295,37 +295,40 @@ export default function AdminPanel() {
                 storage_instructions: prodStorageInstructions,
                 allergens: prodAllergens,
                 dietary_tags: prodDietaryTags,
-                highlights: prodHighlights
+                highlights: prodHighlights,
+                badges: prodBadges // Persist badges in edit mode too
             }).eq('id', editingProduct.id);
 
-            if (!error) {
-                await updateProductIngredients(editingProduct.id, prodIngredients);
-                const updatedIngredientNames = allIngredients
-                    .filter(ing => prodIngredients.includes(ing.id))
-                    .map(ing => ing.name);
-
-                setProducts(products.map(p => p.id === editingProduct.id ? {
-                    ...p,
-                    name: prodName,
-                    description: prodDesc,
-                    category: prodCat,
-                    prices: parsedPrices,
-                    stock: Number(prodStock),
-                    popular: prodPopular,
-                    festivalSpecial: prodFestive,
-                    images: [prodImage],
-                    ingredients: updatedIngredientNames,
-                    ingredientIds: prodIngredients,
-                    shelfLife: Number(prodShelfLife) || 12,
-                    storageInstructions: prodStorageInstructions,
-                    dietaryTags: prodDietaryTags,
-                    highlights: prodHighlights,
-                    badges: prodBadges
-                } : p));
-                setEditingProduct(null);
-            } else {
+            if (error) {
                 console.error("Failed to update product:", error);
+                alert("Failed to update product: " + error.message);
+                return; // Early return to keep the form open and retain input data
             }
+
+            await updateProductIngredients(editingProduct.id, prodIngredients);
+            const updatedIngredientNames = allIngredients
+                .filter(ing => prodIngredients.includes(ing.id))
+                .map(ing => ing.name);
+
+            setProducts(products.map(p => p.id === editingProduct.id ? {
+                ...p,
+                name: prodName,
+                description: prodDesc,
+                category: prodCat,
+                prices: parsedPrices,
+                stock: Number(prodStock),
+                popular: prodPopular,
+                festivalSpecial: prodFestive,
+                images: [prodImage],
+                ingredients: updatedIngredientNames,
+                ingredientIds: prodIngredients,
+                shelfLife: Number(prodShelfLife) || 12,
+                storageInstructions: prodStorageInstructions,
+                dietaryTags: prodDietaryTags,
+                highlights: prodHighlights,
+                badges: prodBadges
+            } : p));
+            setEditingProduct(null);
         } else {
             // ADD MODE
             const { data, error } = await supabase.from('products').insert([{
@@ -347,38 +350,40 @@ export default function AdminPanel() {
                 badges: prodBadges
             }]).select();
 
-            if (!error && data) {
-                const newP = data[0];
-                await updateProductIngredients(newP.id, prodIngredients);
-                const updatedIngredientNames = allIngredients
-                    .filter(ing => prodIngredients.includes(ing.id))
-                    .map(ing => ing.name);
-
-                const newProd: Product = {
-                    id: newP.id,
-                    name: newP.name,
-                    description: newP.description,
-                    category: newP.category_slug,
-                    prices: newP.prices,
-                    popular: newP.popular,
-                    festivalSpecial: newP.festival_special,
-                    rating: newP.rating || 5.0,
-                    reviewsCount: newP.reviews_count || 0,
-                    stock: newP.stock,
-                    images: newP.images,
-                    ingredients: updatedIngredientNames,
-                    ingredientIds: prodIngredients,
-                    shelfLife: newP.shelf_life,
-                    storageInstructions: newP.storage_instructions,
-                    allergens: newP.allergens || [],
-                    dietaryTags: newP.dietary_tags || [],
-                    highlights: newP.highlights || [],
-                    badges: newP.badges || []
-                };
-                setProducts([newProd, ...products]);
-            } else {
+            if (error || !data || data.length === 0) {
                 console.error("Failed to insert product:", error);
+                alert("Failed to insert product: " + (error ? error.message : "No data returned"));
+                return; // Early return to keep the form open and retain input data
             }
+
+            const newP = data[0];
+            await updateProductIngredients(newP.id, prodIngredients);
+            const updatedIngredientNames = allIngredients
+                .filter(ing => prodIngredients.includes(ing.id))
+                .map(ing => ing.name);
+
+            const newProd: Product = {
+                id: newP.id,
+                name: newP.name,
+                description: newP.description,
+                category: newP.category_slug,
+                prices: newP.prices,
+                popular: newP.popular,
+                festivalSpecial: newP.festival_special,
+                rating: newP.rating || 5.0,
+                reviewsCount: newP.reviews_count || 0,
+                stock: newP.stock,
+                images: newP.images,
+                ingredients: updatedIngredientNames,
+                ingredientIds: prodIngredients,
+                shelfLife: newP.shelf_life,
+                storageInstructions: newP.storage_instructions,
+                allergens: newP.allergens || [],
+                dietaryTags: newP.dietary_tags || [],
+                highlights: newP.highlights || [],
+                badges: newP.badges || []
+            };
+            setProducts([newProd, ...products]);
         }
 
         // Reset fields

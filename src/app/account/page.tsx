@@ -73,6 +73,7 @@ import {
   Order
 } from "@/lib/types";
 import { fetchProducts, supabase } from "@/lib/supabaseClient";
+import { OTPWidget } from "@/lib/otp-widget";
 import {
   User,
   ShoppingBag,
@@ -219,41 +220,11 @@ function AccountContent() {
       }
     }
 
-    // Load MSG91 Widget
     const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
     const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
     
     if (widgetId && tokenAuth) {
-      const scriptId = 'msg91-widget-sdk';
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = 'https://verify.msg91.com/otp-provider.js';
-        script.async = true;
-        script.onload = () => {
-          // @ts-ignore
-          if (typeof window !== 'undefined' && window.initSendOTP) {
-            // @ts-ignore
-            window.initSendOTP({
-              widgetId: widgetId,
-              tokenAuth: tokenAuth,
-              exposeMethods: true,
-            });
-          }
-        };
-        document.body.appendChild(script);
-      } else {
-        // Script exists, check if initialized
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.initSendOTP && !window.sendOtp) {
-          // @ts-ignore
-          window.initSendOTP({
-            widgetId: widgetId,
-            tokenAuth: tokenAuth,
-            exposeMethods: true,
-          });
-        }
-      }
+      OTPWidget.initializeWidget(widgetId, tokenAuth);
     }
   }, []);
 
@@ -566,31 +537,26 @@ function AccountContent() {
     // Check Phone Change First
     if (editPhone && editPhone !== profile?.phone) {
       setIsPhoneOtpSending(true);
-      // @ts-ignore
-      if (typeof window !== 'undefined' && window.sendOtp) {
-        // @ts-ignore
-        window.sendOtp(
-          `91${editPhone}`,
-          (data: any) => {
-            setIsPhoneOtpSending(false);
-            const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
-            setReqId(resolvedReqId);
-            setShowPhoneOtpModal(true);
-          },
-          (err: any) => {
-            setIsPhoneOtpSending(false);
-            alert(err?.message || "Failed to send OTP to this phone number.");
-          }
-        );
-      } else {
-        setIsPhoneOtpSending(false);
+      const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
+      
+      if (!widgetId) {
         // Mock success if MSG91 is missing
-        if (!process.env.NEXT_PUBLIC_MSG91_WIDGET_ID) {
-           setShowPhoneOtpModal(true);
-        } else {
-           alert("OTP service is still loading or not ready. Please wait a moment and try again. (If you have an ad-blocker, please disable it).");
-        }
+        setIsPhoneOtpSending(false);
+        setShowPhoneOtpModal(true);
+        return;
       }
+
+      OTPWidget.sendOTP({ identifier: `91${editPhone}` })
+        .then((data: any) => {
+          setIsPhoneOtpSending(false);
+          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+          setReqId(resolvedReqId);
+          setShowPhoneOtpModal(true);
+        })
+        .catch((err: any) => {
+          setIsPhoneOtpSending(false);
+          alert(err?.message || "Failed to send OTP to this phone number.");
+        });
       return;
     }
 
@@ -624,29 +590,22 @@ function AccountContent() {
       return;
     }
 
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.verifyOtp) {
-      // @ts-ignore
-      window.verifyOtp(
-        phoneOtp,
-        (data: any) => {
-          setShowPhoneOtpModal(false);
-          setIsPhoneOtpSending(false);
-          updateProfileToDB(editName, editEmail, editPhone);
-        },
-        (err: any) => {
-          setIsPhoneOtpSending(false);
-          const errMsg = err?.message || 'Invalid OTP.';
-          if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
-             setShowPhoneOtpModal(false);
-             updateProfileToDB(editName, editEmail, editPhone);
-          } else {
-             alert(errMsg);
-          }
-        },
-        reqId
-      );
-    }
+    OTPWidget.verifyOTP({ otp: phoneOtp, reqId })
+      .then((data: any) => {
+        setShowPhoneOtpModal(false);
+        setIsPhoneOtpSending(false);
+        updateProfileToDB(editName, editEmail, editPhone);
+      })
+      .catch((err: any) => {
+        setIsPhoneOtpSending(false);
+        const errMsg = err?.message || 'Invalid OTP.';
+        if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
+           setShowPhoneOtpModal(false);
+           updateProfileToDB(editName, editEmail, editPhone);
+        } else {
+           alert(errMsg);
+        }
+      });
   };
 
   const handleVerifyEmailOtp = async () => {

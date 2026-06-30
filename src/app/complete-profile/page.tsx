@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Phone, ArrowRight, ShieldCheck, Mail, User } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { OTPWidget } from '@/lib/otp-widget';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -33,32 +34,8 @@ export default function CompleteProfilePage() {
     const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
     const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
     
-    if (!widgetId || !tokenAuth) return;
-
-    const scriptId = 'msg91-widget-sdk';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://verify.msg91.com/otp-provider.js';
-      script.async = true;
-      script.onload = () => {
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.initSendOTP) {
-          // @ts-ignore
-          window.initSendOTP({
-            widgetId: widgetId,
-            tokenAuth: tokenAuth,
-            exposeMethods: true,
-            success: (data: any) => {
-              console.log('OTP verified from global success', data);
-            },
-            failure: (error: any) => {
-              console.log('OTP global failure', error);
-            }
-          });
-        }
-      };
-      document.body.appendChild(script);
+    if (widgetId && tokenAuth) {
+      OTPWidget.initializeWidget(widgetId, tokenAuth);
     }
   }, []);
 
@@ -78,26 +55,17 @@ export default function CompleteProfilePage() {
     }
 
     setIsLoading(true);
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.sendOtp) {
-      // @ts-ignore
-      window.sendOtp(
-        `91${phone}`,
-        (data: any) => {
-          setIsLoading(false);
-          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
-          setReqId(resolvedReqId);
-          setStep('OTP');
-        },
-        (err: any) => {
-          setIsLoading(false);
-          setError(err?.message || 'Failed to send OTP. Please try again.');
-        }
-      );
-    } else {
-      setIsLoading(false);
-      setError("OTP Service is not fully loaded. Please wait a moment or refresh.");
-    }
+    OTPWidget.sendOTP({ identifier: `91${phone}` })
+      .then((data: any) => {
+        setIsLoading(false);
+        const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+        setReqId(resolvedReqId);
+        setStep('OTP');
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        setError(err?.message || 'Failed to send OTP. Please try again.');
+      });
   };
 
   const handleVerifyOTP = async () => {
@@ -117,27 +85,20 @@ export default function CompleteProfilePage() {
     }
 
     setIsLoading(true);
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.verifyOtp) {
-      // @ts-ignore
-      window.verifyOtp(
-        otp,
-        async (data: any) => {
-          await handleSuccess(data);
-        },
-        (err: any) => {
-          const errMsg = err?.message || 'Invalid OTP. Please try again.';
-          if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
-            // MSG91 considers it verified already, so proceed
-            handleSuccess({ message: "Already verified" });
-          } else {
-            setIsLoading(false);
-            setError(errMsg);
-          }
-        },
-        reqId
-      );
-    }
+    OTPWidget.verifyOTP({ otp, reqId })
+      .then(async (data: any) => {
+        await handleSuccess(data);
+      })
+      .catch((err: any) => {
+        const errMsg = err?.message || 'Invalid OTP. Please try again.';
+        if (errMsg.toLowerCase().includes('already verifed') || errMsg.toLowerCase().includes('already verified')) {
+          // MSG91 considers it verified already, so proceed
+          handleSuccess({ message: "Already verified" });
+        } else {
+          setIsLoading(false);
+          setError(errMsg);
+        }
+      });
   };
 
   const handleSuccess = async (data: any) => {

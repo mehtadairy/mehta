@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Phone, ArrowRight, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
+import { OTPWidget } from '@/lib/otp-widget';
 
 function LoginContent() {
   const router = useRouter();
@@ -22,32 +23,8 @@ function LoginContent() {
     const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
     const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
     
-    if (!widgetId || !tokenAuth) return;
-
-    const scriptId = 'msg91-widget-sdk';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://verify.msg91.com/otp-provider.js'; // Using updated URL from user docs
-      script.async = true;
-      script.onload = () => {
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.initSendOTP) {
-          // @ts-ignore
-          window.initSendOTP({
-            widgetId: widgetId,
-            tokenAuth: tokenAuth,
-            exposeMethods: true,
-            success: (data: any) => {
-              console.log('OTP verified from global success', data);
-            },
-            failure: (error: any) => {
-              console.log('OTP global failure', error);
-            }
-          });
-        }
-      };
-      document.body.appendChild(script);
+    if (widgetId && tokenAuth) {
+      OTPWidget.initializeWidget(widgetId, tokenAuth);
     }
   }, []);
 
@@ -95,30 +72,21 @@ function LoginContent() {
     }
 
     setIsLoading(true);
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.sendOtp) {
-      // @ts-ignore
-      window.sendOtp(
-        `91${phone}`, // Country code + mobile number
-        (data: any) => {
-          setIsLoading(false);
-          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
-          setReqId(resolvedReqId);
-          setStep('OTP');
-        },
-        (err: any) => {
-          setIsLoading(false);
-          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to send OTP. Please try again.');
-          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
-            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
-          }
-          setError(errMsg);
+    OTPWidget.sendOTP({ identifier: `91${phone}` })
+      .then((data: any) => {
+        setIsLoading(false);
+        const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+        setReqId(resolvedReqId);
+        setStep('OTP');
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to send OTP. Please try again.');
+        if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+          errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
         }
-      );
-    } else {
-      setIsLoading(false);
-      setError("OTP Service is not fully loaded. Please wait a moment or refresh.");
-    }
+        setError(errMsg);
+      });
   };
 
   const handleVerifyOTP = () => {
@@ -138,53 +106,38 @@ function LoginContent() {
     }
 
     setIsLoading(true);
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.verifyOtp) {
-      // @ts-ignore
-      window.verifyOtp(
-        otp,
-        (data: any) => {
-          handleSuccess(data);
-        },
-        (err: any) => {
-          setIsLoading(false);
-          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Invalid OTP. Please try again.');
-          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
-            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
-          }
-          setError(errMsg);
-        },
-        reqId
-      );
-    }
+    OTPWidget.verifyOTP({ otp, reqId })
+      .then((data: any) => {
+        handleSuccess(data);
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        let errMsg = (typeof err === 'string') ? err : (err?.message || 'Invalid OTP. Please try again.');
+        if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+          errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
+        }
+        setError(errMsg);
+      });
   };
 
   const handleResendOTP = () => {
     setError('');
     setIsLoading(true);
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.retryOtp) {
-      // @ts-ignore
-      window.retryOtp(
-        null, // Default channel
-        (data: any) => {
-          setIsLoading(false);
-          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
-          if (resolvedReqId) setReqId(resolvedReqId);
-          setError("OTP Resent successfully!");
-        },
-        (err: any) => {
-          setIsLoading(false);
-          let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to resend OTP.');
-          if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
-            errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
-          }
-          setError(errMsg);
+    OTPWidget.retryOTP({ reqId, retryChannel: 1 })
+      .then((data: any) => {
+        setIsLoading(false);
+        const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+        if (resolvedReqId) setReqId(resolvedReqId);
+        setError("OTP Resent successfully!");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        let errMsg = (typeof err === 'string') ? err : (err?.message || 'Failed to resend OTP.');
+        if (typeof errMsg === 'string' && errMsg.includes('IPBlocked')) {
+          errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
         }
-      );
-    } else {
-      setIsLoading(false);
-    }
+        setError(errMsg);
+      });
   };
 
   const handleSuccess = async (data: any) => {
