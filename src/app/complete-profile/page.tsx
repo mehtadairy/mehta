@@ -13,6 +13,7 @@ export default function CompleteProfilePage() {
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reqId, setReqId] = useState('');
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -48,14 +49,18 @@ export default function CompleteProfilePage() {
             widgetId: widgetId,
             tokenAuth: tokenAuth,
             exposeMethods: true,
-            success: (data: any) => console.log('OTP verified from global success', data),
-            failure: (err: any) => console.log('OTP global failure', err)
+            success: (data: any) => {
+              console.log('OTP verified from global success', data);
+            },
+            failure: (error: any) => {
+              console.log('OTP global failure', error);
+            }
           });
         }
       };
       document.body.appendChild(script);
     }
-  }, [router]);
+  }, []);
 
   const handleSendOTP = () => {
     setError('');
@@ -80,6 +85,8 @@ export default function CompleteProfilePage() {
         `91${phone}`,
         (data: any) => {
           setIsLoading(false);
+          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+          setReqId(resolvedReqId);
           setStep('OTP');
         },
         (err: any) => {
@@ -127,7 +134,8 @@ export default function CompleteProfilePage() {
             setIsLoading(false);
             setError(errMsg);
           }
-        }
+        },
+        reqId
       );
     }
   };

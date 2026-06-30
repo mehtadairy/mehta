@@ -15,6 +15,7 @@ function LoginContent() {
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reqId, setReqId] = useState('');
 
   // Load MSG91 Widget SDK and Initialize
   useEffect(() => {
@@ -101,6 +102,8 @@ function LoginContent() {
         `91${phone}`, // Country code + mobile number
         (data: any) => {
           setIsLoading(false);
+          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+          setReqId(resolvedReqId);
           setStep('OTP');
         },
         (err: any) => {
@@ -150,7 +153,8 @@ function LoginContent() {
             errMsg = 'Too many attempts. Your IP has been temporarily blocked by the OTP provider. Please use Google Login.';
           }
           setError(errMsg);
-        }
+        },
+        reqId
       );
     }
   };
@@ -165,6 +169,8 @@ function LoginContent() {
         null, // Default channel
         (data: any) => {
           setIsLoading(false);
+          const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+          if (resolvedReqId) setReqId(resolvedReqId);
           setError("OTP Resent successfully!");
         },
         (err: any) => {

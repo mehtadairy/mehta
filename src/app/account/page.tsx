@@ -154,6 +154,7 @@ function AccountContent() {
   const [showPhoneOtpModal, setShowPhoneOtpModal] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
   const [isPhoneOtpSending, setIsPhoneOtpSending] = useState(false);
+  const [reqId, setReqId] = useState("");
 
   const handleGoogleLogin = async () => {
     // Moved to Login Page
@@ -570,8 +571,10 @@ function AccountContent() {
         // @ts-ignore
         window.sendOtp(
           `91${editPhone}`,
-          () => {
+          (data: any) => {
             setIsPhoneOtpSending(false);
+            const resolvedReqId = typeof data === 'string' ? data : (data?.reqId || data?.requestId || '');
+            setReqId(resolvedReqId);
             setShowPhoneOtpModal(true);
           },
           (err: any) => {
@@ -640,7 +643,8 @@ function AccountContent() {
           } else {
              alert(errMsg);
           }
-        }
+        },
+        reqId
       );
     }
   };
