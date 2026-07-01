@@ -6,11 +6,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get('phone');
     
-    // Create a fresh client for this request to avoid global state contamination
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false }
-    });
-
     // Check for authenticated session (Google Auth)
     const authHeader = request.headers.get('Authorization');
     let user = null;
@@ -54,11 +49,6 @@ export async function PUT(request: Request) {
   try {
     const { phone, email, name, newPhone, newEmail } = await request.json();
 
-    // Create a fresh client for this request
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false }
-    });
-
     // Check for authenticated session
     const authHeader = request.headers.get('Authorization');
     let user = null;
@@ -81,6 +71,20 @@ export async function PUT(request: Request) {
     const { data: existingCustomer, error: fetchError } = await fetchQuery.single();
     
     if (fetchError || !existingCustomer) {
+      if (user) {
+        const newCustomer = {
+          auth_user_id: user.id,
+          name: name || user.user_metadata?.full_name,
+          email: newEmail !== undefined ? newEmail : user.email,
+          phone: newPhone || phone || null
+        };
+        const { data, error } = await supabase.from('customers').insert([newCustomer]).select().single();
+        if (error) {
+          console.error('Supabase insert error:', error);
+          return NextResponse.json({ success: false, message: 'Failed to create profile' }, { status: 500 });
+        }
+        return NextResponse.json({ success: true, profile: data });
+      }
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
 

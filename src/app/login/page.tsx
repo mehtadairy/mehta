@@ -17,6 +17,37 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [reqId, setReqId] = useState('');
+  const [truecallerNonce, setTruecallerNonce] = useState('');
+  const [isTruecallerPolling, setIsTruecallerPolling] = useState(false);
+
+  useEffect(() => {
+    let pollInterval: any;
+    if (isTruecallerPolling && truecallerNonce) {
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/auth/truecaller/status?nonce=${truecallerNonce}`);
+          const data = await res.json();
+          if (data.success && data.status === 'successful') {
+            setIsTruecallerPolling(false);
+            clearInterval(pollInterval);
+            
+            localStorage.setItem("mehta_logged_in", "true");
+            if (data.customer.phone) localStorage.setItem("mehta_user_phone", data.customer.phone);
+            localStorage.setItem("mehta_user_id", data.customer.id);
+            if (data.customer.name) localStorage.setItem("mehta_user_name", data.customer.name);
+            if (data.customer.email) localStorage.setItem("mehta_user_email", data.customer.email);
+            
+            window.dispatchEvent(new Event("authUpdated"));
+            const redirectUrl = searchParams.get("redirect") || "/account";
+            router.push(redirectUrl);
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
+        }
+      }, 2000);
+    }
+    return () => clearInterval(pollInterval);
+  }, [isTruecallerPolling, truecallerNonce, router, searchParams]);
 
   // Load MSG91 Widget SDK and Initialize
   useEffect(() => {
@@ -51,6 +82,36 @@ function LoginContent() {
       setError(err.message || 'Google login failed. Please try again.');
       setIsLoading(false);
     }
+  };
+
+  const generateNonce = () => {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  };
+
+  const handleTruecallerLogin = () => {
+    setError('');
+    const nonce = generateNonce();
+    setTruecallerNonce(nonce);
+    
+    const appKey = process.env.NEXT_PUBLIC_TRUECALLER_APP_KEY;
+    const appName = "Mehta Dairy";
+    
+    if (!appKey) {
+       setError("Truecaller is not configured. Please use OTP or Google Login.");
+       return;
+    }
+
+    // Trigger deep link
+    window.location.href = `truecallersdk://truesdk/web_verify?requestNonce=${nonce}&partnerKey=${appKey}&partnerName=${appName}`;
+    
+    // Fallback detection
+    setTimeout(() => {
+      if (document.hasFocus()) {
+        setError('Truecaller app not found on this device. Please use OTP or Google Login.');
+      } else {
+        setIsTruecallerPolling(true);
+      }
+    }, 800);
   };
 
   const handleContinue = () => {
@@ -212,6 +273,17 @@ function LoginContent() {
 
           {step === 'PHONE' ? (
             <div className="flex flex-col gap-5">
+              <button
+                onClick={handleTruecallerLogin}
+                disabled={isLoading || isTruecallerPolling}
+                className="w-full bg-[#0087FF] hover:bg-[#007AE6] text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-3 shadow-sm hover:shadow-md transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.6 15.6l-5.6-3.4c-.2-.1-.3-.4-.3-.6V7c0-.4.3-.7.7-.7s.7.3.7.7v6l5 3c.3.2.4.6.2.9-.2.3-.5.4-.7.1z"/>
+                </svg>
+                {isTruecallerPolling ? "Waiting for Truecaller..." : "Continue with Truecaller"}
+              </button>
+
               <button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}

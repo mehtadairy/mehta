@@ -1193,8 +1193,13 @@ function AccountContent() {
                           id="editName"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
+                          readOnly={!!profile?.auth_user_id}
                           placeholder=" "
-                          className="peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 transition-all bg-brand-cream/10 text-brand-charcoal"
+                          className={`peer w-full border border-brand-beige/80 rounded-xl pl-10 pr-4 pt-6 pb-2 text-sm focus:outline-none transition-all ${
+                            profile?.auth_user_id
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 bg-brand-cream/10 text-brand-charcoal'
+                          }`}
                           required
                         />
                         <User className="absolute left-3.5 top-[25px] h-4 w-4 text-muted-foreground/75 peer-focus:text-brand-orange transition-colors" />
