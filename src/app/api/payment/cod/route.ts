@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { createInvoice } from '@/lib/services/invoices';
 
 export async function POST(request: Request) {
@@ -10,8 +10,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing order details or items' }, { status: 400 });
     }
 
+    // Sanitize order payload to prevent malicious injection
+    const { id, created_at, updated_at, status, payment_status, payment_id, ...sanitizedPayload } = orderPayload;
+
     const finalOrderData = {
-      ...orderPayload,
+      ...sanitizedPayload,
       payment_id: 'COD-' + Date.now(),
       payment_status: 'Pending',
       status: 'Processing'

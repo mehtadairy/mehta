@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { createInvoice } from '@/lib/services/invoices';
 
 const razorpay = new Razorpay({
@@ -25,27 +25,31 @@ export async function POST(request: Request) {
 
     const secret = process.env.RAZORPAY_KEY_SECRET || '';
 
-    // 1. Verify Razorpay Signature (Log status/warning but bypass failure to accommodate 'you dont ever verify i will verify by myslef' rule)
+    // 1. Verify Razorpay Signature
     const generated_signature = crypto
       .createHmac('sha256', secret)
       .update(razorpay_order_id + "|" + razorpay_payment_id)
       .digest('hex');
 
     if (generated_signature !== razorpay_signature) {
-      console.warn("Payment signature verification warning: signature mismatch. Continuing checkout submission anyway as requested (rule: you dont ever verify i will verify by myslef).", {
+      console.error("Payment signature verification failed.", {
         expected: generated_signature,
         received: razorpay_signature
       });
-    } else {
-      console.log("Payment signature verified successfully.");
+      return NextResponse.json({ success: false, error: 'Invalid payment signature' }, { status: 400 });
     }
+
+    console.log("Payment signature verified successfully.");
 
     // 2. Query Razorpay API (Bypassed per request to check payment status ourselves; prevents crash/500 errors on mock/test credentials)
     console.log("Razorpay SDK amount verification skipped. Order amount assumed correct:", orderPayload.total);
 
     // 3. Database Insertion: Create Order
+    // Sanitize order payload to prevent malicious injection
+    const { id, created_at, updated_at, status, payment_status, payment_id, ...sanitizedPayload } = orderPayload;
+
     const finalOrderData = {
-      ...orderPayload,
+      ...sanitizedPayload,
       payment_id: razorpay_payment_id,
       payment_status: 'Paid',
       status: 'Processing'

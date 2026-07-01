@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import webpush from 'web-push';
 import { BUSINESS } from '@/lib/businessConfig';
 

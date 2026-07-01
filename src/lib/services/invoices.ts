@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseServer as supabase } from "@/lib/supabaseServer";
 import { BUSINESS } from "@/lib/businessConfig";
 import fs from "fs";
 import path from "path";

@@ -135,68 +135,56 @@ export default function WorkerPanel() {
   const loadPanelData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Orders (with order items)
-      const { data: orderData, error: orderErr } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .order("created_at", { ascending: false });
-      if (!orderErr && orderData) setOrders(orderData);
-
-      // 2. Fetch Payments (and synthesize missing Razorpay orders)
-      const { data: paymentData, error: payErr } = await supabase
-        .from("payments")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (!payErr && paymentData) {
-        const existingOrderIds = new Set(paymentData.map(p => p.order_id));
-        const ordersList = orderData || [];
-        const synthesizedPayments = ordersList
-          .filter((o: any) => {
-            const isRazorpay = o.payment_method?.toLowerCase() === 'razorpay' || o.payment_method?.toLowerCase() === 'online';
-            return isRazorpay && !existingOrderIds.has(o.id);
-          })
-          .map((o: any) => ({
-            id: `synth-${o.id}`,
-            order_id: o.id,
-            order_number: o.order_number,
-            payment_id: o.payment_id || o.razorpay_payment_id || `Online Order`,
-            razorpay_order_id: o.razorpay_order_id || null,
-            amount: o.total,
-            method: o.payment_method || 'Razorpay',
-            status: o.payment_status || 'Paid',
-            created_at: o.created_at
-          }));
+      // Fetch all protected data via secure API route
+      const res = await fetch("/api/worker/data");
+      if (res.ok) {
+        const { data } = await res.json();
         
-        const combined = [...paymentData, ...synthesizedPayments].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        setPayments(combined);
-      } else if (paymentData) {
-        setPayments(paymentData);
+        // 1. Set Orders
+        if (data.orders) {
+          const formattedOrders = data.orders.map((o: any) => ({
+            id: o.id,
+            orderNumber: o.order_number,
+            date: new Date(o.created_at).toLocaleDateString(),
+            status: o.status,
+            total: o.total,
+            paymentStatus: o.payment_status,
+            userName: o.user_name,
+            userPhone: o.user_phone,
+            userEmail: o.user_email,
+            shippingAddress: o.shipping_address,
+            items: o.order_items ? o.order_items.map((i: any) => ({
+              productId: i.product_id,
+              productName: i.product_name,
+              weight: i.weight,
+              quantity: i.quantity,
+              price: i.price,
+              image: i.image
+            })) : []
+          }));
+          setOrders(formattedOrders as any);
+        }
+
+        // 2. Set Payments
+        if (data.payments) {
+          setPayments(data.payments);
+        }
+
+        // 3. Set Invoices
+        if (data.invoices) {
+          setInvoices(data.invoices);
+        }
+
+        // 4. Set Customers
+        if (data.customers) {
+          setCustomers(data.customers);
+        }
+
+        // 5. Set Notifications
+        if (data.notifications) {
+          setNotifications(data.notifications);
+        }
       }
-
-      // 3. Fetch Invoices
-      const { data: invoiceData, error: invErr } = await supabase
-        .from("invoices")
-        .select("*, orders(*)")
-        .order("created_at", { ascending: false });
-      if (!invErr && invoiceData) setInvoices(invoiceData);
-
-      // 4. Fetch Customers
-      const { data: customerData, error: custErr } = await supabase
-        .from("customers")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (!custErr && customerData) setCustomers(customerData);
-
-      // 5. Fetch Notifications
-      const { data: notifyData, error: notErr } = await supabase
-        .from("notifications")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (!notErr && notifyData) setNotifications(notifyData);
-
     } catch (e) {
       console.error("Error loading panel data:", e);
     } finally {
@@ -245,12 +233,20 @@ export default function WorkerPanel() {
     const { orderId, nextStatus } = showStatusConfirm;
 
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: nextStatus })
-        .eq("id", orderId);
+      const res = await fetch("/api/worker/update-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          nextStatus,
+          workerName: workerInfo?.name
+        })
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update order");
+      }
 
       // Update locally
       setOrders(prev =>
@@ -259,16 +255,6 @@ export default function WorkerPanel() {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder((prev: any) => ({ ...prev, status: nextStatus }));
       }
-
-      // Add a notification entry in Supabase to log action
-      await supabase.from("notifications").insert([
-        {
-          title: "Order Status Update",
-          message: `Order #${orderId.substring(0, 8)} status changed to ${nextStatus} by worker ${workerInfo?.name || "Employee"}.`,
-          type: "status_update",
-          is_read: false
-        }
-      ]);
 
       setShowStatusConfirm(null);
       alert(`Order status updated successfully to ${nextStatus}.`);
@@ -282,12 +268,16 @@ export default function WorkerPanel() {
     if (!confirm("Are you sure you want to verify and complete this payment?")) return;
 
     try {
-      const { error } = await supabase
-        .from("payments")
-        .update({ status: "paid" })
-        .eq("id", paymentId);
+      const res = await fetch("/api/worker/update-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, status: "paid" })
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to verify payment");
+      }
 
       setPayments(prev =>
         prev.map(p => (p.id === paymentId ? { ...p, status: "paid" } : p))

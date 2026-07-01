@@ -188,50 +188,49 @@ export default function AdminPanel() {
         const loadData = async () => {
             const allProducts = await fetchProducts();
             setProducts(allProducts);
-
-            const { data: userOrders, error: ordersError } = await supabase
-                .from('orders')
-                .select('*, order_items(*)')
-                .order('created_at', { ascending: false });
-
-            if (!ordersError && userOrders) {
-                const formattedOrders = userOrders.map((o: any) => ({
-                    id: o.id,
-                    orderNumber: o.order_number,
-                    date: new Date(o.created_at).toLocaleDateString(),
-                    status: o.status,
-                    total: o.total,
-                    paymentStatus: o.payment_status,
-                    userName: o.user_name,
-                    userPhone: o.user_phone,
-                    userEmail: o.user_email,
-                    shippingAddress: o.shipping_address,
-                    items: o.order_items ? o.order_items.map((i: any) => ({
-                        productId: i.product_id,
-                        productName: i.product_name,
-                        weight: i.weight,
-                        quantity: i.quantity,
-                        price: i.price,
-                        image: i.image
-                    })) : []
-                }));
-                setOrders(formattedOrders as any);
-            } else {
-                setOrders(getOrders());
-            }
-
-
+            
+            const dbIngredients = await fetchIngredients();
+            setAllIngredients(dbIngredients);
+            
             const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
             if (cats) setCategories(cats);
 
             const { data: bans } = await supabase.from('banners').select('*').order('sort_order', { ascending: true });
             if (bans) setBanners(bans);
 
-            const { data: customerList } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-            if (customerList) setDbCustomers(customerList);
-
-            const dbIngredients = await fetchIngredients();
-            setAllIngredients(dbIngredients);
+            // Fetch protected data via secure API route
+            const res = await fetch("/api/admin/data");
+            if (res.ok) {
+              const { data } = await res.json();
+              if (data.orders) {
+                  const formattedOrders = data.orders.map((o: any) => ({
+                      id: o.id,
+                      orderNumber: o.order_number,
+                      date: new Date(o.created_at).toLocaleDateString(),
+                      status: o.status,
+                      total: o.total,
+                      paymentStatus: o.payment_status,
+                      userName: o.user_name,
+                      userPhone: o.user_phone,
+                      userEmail: o.user_email,
+                      shippingAddress: o.shipping_address,
+                      items: o.order_items ? o.order_items.map((i: any) => ({
+                          productId: i.product_id,
+                          productName: i.product_name,
+                          weight: i.weight,
+                          quantity: i.quantity,
+                          price: i.price,
+                          image: i.image
+                      })) : []
+                  }));
+                  setOrders(formattedOrders as any);
+              }
+              if (data.customers) {
+                  setDbCustomers(data.customers);
+              }
+            } else {
+               setOrders(getOrders()); // fallback to local mock if error
+            }
         };
         if (isAdminAuth) loadData();
     }, [activeTab, isAdminAuth]);
