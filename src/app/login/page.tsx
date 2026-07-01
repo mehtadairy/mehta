@@ -125,8 +125,22 @@ function LoginContent() {
       lang: "en"
     });
     
-    // Trigger deep link
-    window.location.href = `${baseUrl}?${params.toString()}`;
+    const deepLink = `${baseUrl}?${params.toString()}`;
+
+    // Modern mobile browsers (especially Chrome on Android) block window.location for custom protocols.
+    // An explicit anchor tag click is much more reliable.
+    const a = document.createElement('a');
+    a.href = deepLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    
+    // Cleanup
+    setTimeout(() => {
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
+    }, 100);
     
     // Start polling regardless, but set a timeout to stop if no response after 30 seconds
     setIsTruecallerPolling(true);
