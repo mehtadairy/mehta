@@ -420,9 +420,16 @@ function AccountContent() {
         setEditPhone(customerProfile.phone || phone || "");
         setEditEmail(customerProfile.email || email || "");
 
-        // Load Orders securely by phone
+        // Load Orders securely by phone or customer_id
         let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)');
-        orderQuery = orderQuery.eq('user_phone', customerProfile.phone);
+        
+        if (customerId && customerProfile.phone) {
+          orderQuery = orderQuery.or(`user_phone.eq.${customerProfile.phone},customer_id.eq.${customerId}`);
+        } else if (customerId) {
+          orderQuery = orderQuery.eq('customer_id', customerId);
+        } else if (customerProfile.phone) {
+          orderQuery = orderQuery.eq('user_phone', customerProfile.phone);
+        }
         
         const { data: userOrders, error: ordersError } = await orderQuery.order('created_at', { ascending: false });
 
@@ -831,8 +838,8 @@ function AccountContent() {
                     )}
                   </div>
                   <div className="flex flex-col">
-                    <h3 className="font-serif text-sm font-bold text-brand-charcoal line-clamp-1">{profile?.name || "Guest User"}</h3>
-                    <span className="text-[0.65rem] text-muted-foreground/80 font-medium truncate">{profile?.email || "No email set"}</span>
+                    <h3 className="font-serif text-sm font-bold text-brand-charcoal line-clamp-1">{profile?.name || profile?.phone || "Customer"}</h3>
+                    <span className="text-[0.65rem] text-muted-foreground/80 font-medium truncate">{profile?.email || (profile?.phone && profile?.name ? profile.phone : "No email set")}</span>
                   </div>
                 </div>
 
@@ -937,10 +944,10 @@ function AccountContent() {
                         </div>
                         <div className="z-10 flex-grow">
                           <h2 className="font-serif text-lg font-bold text-[#4A2F1F] leading-tight">
-                            {profile?.name || "Customer"}
+                            {profile?.name || profile?.phone || "Customer"}
                           </h2>
                           <p className="text-[0.65rem] font-bold text-[#D46D2D] mb-1">
-                            {profile?.email || profile?.phone || "No email provided"}
+                            {profile?.email || (profile?.phone && profile?.name ? profile.phone : "No email provided")}
                           </p>
                           <p className="text-[0.6rem] font-bold text-[#2A1E17] uppercase tracking-widest">
                             MEMBER SINCE {new Date().getFullYear()}
