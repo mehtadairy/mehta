@@ -18,11 +18,19 @@ export async function POST(request: Request) {
     };
 
     console.log("Inserting COD order to DB:", finalOrderData.order_number);
-    const { error: orderError } = await supabase.from('orders').insert([finalOrderData]);
+    let { error: orderError } = await supabase.from('orders').insert([finalOrderData]);
+    
+    // Self-healing retry: If the 'customer_id' column doesn't exist in the database table schema
+    if (orderError && (orderError.message?.includes("customer_id") || orderError.details?.includes("customer_id"))) {
+      console.warn("Retrying order insertion without 'customer_id' column...");
+      const { customer_id, ...cleanOrderData } = finalOrderData;
+      const { error: retryError } = await supabase.from('orders').insert([cleanOrderData]);
+      orderError = retryError;
+    }
     
     if (orderError) {
       console.error("Failed to insert COD order:", orderError);
-      return NextResponse.json({ success: false, error: 'Failed to save order to database' }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Failed to save order to database: ' + (orderError.message || JSON.stringify(orderError)) }, { status: 500 });
     }
 
     // Insert Order Items

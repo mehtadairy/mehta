@@ -535,7 +535,10 @@ function AccountContent() {
     if (!editName) return;
 
     // Check Phone Change First
-    if (editPhone && editPhone !== profile?.phone) {
+    const loggedInPhone = typeof window !== 'undefined' ? localStorage.getItem("mehta_user_phone") : null;
+    const isAlreadyVerified = loggedInPhone && editPhone.replace(/\D/g, '').slice(-10) === loggedInPhone.replace(/\D/g, '').slice(-10);
+
+    if (editPhone && editPhone !== profile?.phone && !isAlreadyVerified) {
       setIsPhoneOtpSending(true);
       const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
       
