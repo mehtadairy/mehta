@@ -115,8 +115,18 @@ function LoginContent() {
        return;
     }
 
+    // Construct the deep link URL with required parameters
+    const baseUrl = "truecallersdk://truesdk/web_verify";
+    const params = new URLSearchParams({
+      type: "btmsheet",
+      requestNonce: nonce,
+      partnerKey: appKey,
+      partnerName: appName,
+      lang: "en"
+    });
+    
     // Trigger deep link
-    window.location.href = `truecallersdk://truesdk/web_verify?requestNonce=${nonce}&partnerKey=${appKey}&partnerName=${appName}`;
+    window.location.href = `${baseUrl}?${params.toString()}`;
     
     // Start polling regardless, but set a timeout to stop if no response after 30 seconds
     setIsTruecallerPolling(true);
