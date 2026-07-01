@@ -109,17 +109,30 @@ function LoginContent() {
        return;
     }
 
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) {
+       setError('Truecaller login is only available on mobile devices with the app installed.');
+       return;
+    }
+
     // Trigger deep link
     window.location.href = `truecallersdk://truesdk/web_verify?requestNonce=${nonce}&partnerKey=${appKey}&partnerName=${appName}`;
     
-    // Fallback detection
+    // Start polling regardless, but set a timeout to stop if no response after 30 seconds
+    setIsTruecallerPolling(true);
+    
+    // Fallback detection for missing app (gives time for OS to switch apps)
     setTimeout(() => {
       if (document.hasFocus()) {
+        setIsTruecallerPolling(false);
         setError('Truecaller app not found on this device. Please use OTP or Google Login.');
-      } else {
-        setIsTruecallerPolling(true);
       }
-    }, 800);
+    }, 1500); // Increased timeout to 1.5s for slower Android devices
+  };
+
+  const cancelTruecaller = () => {
+    setIsTruecallerPolling(false);
+    setError('');
   };
 
   const handleContinue = () => {
@@ -281,16 +294,30 @@ function LoginContent() {
 
           {step === 'PHONE' ? (
             <div className="flex flex-col gap-5">
-              <button
-                onClick={handleTruecallerLogin}
-                disabled={isLoading || isTruecallerPolling}
-                className="w-full bg-[#0087FF] hover:bg-[#007AE6] text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-3 shadow-sm hover:shadow-md transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.6 15.6l-5.6-3.4c-.2-.1-.3-.4-.3-.6V7c0-.4.3-.7.7-.7s.7.3.7.7v6l5 3c.3.2.4.6.2.9-.2.3-.5.4-.7.1z"/>
-                </svg>
-                {isTruecallerPolling ? "Waiting for Truecaller..." : "Continue with Truecaller"}
-              </button>
+              {isTruecallerPolling ? (
+                <div className="w-full bg-[#0087FF]/10 border-2 border-[#0087FF] rounded-2xl py-4 px-6 flex flex-col items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#0087FF]"></div>
+                  <span className="text-[#0087FF] font-bold text-sm">Waiting for Truecaller...</span>
+                  <p className="text-xs text-center text-muted-foreground mt-1">Please check your Truecaller app to approve the login request.</p>
+                  <button 
+                    onClick={cancelTruecaller}
+                    className="mt-2 text-xs font-bold text-red-500 hover:text-red-600 underline"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleTruecallerLogin}
+                  disabled={isLoading}
+                  className="w-full bg-[#0087FF] hover:bg-[#007AE6] text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-3 shadow-sm hover:shadow-md transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.6 15.6l-5.6-3.4c-.2-.1-.3-.4-.3-.6V7c0-.4.3-.7.7-.7s.7.3.7.7v6l5 3c.3.2.4.6.2.9-.2.3-.5.4-.7.1z"/>
+                  </svg>
+                  Continue with Truecaller
+                </button>
+              )}
 
               <button
                 onClick={handleGoogleLogin}
