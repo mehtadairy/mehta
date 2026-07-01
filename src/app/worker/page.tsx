@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Product, generateSlug } from "@/lib/types";
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -32,8 +31,7 @@ import {
   Loader2, 
   AlertTriangle,
   ChevronDown,
-  Lock,
-  LockKeyhole
+  Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -94,6 +92,40 @@ export default function WorkerPanel() {
     }
   }, []);
 
+  // --- REALTIME NOTIFICATIONS ---
+  const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isAuth) return;
+
+    const playNotificationSound = () => {
+      try {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
+        audio.play().catch(err => console.log("Autoplay blocked by browser until user interaction:", err));
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    };
+
+    const channel = supabase
+      .channel("live-order-chimes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          console.log("New order detected realtime:", payload.new);
+          playNotificationSound();
+          setNewOrderAlert(payload.new);
+          loadPanelData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuth]);
+
   // Fetch data on activeTab change or auth success
   useEffect(() => {
     if (!isAuth) return;
@@ -110,12 +142,39 @@ export default function WorkerPanel() {
         .order("created_at", { ascending: false });
       if (!orderErr && orderData) setOrders(orderData);
 
-      // 2. Fetch Payments
+      // 2. Fetch Payments (and synthesize missing Razorpay orders)
       const { data: paymentData, error: payErr } = await supabase
         .from("payments")
         .select("*")
         .order("created_at", { ascending: false });
-      if (!payErr && paymentData) setPayments(paymentData);
+      
+      if (!payErr && paymentData) {
+        const existingOrderIds = new Set(paymentData.map(p => p.order_id));
+        const ordersList = orderData || [];
+        const synthesizedPayments = ordersList
+          .filter((o: any) => {
+            const isRazorpay = o.payment_method?.toLowerCase() === 'razorpay' || o.payment_method?.toLowerCase() === 'online';
+            return isRazorpay && !existingOrderIds.has(o.id);
+          })
+          .map((o: any) => ({
+            id: `synth-${o.id}`,
+            order_id: o.id,
+            order_number: o.order_number,
+            payment_id: o.payment_id || o.razorpay_payment_id || `Online Order`,
+            razorpay_order_id: o.razorpay_order_id || null,
+            amount: o.total,
+            method: o.payment_method || 'Razorpay',
+            status: o.payment_status || 'Paid',
+            created_at: o.created_at
+          }));
+        
+        const combined = [...paymentData, ...synthesizedPayments].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setPayments(combined);
+      } else if (paymentData) {
+        setPayments(paymentData);
+      }
 
       // 3. Fetch Invoices
       const { data: invoiceData, error: invErr } = await supabase
@@ -225,13 +284,13 @@ export default function WorkerPanel() {
     try {
       const { error } = await supabase
         .from("payments")
-        .update({ status: "Paid" })
+        .update({ status: "paid" })
         .eq("id", paymentId);
 
       if (error) throw error;
 
       setPayments(prev =>
-        prev.map(p => (p.id === paymentId ? { ...p, status: "Paid" } : p))
+        prev.map(p => (p.id === paymentId ? { ...p, status: "paid" } : p))
       );
       alert("Payment status verified successfully as Paid.");
     } catch (err: any) {
@@ -357,7 +416,7 @@ export default function WorkerPanel() {
             <div className="flex flex-col gap-1.5">
               <label className="text-[0.68rem] font-bold text-[#2A1E17] uppercase tracking-wider">Security Password PIN</label>
               <div className="relative flex items-center">
-                <LockKeyhole className="absolute left-3 h-4 w-4 text-[#7E6B5A]" />
+                <Lock className="absolute left-3 h-4 w-4 text-[#7E6B5A]" />
                 <input
                   type="password"
                   value={password}
@@ -402,7 +461,7 @@ export default function WorkerPanel() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FCF9F2] text-[#2A1E17] flex font-sans antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-[#FCF9F2] text-[#2A1E17] flex font-sans antialiased overflow-x-hidden pb-20 md:pb-0">
       {/* --- SIDEBAR PANEL --- */}
       <aside 
         className={`bg-white border-r border-[#EAE0D3] transition-all duration-300 flex flex-col fixed inset-y-0 left-0 z-30 ${
@@ -1095,15 +1154,19 @@ export default function WorkerPanel() {
                         <tbody>
                           {payments
                             .filter(p => {
-                              if (paymentFilter === "Paid") return p.status === "Paid" || p.status === "COMPLETED";
-                              if (paymentFilter === "Pending") return p.status === "Pending" || p.status === "Unpaid";
-                              if (paymentFilter === "COD") return p.method === "COD" || p.payment_method === "COD";
-                              if (paymentFilter === "Online") return p.method !== "COD" && p.payment_method !== "COD";
+                              const s = p.status?.toLowerCase();
+                              const m = (p.method || p.payment_method)?.toLowerCase();
+                              if (paymentFilter === "Paid") return s === "paid" || s === "completed";
+                              if (paymentFilter === "Pending") return s === "pending" || s === "unpaid" || !s;
+                              if (paymentFilter === "COD") return m === "cod";
+                              if (paymentFilter === "Online") return m !== "cod";
                               return true;
                             })
                             .map((p) => (
                               <tr key={p.id} className="border-b border-[#EAE0D3]/40">
-                                <td className="py-3.5 font-semibold text-[#7E6B5A]">{p.id.substring(0, 10)}...</td>
+                                <td className="py-3.5 font-semibold text-[#7E6B5A]">
+                                  {p.payment_id || p.razorpay_payment_id || (p.id ? `${p.id.substring(0, 10)}...` : "N/A")}
+                                </td>
                                 <td className="py-3.5 font-bold text-[#D46D2D]">#{p.order_number || p.order_id?.substring(0, 8)}</td>
                                 <td className="py-3.5 font-bold text-[#D4AF37] uppercase text-[0.65rem]">{p.method || p.payment_method || "Online"}</td>
                                 <td className="py-3.5 font-bold text-[#2A1E17]">₹{p.amount || p.total || 0}</td>
@@ -1111,14 +1174,16 @@ export default function WorkerPanel() {
                                   {new Date(p.created_at).toLocaleDateString("en-IN")}
                                 </td>
                                 <td className="py-3.5">
-                                  <span className={`px-2 py-0.5 rounded-full text-[0.62rem] font-bold ${
-                                    p.status === "Paid" || p.status === "COMPLETED" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                                  <span className={`px-2 py-0.5 rounded-full text-[0.62rem] font-bold uppercase ${
+                                    p.status?.toLowerCase() === "paid" || p.status?.toLowerCase() === "completed" 
+                                      ? "bg-green-50 text-green-700" 
+                                      : "bg-amber-50 text-amber-700"
                                   }`}>
-                                    {p.status}
+                                    {p.status || "Pending"}
                                   </span>
                                 </td>
                                 <td className="py-3.5 text-right">
-                                  {(p.status === "Pending" || p.status === "Unpaid") && (
+                                  {(p.status?.toLowerCase() === "pending" || p.status?.toLowerCase() === "unpaid" || !p.status) && (
                                     <button 
                                       onClick={() => handleVerifyPayment(p.id)}
                                       className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-[0.68rem] font-bold transition-all cursor-pointer"
@@ -1126,7 +1191,7 @@ export default function WorkerPanel() {
                                       Verify Paid
                                     </button>
                                   )}
-                                  {(p.status === "Paid" || p.status === "COMPLETED") && (
+                                  {(p.status?.toLowerCase() === "paid" || p.status?.toLowerCase() === "completed") && (
                                     <span className="text-[0.65rem] text-green-600 font-bold">Verified ✔</span>
                                   )}
                                 </td>
@@ -1488,6 +1553,77 @@ export default function WorkerPanel() {
               </div>
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {/* ── LIVE NEW ORDER ALERT TOAST ── */}
+      <AnimatePresence>
+        {newOrderAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 20, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.9 }}
+            className="fixed top-4 inset-x-0 mx-auto w-full max-w-sm bg-white border-2 border-[#D46D2D] rounded-xl p-4 shadow-2xl z-55 flex flex-col gap-2.5"
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2 text-[#D46D2D]">
+                <Bell className="h-5 w-5 animate-bounce" />
+                <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#2A1E17]">NEW ORDER RECEIVED!</span>
+              </div>
+              <button 
+                onClick={() => setNewOrderAlert(null)}
+                className="p-1 hover:bg-[#FCF9F2] rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-[#7E6B5A]">
+              Order <strong>#{newOrderAlert.order_number || newOrderAlert.id.substring(0, 8)}</strong> has been placed by <strong>{newOrderAlert.user_name || "Guest"}</strong> for <strong>₹{newOrderAlert.total}</strong>.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setSelectedOrder(newOrderAlert);
+                  setNewOrderAlert(null);
+                  setActiveTab("orders");
+                }}
+                className="bg-[#D46D2D] hover:bg-[#BF5E23] text-white px-3 py-1.5 rounded text-[0.68rem] font-bold cursor-pointer"
+              >
+                View Details
+              </button>
+            </div>
+          </motion.div>
+      </AnimatePresence>
+
+      {/* ── WORKER DOWNSIZE MOBILE BOTTOM NAVBAR ── */}
+      {isAuth && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-[#EAE0D3] shadow-[0_10px_30px_rgba(0,0,0,0.08)] h-[65px] rounded-full flex items-center justify-around md:hidden px-2">
+          {[
+            { id: "dashboard", label: "Stats", icon: LayoutDashboard },
+            { id: "orders", label: "Orders", icon: ShoppingBag },
+            { id: "delivery", label: "Delivery", icon: Truck },
+            { id: "invoices", label: "Invoices", icon: FileText },
+            { id: "payments", label: "Payments", icon: CreditCard }
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)}
+                className="flex flex-col items-center justify-center h-full flex-1 cursor-pointer"
+              >
+                <div className={`px-4 py-1.5 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  isActive ? "bg-[#FDF2EC] text-[#D46D2D]" : "text-[#7E6B5A]"
+                }`}>
+                  <Icon className="w-4.5 h-4.5" strokeWidth={isActive ? 2.5 : 2} />
+                </div>
+                <span className={`text-[0.55rem] font-bold tracking-wider uppercase mt-1 transition-colors duration-300 ${
+                  isActive ? "text-[#D46D2D]" : "text-[#7E6B5A]"
+                }`}>{item.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

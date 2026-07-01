@@ -48,6 +48,7 @@ export default function MobileNavBar() {
   if (
     !pathname ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/worker") ||
     pathname.startsWith("/product/") ||
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/login") ||
