@@ -44,7 +44,10 @@ export class OTPWidget {
     if (data.type === 'error') {
       throw new Error(data.message || 'Failed to send OTP');
     }
-    return data;
+    return {
+      ...data,
+      reqId: data.message // MSG91 returns the request ID in the 'message' field
+    };
   }
 
   /**
