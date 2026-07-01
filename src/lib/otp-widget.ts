@@ -32,7 +32,7 @@ export class OTPWidget {
       ...body
     };
 
-    const res = await fetch('https://control.msg91.com/api/v5/widget/sendOtpMobile', {
+    const res = await fetch('https://control.msg91.com/api/v5/widget/sendOtp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
