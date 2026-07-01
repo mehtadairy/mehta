@@ -17,5 +17,6 @@ CREATE TABLE IF NOT EXISTS public.workers (
 INSERT INTO public.workers (employee_id, name, role, branch, phone_number, password, status)
 VALUES 
   ('worker01', 'Rajesh Kumar', 'Store Associate', 'Main Branch', '9876543210', 'password123', 'active'),
-  ('worker02', 'Suresh Mehta', 'Cashier', 'Downtown Branch', '9876543211', 'password456', 'active')
+  ('worker02', 'Suresh Mehta', 'Cashier', 'Downtown Branch', '9876543211', 'password456', 'active'),
+  ('babli', 'Babli', 'Store Manager', 'Main Branch', '9876543212', 'babli@1972', 'active')
 ON CONFLICT (employee_id) DO NOTHING;

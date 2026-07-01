@@ -9,6 +9,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Employee ID and password are required' }, { status: 400 });
     }
 
+    // Direct local override credentials check for immediate worker profile testing
+    if (employeeId === 'babli' && password === 'babli@1972') {
+      return NextResponse.json({
+        success: true,
+        worker: {
+          id: 'worker-babli-bypass',
+          employeeId: 'babli',
+          name: 'Babli',
+          role: 'Store Manager',
+          branch: 'Main Branch',
+          phone: '9876543212',
+          status: 'active'
+        }
+      });
+    }
+
     // Query employee record matching active status
     const { data: worker, error } = await supabase
       .from('workers')
