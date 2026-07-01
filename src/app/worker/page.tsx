@@ -1593,6 +1593,7 @@ export default function WorkerPanel() {
               </button>
             </div>
           </motion.div>
+        )}
       </AnimatePresence>
 
       {/* ── WORKER DOWNSIZE MOBILE BOTTOM NAVBAR ── */}
