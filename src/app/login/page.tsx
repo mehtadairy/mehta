@@ -27,6 +27,14 @@ function LoginContent() {
         try {
           const res = await fetch(`/api/auth/truecaller/status?nonce=${truecallerNonce}`);
           const data = await res.json();
+          
+          if (!data.success && data.error) {
+            setIsTruecallerPolling(false);
+            clearInterval(pollInterval);
+            setError(data.error);
+            return;
+          }
+
           if (data.success && data.status === 'successful') {
             setIsTruecallerPolling(false);
             clearInterval(pollInterval);

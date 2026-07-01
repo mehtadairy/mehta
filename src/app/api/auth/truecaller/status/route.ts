@@ -17,7 +17,17 @@ export async function GET(request: Request) {
       .eq('request_nonce', nonce)
       .single();
 
-    if (dbError || !requestRecord) {
+    if (dbError) {
+      if (dbError.code === '42P01') {
+        console.error("Truecaller Table Missing! Please run the SQL script.", dbError);
+        return NextResponse.json({ success: false, error: 'Truecaller tracking table missing in database.' }, { status: 500 });
+      }
+      if (dbError.code !== 'PGRST116') {
+        console.error("Database error in Truecaller polling:", dbError);
+      }
+    }
+
+    if (!requestRecord) {
       // It might just not have arrived yet (polling)
       return NextResponse.json({ success: true, status: 'pending' });
     }
