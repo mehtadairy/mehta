@@ -1,0 +1,3 @@
+=== Mapping Crash Diagnostics ===
+Fetched 66 orders. Testing mapping function for each order...
+✅ All orders mapped successfully! No crashes found in mapping logic.

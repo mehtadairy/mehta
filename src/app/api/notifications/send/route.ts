@@ -1,0 +1,75 @@
+import { NextResponse } from 'next/server';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import webpush from 'web-push';
+import { BUSINESS } from '@/lib/businessConfig';
+import { cookies } from 'next/headers';
+import { verifySession } from '@/lib/auth-utils';
+
+// Configuration
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:support@mehtadairy.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+export async function POST(req: Request) {
+  try {
+    // 🔒 Authorization check: Only verified admin can send notifications
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    if (!adminToken) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const adminPayload = await verifySession(adminToken);
+    if (!adminPayload || adminPayload.role !== 'super_admin') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { phone, title, body, url } = await req.json();
+
+    if (!phone) {
+      return NextResponse.json({ success: false, error: 'Phone number is required' }, { status: 400 });
+    }
+
+    // Fetch user push subscription
+    const { data: customer, error: fetchError } = await supabase
+      .from('customers')
+      .select('push_subscription')
+      .eq('phone', phone)
+      .single();
+
+    if (fetchError || !customer || !customer.push_subscription) {
+      return NextResponse.json({ success: false, error: 'No active push subscription found for this user' }, { status: 404 });
+    }
+
+    const payload = JSON.stringify({
+      title: title || `${BUSINESS.shortName} Update`,
+      body: body || 'You have a new notification.',
+      url: url || '/account',
+    });
+
+    try {
+      await webpush.sendNotification(customer.push_subscription, payload);
+      return NextResponse.json({ success: true });
+    } catch (pushErr: any) {
+      console.error("WebPush Error:", pushErr);
+      
+      // If subscription is invalid (e.g. 410 Gone), remove it from DB
+      if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+        await supabase
+          .from('customers')
+          .update({ push_subscription: null })
+          .eq('phone', phone);
+      }
+
+      return NextResponse.json({ success: false, error: 'Failed to send push notification' }, { status: 500 });
+    }
+
+  } catch (err: any) {
+    console.error('Send Notification Error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

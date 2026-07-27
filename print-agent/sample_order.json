@@ -1,0 +1,26 @@
+{
+  "orderNumber": "ORD-109923",
+  "date": "2026-07-14T19:30:00Z",
+  "customerName": "Rohan Patel",
+  "customerPhone": "+91 9876543210",
+  "shippingAddress": "A-402, Sunshine Apartments, Near City Center Mall, CG Road, Ahmedabad, Gujarat 380009",
+  "printType": "billing",
+  "items": [
+    { "name": "Kaju Katli (500g)", "qty": 2, "price": 450 },
+    { "name": "Motichoor Ladoo Box", "qty": 1, "price": 220 },
+    { "name": "Special Bombay Halwa Mix (1kg)", "qty": 1, "price": 680 }
+  ],
+  "subtotal": 1800,
+  "discount": 100,
+  "deliveryCharge": 50,
+  "total": 1750,
+  "paymentStatus": "Paid Online",
+  "trackingUrl": "https://mehtadairy.com/track/ORD-109923",
+  "specialInstructions": "Please pack the Kaju Katli in premium gift boxes. Make sure it is sealed properly.",
+  "shopName": "MEHTA SWEET MART",
+  "shopSubtitle": "Fresh Sweets & Snacks",
+  "shopPhone": "9913252232",
+  "shopEmail": "support@mehtadairy.com",
+  "shopGST": "24ACKPM9230A2ZW",
+  "shopFSSAI": "10713006000140"
+}

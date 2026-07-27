@@ -1,0 +1,301 @@
+=== Database Diagnostics ===
+SUPABASE_URL: "https://kankezqwlbigcbxrcoof.supabase.co"
+Querying public.orders table count...
+✅ Orders total count in database: 66
+Fetching latest 5 orders with order_items and invoices joins...
+✅ Latest 5 orders: [
+  {
+    "id": "0212118e-9be7-4018-8a94-bdcf0564069a",
+    "profile_id": null,
+    "order_number": "ORD-297622",
+    "subtotal": 840,
+    "discount": 0,
+    "delivery_charge": 0,
+    "total": 840,
+    "shipping_address": {
+      "id": "37b64d60-7677-40ec-883b-0b1e212c91de",
+      "city": "Palitana",
+      "name": "Aryan Rathod",
+      "phone": "9316688014",
+      "state": "Gujarat",
+      "street": "6, Shivpark society,adpur road,rajwadi",
+      "pincode": "364270",
+      "landmark": null,
+      "isDefault": false
+    },
+    "status": "Processing",
+    "payment_method": "COD",
+    "payment_status": "Pending",
+    "razorpay_order_id": null,
+    "razorpay_payment_id": null,
+    "created_at": "2026-07-13T11:43:08.323393+00:00",
+    "user_name": "Arjun parmar",
+    "user_phone": "6351561018",
+    "user_email": "parmararjun0501@gmail.com",
+    "coupon_code": null,
+    "payment_id": "COD-1783942987542",
+    "customer_id": null,
+    "printed": false,
+    "printed_at": null,
+    "printed_by": null,
+    "print_status": "pending",
+    "order_items": [
+      {
+        "id": "c6d5e2a2-34aa-4427-95e7-c7fc1ce2dc39",
+        "image": "/prod_mix_sweet_1781172828788.png",
+        "price": 840,
+        "weight": "1kg",
+        "order_id": "0212118e-9be7-4018-8a94-bdcf0564069a",
+        "quantity": 1,
+        "product_id": "8d8b6ffe-f663-4a8e-af4f-58cee81b059b",
+        "product_name": "Cadburi Roll"
+      }
+    ],
+    "invoices": [
+      {
+        "id": "43cd7d8d-de8f-409c-808f-af334a888ef6",
+        "pdf_url": "https://kankezqwlbigcbxrcoof.supabase.co/storage/v1/object/public/invoices/2026/07/INV-2026-000034.pdf",
+        "metadata": {
+          "total": 840,
+          "discount": 0,
+          "subtotal": 840,
+          "user_name": "Arjun parmar",
+          "user_email": "parmararjun0501@gmail.com",
+          "user_phone": "6351561018",
+          "payment_method": "COD",
+          "payment_status": "Pending",
+          "delivery_charge": 0
+        },
+        "order_id": "0212118e-9be7-4018-8a94-bdcf0564069a",
+        "created_at": "2026-07-13T11:46:37.389476+00:00",
+        "customer_id": "ec67645f-deb4-45ec-9e80-38f33bba4de9",
+        "invoice_number": "INV-2026-000034"
+      }
+    ]
+  },
+  {
+    "id": "0f65e6ad-af68-432f-a26e-fd2b7bd9b455",
+    "profile_id": null,
+    "order_number": "ORD-614771",
+    "subtotal": 400,
+    "discount": 0,
+    "delivery_charge": 0,
+    "total": 400,
+    "shipping_address": {
+      "id": "4d5529c2-06ad-4629-a467-7134345d4fe5",
+      "city": "Palitana",
+      "name": "Arjun parmar",
+      "phone": "6351561018",
+      "state": "Gujarat",
+      "street": "6, SHIVPARK SOCITEY RAJAWADI PALITANA BHVNAGAR",
+      "pincode": "364270",
+      "landmark": null,
+      "isDefault": true
+    },
+    "status": "Processing",
+    "payment_method": "Razorpay",
+    "payment_status": "Paid",
+    "razorpay_order_id": null,
+    "razorpay_payment_id": null,
+    "created_at": "2026-07-13T10:17:15.036596+00:00",
+    "user_name": "Arjun parmar",
+    "user_phone": "6351561018",
+    "user_email": "parmararjun0501@gmail.com",
+    "coupon_code": null,
+    "payment_id": "pay_TCx0s8GhYXCBmn",
+    "customer_id": null,
+    "printed": false,
+    "printed_at": null,
+    "printed_by": null,
+    "print_status": "pending",
+    "order_items": [
+      {
+        "id": "4b561f2b-f680-4a0a-aee4-24b06f81aa1b",
+        "image": "https://kankezqwlbigcbxrcoof.supabase.co/storage/v1/object/public/products/1781712697709-511cujc.webp",
+        "price": 400,
+        "weight": "1kg",
+        "order_id": "0f65e6ad-af68-432f-a26e-fd2b7bd9b455",
+        "quantity": 1,
+        "product_id": "f64b6e5f-5b8f-485e-b0ed-c83ba1a4eca9",
+        "product_name": "Makhniya Gathiya"
+      }
+    ],
+    "invoices": []
+  },
+  {
+    "id": "5a38a2ad-0804-4db7-8fed-cd1671d7d717",
+    "profile_id": null,
+    "order_number": "WA-298215",
+    "subtotal": 20,
+    "discount": 0,
+    "delivery_charge": 0,
+    "total": 20,
+    "shipping_address": {
+      "city": "Auto-detected",
+      "name": "Arjun parmar",
+      "phone": "6351561018",
+      "state": "Gujarat",
+      "street": "Navagadh",
+      "pincode": "364270"
+    },
+    "status": "Pending",
+    "payment_method": "Razorpay",
+    "payment_status": "Pending",
+    "razorpay_order_id": null,
+    "razorpay_payment_id": null,
+    "created_at": "2026-07-13T10:14:47.38739+00:00",
+    "user_name": "Arjun parmar",
+    "user_phone": "6351561018",
+    "user_email": "",
+    "coupon_code": null,
+    "payment_id": "order_TCwyb2wKVGdKGI",
+    "customer_id": "ec67645f-deb4-45ec-9e80-38f33bba4de9",
+    "printed": false,
+    "printed_at": null,
+    "printed_by": null,
+    "print_status": "pending",
+    "order_items": [
+      {
+        "id": "89fc38cc-ad22-4dd8-bcb8-3609172c1b90",
+        "image": "https://kankezqwlbigcbxrcoof.supabase.co/storage/v1/object/public/products/1781713607143-4dwr4md.webp",
+        "price": 10,
+        "weight": "Standard",
+        "order_id": "5a38a2ad-0804-4db7-8fed-cd1671d7d717",
+        "quantity": 2,
+        "product_id": "0ce4cf74-a4fd-4667-bf8e-e40f92734089",
+        "product_name": "Mari Jada Gathiya"
+      }
+    ],
+    "invoices": []
+  },
+  {
+    "id": "19bb8109-55ac-4c64-9ccd-09b4b82d522e",
+    "profile_id": null,
+    "order_number": "ORD-660160",
+    "subtotal": 840,
+    "discount": 0,
+    "delivery_charge": 0,
+    "total": 840,
+    "shipping_address": {
+      "id": "6b84b7c7-f595-436b-b040-b46dcfd014bf",
+      "city": "Palitana",
+      "name": "Aryan Rathod",
+      "phone": "9316688014",
+      "state": "Gujarat",
+      "street": "6, SHIVPARK SOCITEY RAJAWADI PALITANA BHVNAGAR",
+      "pincode": "364270",
+      "landmark": null,
+      "isDefault": true
+    },
+    "status": "Processing",
+    "payment_method": "COD",
+    "payment_status": "Pending",
+    "razorpay_order_id": null,
+    "razorpay_payment_id": null,
+    "created_at": "2026-07-13T09:58:40.929326+00:00",
+    "user_name": "Aryan Rathod",
+    "user_phone": "9316688014",
+    "user_email": "aaryan.b.rathod99@gmail.com",
+    "coupon_code": null,
+    "payment_id": "COD-1783936720148",
+    "customer_id": null,
+    "printed": false,
+    "printed_at": null,
+    "printed_by": null,
+    "print_status": "pending",
+    "order_items": [
+      {
+        "id": "e4cf4a6a-3ebd-4ca8-bf69-af5f6575f8a6",
+        "image": "/prod_mix_sweet_1781172828788.png",
+        "price": 840,
+        "weight": "1kg",
+        "order_id": "19bb8109-55ac-4c64-9ccd-09b4b82d522e",
+        "quantity": 1,
+        "product_id": "8d8b6ffe-f663-4a8e-af4f-58cee81b059b",
+        "product_name": "Cadburi Roll"
+      }
+    ],
+    "invoices": []
+  },
+  {
+    "id": "088834ff-8be5-4cf2-b9f9-61d09621f2ed",
+    "profile_id": null,
+    "order_number": "ORD-581550",
+    "subtotal": 520,
+    "discount": 0,
+    "delivery_charge": 0,
+    "total": 520,
+    "shipping_address": {
+      "id": "4d5529c2-06ad-4629-a467-7134345d4fe5",
+      "city": "Palitana",
+      "name": "Arjun parmar",
+      "phone": "6351561018",
+      "state": "Gujarat",
+      "street": "6, SHIVPARK SOCITEY RAJAWADI PALITANA BHVNAGAR",
+      "pincode": "364270",
+      "landmark": null,
+      "isDefault": true
+    },
+    "status": "Processing",
+    "payment_method": "COD",
+    "payment_status": "Pending",
+    "razorpay_order_id": null,
+    "razorpay_payment_id": null,
+    "created_at": "2026-07-13T09:32:31.400178+00:00",
+    "user_name": "Arjun parmar",
+    "user_phone": "6351561018",
+    "user_email": "parmararjun0501@gmail.com",
+    "coupon_code": null,
+    "payment_id": "COD-1783935150202",
+    "customer_id": null,
+    "printed": false,
+    "printed_at": null,
+    "printed_by": null,
+    "print_status": "reprint",
+    "order_items": [
+      {
+        "id": "ca30bc90-12d2-4dfe-b6b4-6eadd275b346",
+        "image": "https://kankezqwlbigcbxrcoof.supabase.co/storage/v1/object/public/products/1783003756974-bxfr4p0.webp",
+        "price": 520,
+        "weight": "1kg",
+        "order_id": "088834ff-8be5-4cf2-b9f9-61d09621f2ed",
+        "quantity": 1,
+        "product_id": "8bbfaa8d-f564-41cd-a4a2-65a2559b7eb6",
+        "product_name": "Mohanthal"
+      }
+    ],
+    "invoices": [
+      {
+        "id": "1c03fc66-677e-4e4e-a7dc-137d2829a8b7",
+        "pdf_url": "https://kankezqwlbigcbxrcoof.supabase.co/storage/v1/object/public/invoices/2026/07/INV-2026-000033.pdf",
+        "metadata": {
+          "total": 520,
+          "discount": 0,
+          "subtotal": 520,
+          "user_name": "Arjun parmar",
+          "email_sent": true,
+          "user_email": "parmararjun0501@gmail.com",
+          "user_phone": "6351561018",
+          "payment_method": "COD",
+          "payment_status": "Pending",
+          "delivery_charge": 0,
+          "delivery_status": "sent"
+        },
+        "order_id": "088834ff-8be5-4cf2-b9f9-61d09621f2ed",
+        "created_at": "2026-07-13T09:33:37.687787+00:00",
+        "customer_id": "ec67645f-deb4-45ec-9e80-38f33bba4de9",
+        "invoice_number": "INV-2026-000033"
+      }
+    ]
+  }
+]
+Querying public.print_jobs count...
+✅ Print jobs total count in database: 159
+Querying table "customers"...
+✅ Table "customers" is ACCESSIBLE (found 1 records)
+Querying table "payments"...
+✅ Table "payments" is ACCESSIBLE (found 0 records)
+Querying table "invoices"...
+✅ Table "invoices" is ACCESSIBLE (found 1 records)
+Querying table "notifications"...
+❌ Table "notifications" error: "Could not find the table 'public.notifications' in the schema cache"

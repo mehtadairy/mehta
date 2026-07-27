@@ -1,0 +1,33 @@
+                MEHTA SWEET MART
+             Fresh Sweets & Snacks
+                  TAX INVOICE
+------------------------------------------------
+Tel: 9913252232
+Email: support@mehtadairy.com
+GST No: 24ACKPM9230A2ZW
+FSSAI: 10713006000140
+------------------------------------------------
+Order ID: ORD-109923        Date: 15/07/26 01:00
+Customer: Rohan Patel         Ph: +91 9876543210
+Address:
+A-402, Sunshine Apartments, Near City Center
+Mall, CG Road, Ahmedabad, Gujarat 380009
+------------------------------------------------
+ITEM                      QTY                AMT
+------------------------------------------------
+Kaju Katli               500gx2           450.00
+Motichoor Ladoo Box        1              220.00
+Special Bombay Halwa Mix  1kg             680.00
+------------------------------------------------
+Subtotal                             Rs. 1800.00
+Delivery                               Rs. 50.00
+Discount                              Rs. 100.00
+Payment                              Paid Online
+------------------------------------------------
+TOTAL                                Rs. 1750.00
+------------------------------------------------
+[ NATIVE HW QR CODE: https://mehtadairy.com/track/ORD-109923 ]
+                        
+                Scan QR to Track
+                   Thank You!
+                        
