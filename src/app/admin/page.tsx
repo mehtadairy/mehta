@@ -1390,7 +1390,7 @@ export default function AdminPanel() {
 
             {/* ── ADMIN PANEL TOPBAR ───────────────────────────────────── */}
             <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-2xs">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+                <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="h-9 w-auto flex items-center justify-center">
                             <img src="/logo.png" alt="Logo" className="h-9 w-auto object-contain" />
@@ -1419,7 +1419,7 @@ export default function AdminPanel() {
 
             {/* --- ADMIN SHELL WORKSPACE --- */}
             <section className="py-5 bg-[#F8F7F5] min-h-[calc(100vh-56px)]">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col lg:flex-row gap-6 items-start w-full relative">
 
                         {/* Mobile Header Horizontal Scrolling Menu */}
