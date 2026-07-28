@@ -1290,12 +1290,23 @@ function AccountContent() {
                                 <div className="p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
                                   {/* Large Product Image */}
                                   <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center">
-                                    <img
-                                      src={mainProduct?.image || "/logo.png"}
-                                      alt={mainProduct?.productName || "Sweet Box"}
-                                      className="h-full w-full object-cover"
-                                      onError={(e) => { (e.target as HTMLImageElement).src = "/logo.png"; }}
-                                    />
+                                    {mainProduct?.image && !mainProduct.image.includes("logo.png") ? (
+                                      <img
+                                        src={mainProduct.image}
+                                        alt={mainProduct.productName || "Sweet Box"}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          const parent = e.currentTarget.parentElement;
+                                          if (parent) {
+                                            parent.innerHTML = '<div class="h-full w-full bg-[#FDF2EC] flex items-center justify-center text-[#D46D2D] text-lg">📦</div>';
+                                          }
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full bg-[#FDF2EC] flex items-center justify-center text-[#D46D2D] text-lg font-bold">
+                                        📦
+                                      </div>
+                                    )}
                                   </div>
 
                                   {/* Order description, amount, status chip */}
