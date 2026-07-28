@@ -204,6 +204,9 @@ function AccountContent() {
   const [loyaltyPoints, setLoyaltyPoints] = useState(1250);
   const [loyaltyTier, setLoyaltyTier] = useState("Gold");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [orderSortOrder, setOrderSortOrder] = useState("newest");
 
   // Profile Update State
   const [editName, setEditName] = useState("");
@@ -1525,7 +1528,20 @@ function AccountContent() {
                                           <div className="flex flex-col gap-1">
                                             <span className="font-bold text-[#2A1E17]">{order.userName || profile?.name}</span>
                                             <span className="font-medium text-[#7E6B5A]">{order.userPhone || profile?.phone}</span>
-                                            <span className="font-medium text-[#7E6B5A] leading-relaxed mt-1">{order.shippingAddress}</span>
+                                            <span className="font-medium text-[#7E6B5A] leading-relaxed mt-1 text-[11px]">
+                                               {typeof order.shippingAddress === 'string' ? (
+                                                 order.shippingAddress
+                                               ) : order.shippingAddress && typeof order.shippingAddress === 'object' ? (
+                                                 <>
+                                                   {order.shippingAddress.name && <strong className="block text-brand-charcoal mb-0.5">{order.shippingAddress.name} ({order.shippingAddress.phone})</strong>}
+                                                   {order.shippingAddress.flat || order.shippingAddress.street || ''} {order.shippingAddress.area || ''}
+                                                   <br />
+                                                   {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                                                 </>
+                                               ) : (
+                                                 "No shipping address set"
+                                               )}
+                                             </span>
                                           </div>
                                         </div>
 
