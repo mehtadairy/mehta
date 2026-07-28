@@ -30,6 +30,7 @@ import AdminDeliveryZones from "@/components/AdminDeliveryZones";
 import AdminInvoices from "@/components/AdminInvoices";
 import AdminBlogs from "@/components/AdminBlogs";
 import AdminWhatsAppCenter from "@/components/AdminWhatsAppCenter";
+import AdminShipping from "@/components/admin/AdminShipping";
 import WhatsAppCenter from "@/components/WhatsAppCenter";
 import AdminPrinters from "@/components/AdminPrinters";
 import { OrdersSkeleton } from "@/components/admin/OrdersSkeleton";
@@ -82,6 +83,7 @@ export default function AdminPanel() {
         { id: "dashboard", label: "Overview", fullLabel: "Administrative Overview", icon: LayoutDashboard },
         { id: "products", label: "Inventory", fullLabel: "Sweet Inventory", icon: Dessert, badgeKey: "products" },
         { id: "orders", label: "Orders", fullLabel: "Orders Tracking", icon: ShoppingBag, badgeKey: "orders" },
+        { id: "shipping", label: "Shipping", fullLabel: "🚚 Shiprocket Logistics", icon: Truck },
         { id: "whatsapp_orders", label: "WhatsApp Orders", fullLabel: "🟢 WhatsApp Orders", icon: ShoppingBag, badgeKey: "whatsapp_orders" },
         { id: "invoices", label: "Invoices", fullLabel: "Invoice Management", icon: FileText },
         { id: "blogs", label: "Blogs CMS", fullLabel: "Blog Articles CMS", icon: PenTool },
@@ -1839,6 +1841,11 @@ export default function AdminPanel() {
                                         <div className="h-full flex flex-col pb-8">
                                             <AdminWhatsAppCenter />
                                         </div>
+                                    )}
+
+                                    {/* ==================== TAB: SHIPROCKET LOGISTICS ==================== */}
+                                    {activeTab === "shipping" && (
+                                        <AdminShipping />
                                     )}
 
                                     {/* ==================== TAB 3.5: INVOICES ==================== */}

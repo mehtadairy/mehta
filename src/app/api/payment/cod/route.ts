@@ -205,6 +205,14 @@ export async function POST(request: Request) {
       console.log("Invoice background generation warning/failure for COD:", invoiceErr);
     });
 
+    // Automatically create Shiprocket shipment for COD order
+    try {
+      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
+      createShiprocketOrder(newOrder.id).catch((srErr) => console.error("Shiprocket COD creation error:", srErr));
+    } catch (srErr) {
+      console.warn("Non-fatal Shiprocket COD creation exception:", srErr);
+    }
+
     // 6. WhatsApp Notification
     try {
       if (finalOrderData.user_phone) {

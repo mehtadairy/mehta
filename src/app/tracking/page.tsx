@@ -32,6 +32,8 @@ interface OrderTrackingDetails {
   estDelivery: string;
   address: string;
   paymentStatus: "Paid" | "Pending" | "Failed";
+  courierName?: string;
+  trackingUrl?: string;
   items: Array<{ name: string; weight: string; qty: number; img: string }>;
 }
 
@@ -82,17 +84,19 @@ function TrackingContent() {
       // Map DB order to OrderTrackingDetails
       setOrder({
         id: o.order_number || o.id,
-        trackingId: o.id, // For display, we might just use the DB ID if no separate tracking ID
-        status: o.status as TrackingStatus,
+        trackingId: o.awb_number || o.id,
+        status: (o.shipment_status || o.status) as TrackingStatus,
         date: new Date(o.created_at).toLocaleDateString(),
-        estDelivery: new Date(new Date(o.created_at).getTime() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        address: `${o.shipping_address_line1 || ''}, ${o.shipping_city || ''}, ${o.shipping_state || ''} ${o.shipping_postal_code || ''}`,
+        estDelivery: o.delivery_eta || new Date(new Date(o.created_at).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        address: `${o.shipping_address?.street || o.shipping_address_line1 || ''}, ${o.shipping_address?.city || o.shipping_city || ''}, ${o.shipping_address?.state || o.shipping_state || ''} ${o.shipping_address?.pincode || o.shipping_postal_code || ''}`,
         paymentStatus: o.payment_status as any,
+        courierName: o.courier_name || 'Delhivery Express',
+        trackingUrl: o.tracking_url || `https://shiprocket.co/tracking/${o.awb_number || o.id}`,
         items: (o.order_items || []).map((item: any) => ({
           name: item.product_name,
-          weight: "Box", // Default or extract from product
+          weight: item.weight || "Box",
           qty: item.quantity,
-          img: item.image_url || "/images/placeholder-sweet.jpg"
+          img: item.image || item.image_url || "/images/placeholder-sweet.jpg"
         }))
       });
     } catch (err: any) {

@@ -162,9 +162,12 @@ export async function POST(request: Request) {
       await supabase.from('order_items').upsert(itemsToSave, { onConflict: 'order_id,product_id,weight' });
     }
 
-    // Asynchronously create invoice & dispatch WhatsApp
+    // Asynchronously create invoice, dispatch WhatsApp & create Shiprocket shipment
     try {
       createInvoice(orderPayload.id).catch(e => console.error("Invoice creation warning:", e));
+      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
+      createShiprocketOrder(savedOrder.id || orderPayload.id).catch(e => console.error("Shiprocket creation warning:", e));
+
       const cleanPhone = (orderPayload.user_phone || '').replace(/\D/g, '').slice(-10);
       if (cleanPhone) {
         WhatsAppService.sendOrderConfirmation(`91${cleanPhone}`, {

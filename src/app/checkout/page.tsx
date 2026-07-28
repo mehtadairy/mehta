@@ -477,33 +477,50 @@ function CheckoutContent() {
   
   const discountAmount = 0;
 
-  // Dynamic Delivery Calculation
+  const [shiprocketCouriers, setShiprocketCouriers] = useState<any[]>([]);
+  const [selectedCourierId, setSelectedCourierId] = useState<number | null>(null);
+
+  // Dynamic Delivery Calculation via Shiprocket
   useEffect(() => {
     const fetchDeliveryZone = async () => {
-
-      
       const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-      if (!selectedAddress) return;
+      if (!selectedAddress || !selectedAddress.pincode) return;
 
       const userPincode = selectedAddress.pincode.trim();
+      setIsPincodeLoading(true);
       try {
-        const res = await fetch(`/api/delivery/check?pincode=${userPincode}&subtotal=${cartSubtotal}`);
+        const res = await fetch('/api/delivery/check-serviceability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pincode: userPincode,
+            weightInKg: 0.5,
+            subtotal: cartSubtotal
+          })
+        });
         const result = await res.json();
-        
-        if (result.success) {
+
+        if (result.success && result.serviceable) {
           setPincodeError("");
           setDeliveryDays(result.estimatedDeliveryTime || "1-3 Days");
           setDeliveryCharge(result.deliveryCharge);
+          setShiprocketCouriers(result.availableCouriers || []);
+          if (result.recommendedCourier) {
+            setSelectedCourierId(result.recommendedCourier.courierId);
+          }
         } else {
           setDeliveryCharge(0);
           setDeliveryDays("");
-          setPincodeError(`We do not currently deliver to this pincode (${userPincode}) for Home Delivery. Please contact support.`);
+          setShiprocketCouriers([]);
+          setPincodeError(`We do not currently deliver to this pincode (${userPincode}) for Home Delivery.`);
         }
       } catch (err) {
         console.error("Failed to check delivery charge:", err);
-        setDeliveryCharge(100); // Standard fallback
-        setDeliveryDays("3-5 Days");
-        setPincodeError("Unable to verify delivery zone. Standard fallback charges applied.");
+        setDeliveryCharge(70);
+        setDeliveryDays("2-4 Days");
+        setPincodeError("Unable to verify delivery zone. Standard rates applied.");
+      } finally {
+        setIsPincodeLoading(false);
       }
     };
 
