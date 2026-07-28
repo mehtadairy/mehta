@@ -201,8 +201,6 @@ function AccountContent() {
   const [emailSendingInvoiceId, setEmailSendingInvoiceId] = useState<string | null>(null);
 
   // New State variables for the redesign
-  const [loyaltyPoints, setLoyaltyPoints] = useState(1250);
-  const [loyaltyTier, setLoyaltyTier] = useState("Gold");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
@@ -749,11 +747,11 @@ function AccountContent() {
         <section className="py-8 sm:py-16 bg-[#FCF9F2] min-h-[calc(100vh-80px)] mt-20 sm:mt-24 pb-28 md:pb-16 font-sans">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             
-            {/* ── PROFILE HEADER & LOYALTY CARD CONTAINER ── */}
+            {/* ── PROFILE HEADER CONTAINER ── */}
             {activeTab === "dashboard" && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+              <div className="grid grid-cols-1 gap-6 mb-10">
                 {/* Profile Header */}
-                <div className="col-span-12 lg:col-span-8 bg-gradient-to-br from-[#FFF] via-[#FAF6EE] to-[#FFF] border border-[#EAE0D3] rounded-[2rem] p-6 sm:p-8 shadow-[0_12px_30px_-10px_rgba(42,30,23,0.08)] relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+                <div className="bg-gradient-to-br from-[#FFF] via-[#FAF6EE] to-[#FFF] border border-[#EAE0D3] rounded-[2rem] p-6 sm:p-8 shadow-[0_12px_30px_-10px_rgba(42,30,23,0.08)] relative overflow-hidden flex flex-col justify-between min-h-[220px]">
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#D4AF37 1.5px, transparent 1.5px)', backgroundSize: '15px 15px' }}></div>
                   <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#D4AF37]/5 to-[#D46D2D]/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -783,9 +781,6 @@ function AccountContent() {
                         <h2 className="font-serif text-2xl font-bold text-[#2A1E17] tracking-tight">
                           {profile?.name || "Guest Sweet Lover"}
                         </h2>
-                        <span className="inline-flex items-center gap-1 bg-[#FDF2EC] border border-[#D4AF37]/30 text-[#D46D2D] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-2xs">
-                          👑 Gold Member
-                        </span>
                       </div>
                       <p className="text-xs text-[#7E6B5A] mt-1.5 font-medium">
                         {profile?.email || "No email address set"}
@@ -812,42 +807,6 @@ function AccountContent() {
                     >
                       <Share2 className="h-3.5 w-3.5" /> Share Profile
                     </button>
-                  </div>
-                </div>
-
-                {/* Loyalty Progress Card */}
-                <div className="col-span-12 lg:col-span-4 bg-gradient-to-br from-[#2A1E17] to-[#3D2C21] text-white rounded-[2rem] p-6 shadow-[0_12px_30px_-10px_rgba(42,30,23,0.2)] flex flex-col justify-between min-h-[220px] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                  
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[9px] font-black tracking-widest text-[#D4AF37] uppercase">Loyalty Reward Points</span>
-                      <h3 className="text-4xl font-serif font-black mt-1 text-[#FFF] tracking-tight">
-                        {loyaltyPoints} <span className="text-xs text-[#D4AF37] font-sans font-bold">pts</span>
-                      </h3>
-                    </div>
-                    <Award className="h-8 w-8 text-[#D4AF37] animate-pulse" />
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="flex justify-between text-[10px] text-gray-300 font-bold mb-1.5">
-                      <span>Platinum Tier Progress</span>
-                      <span>1,250 / 1,500 pts</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#D46D2D] rounded-full" style={{ width: "83%" }}></div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/10 text-xs">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-[#D4AF37] uppercase font-black">Total Savings</span>
-                      <span className="font-bold text-white mt-0.5">₹1,450 Saved</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[9px] text-[#D4AF37] uppercase font-black">Orders Placed</span>
-                      <span className="font-bold text-white mt-0.5">{orders.length} Orders</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -941,29 +900,21 @@ function AccountContent() {
                     {/* Quick Actions Action Tiles (inspired by Apple Grid) */}
                     <div>
                       <h3 className="font-serif text-lg font-bold text-[#2A1E17] mb-4">Quick Links</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         {[
                           { id: "orders", title: "My Orders", subtitle: "Track purchases", icon: "📦" },
                           { id: "wishlist", title: "Wishlist", subtitle: "Saved sweets", icon: "❤️" },
                           { id: "addresses", title: "Addresses", subtitle: "Delivery spots", icon: "📍" },
                           { id: "settings", title: "Edit Details", subtitle: "Change account", icon: "⚙️" },
-                          { id: "coupons", title: "Coupons", subtitle: "Discounts & offers", icon: "🎫" },
-                          { id: "rewards", title: "Rewards Hub", subtitle: "Redeem points", icon: "🎁" },
-                          { id: "notifications", title: "Inbox Messages", subtitle: "Latest updates", icon: "🔔" },
-                          { id: "referral", title: "Refer & Earn", subtitle: "Free credits", icon: "👥" }
+                          { id: "notifications", title: "Inbox Messages", subtitle: "Latest updates", icon: "🔔" }
                         ].map((tile) => {
-                          const isCustomTab = ["coupons", "rewards", "referral"].includes(tile.id);
                           return (
                             <button
                               key={tile.id}
                               onClick={() => {
-                                if (isCustomTab) {
-                                  window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `Feature ${tile.title} details displayed!`, type: "success" } }));
-                                } else {
-                                  setActiveTab(tile.id);
-                                }
+                                setActiveTab(tile.id);
                               }}
-                              className="bg-white border border-[#EAE0D3] rounded-2xl p-4 flex flex-col items-center sm:items-start text-center sm:text-left gap-2 shadow-2xs hover:border-[#D46D2D] hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                              className="bg-white border border-[#EAE0D3] rounded-2xl p-4 flex flex-col items-center sm:items-start text-center sm:text-left gap-2 shadow-2xs hover:border-[#D46D2D] hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full"
                             >
                               <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{tile.icon}</span>
                               <div className="flex flex-col gap-0.5">
@@ -974,43 +925,6 @@ function AccountContent() {
                           );
                         })}
                       </div>
-                    </div>
-
-                    {/* Total Orders, Savings & Birthday offer Box */}
-                    <div className="bg-[#FAF6EE] border border-[#EAE0D3]/80 rounded-[1.5rem] p-5 flex flex-col sm:flex-row gap-5 items-center justify-between relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-[#D4AF37]/5 rounded-full blur-xl pointer-events-none"></div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">🎂</span>
-                        <div className="flex flex-col">
-                          <h4 className="font-serif text-xs font-bold text-[#2A1E17]">Exclusive Birthday Treats Offer!</h4>
-                          <p className="text-[10px] text-[#7E6B5A] font-medium mt-0.5">Tell us your birthday month under profile settings to receive a 15% discount coupon on your special day.</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setActiveTab("settings")}
-                        className="bg-white hover:bg-gray-50 text-[#D46D2D] border border-[#EAE0D3] text-[10px] font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all cursor-pointer flex-shrink-0"
-                      >
-                        Claim Offer
-                      </button>
-                    </div>
-
-                    {/* Refer & Earn Banner */}
-                    <div className="bg-gradient-to-r from-[#D46D2D] to-[#D4AF37] text-white rounded-[1.5rem] p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-5 relative overflow-hidden">
-                      <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#FFF]/80">Share with Friends</span>
-                        <h4 className="font-serif text-lg font-bold">Invite sweets lovers & earn ₹100!</h4>
-                        <p className="text-[10px] text-white/90">Get ₹100 credit immediately when a friend places their first sweets order.</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const inviteUrl = `https://wa.me/?text=Check%20out%20Mehta%20Dairy!%20Delicious%20luxury%20sweets%20since%201972.%20Get%20discount%20using%20my%20link.`;
-                          window.open(inviteUrl, "_blank");
-                        }}
-                        className="bg-white hover:bg-gray-50 text-[#D46D2D] text-xs font-black uppercase tracking-wider px-5 py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                      >
-                        👥 Invite via WhatsApp
-                      </button>
                     </div>
 
                     {/* Recent Orders List (Vertical Cards) */}
