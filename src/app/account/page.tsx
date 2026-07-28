@@ -103,7 +103,14 @@ import {
   Settings,
   X,
   Loader2,
-  ShoppingCart
+  ShoppingCart,
+  Share2,
+  Copy,
+  Calendar,
+  DollarSign,
+  Filter,
+  ArrowUpDown,
+  Sliders
 } from "lucide-react";
 import { useLocation } from "@/lib/context/LocationContext";
 
