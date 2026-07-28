@@ -159,8 +159,9 @@ export async function verifyOTP(mobile: string, otp: string): Promise<{ success:
     const cleanMobile = mobile.replace(/\D/g, '');
     const fullMobile = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
 
-    // Direct bypass check for testing/development
-    if (otp === '123456') {
+    // Direct bypass check ONLY in development / testing mode
+    const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_TEST_OTP === 'true';
+    if (isDev && otp === '123456') {
       try {
         const { data: record } = await supabase
           .from('otp_verifications')

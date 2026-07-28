@@ -34,7 +34,7 @@ function hexToBuffer(hex: string) {
 
 export async function signSession(payload: any): Promise<string> {
   const encoder = new TextEncoder();
-  const dataString = JSON.stringify({ ...payload, exp: Date.now() + 24 * 60 * 60 * 1000 }); // 24 hours expiry
+  const dataString = JSON.stringify({ ...payload, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 }); // 30 days expiry
   const dataBuffer = encoder.encode(dataString);
   
   const key = await getCryptoKey();

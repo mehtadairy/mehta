@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySession } from '@/lib/auth-utils';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { verifySession, verifyCustomerSession } from '@/lib/auth-utils';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -33,51 +33,77 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('mehta_customer_token')?.value;
-  console.log(`[AUTH-DEBUG] Middleware running for path: ${pathname}. Cookie mehta_customer_token present: ${!!token}`);
+  const customerToken = request.cookies.get('mehta_customer_token')?.value;
 
   // Paths that require authentication
   const isAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
   const isWorkerRoute = pathname.startsWith('/worker') && pathname !== '/worker/login';
   const isProtectedAdminApi = pathname.startsWith('/api/admin') && pathname !== '/api/admin/login';
   const isProtectedWorkerApi = pathname.startsWith('/api/worker') && pathname !== '/api/worker/login';
+  const isProtectedCustomerRoute = pathname.startsWith('/account') || pathname.startsWith('/reorder') || pathname.startsWith('/print-station');
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
   const isCronRoute = pathname.startsWith('/api/cron/');
 
-  // Admin Route Protection
+  // 🔒 2. Admin Route Protection
   if (isAdminRoute || isProtectedAdminApi) {
     const adminToken = request.cookies.get('mehta_admin_token')?.value;
-    if (!adminToken) {
-      if (isProtectedAdminApi) {
-        return NextResponse.json({ error: 'Unauthorized: Missing Admin Token' }, { status: 401 });
-      }
-    } else {
+    let isValidAdmin = false;
+
+    if (adminToken) {
       const payload = await verifySession(adminToken);
-      if (!payload || payload.role !== 'super_admin') {
-        if (isProtectedAdminApi) {
-          return NextResponse.json({ error: 'Unauthorized: Invalid Admin Token' }, { status: 401 });
-        }
+      if (payload?.role === 'super_admin') isValidAdmin = true;
+    }
+
+    if (!isValidAdmin) {
+      if (isProtectedAdminApi) {
+        return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
       }
+      return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
 
-  // Worker Route Protection
+  // 🔒 3. Worker Route Protection
   if (isWorkerRoute || isProtectedWorkerApi) {
     const workerToken = request.cookies.get('mehta_worker_token')?.value;
-    if (!workerToken) {
-      if (isProtectedWorkerApi) {
-        return NextResponse.json({ error: 'Unauthorized: Missing Worker Token' }, { status: 401 });
-      }
-    } else {
+    let isValidWorker = false;
+
+    if (workerToken) {
       const payload = await verifySession(workerToken);
-      if (!payload || payload.role === 'super_admin' || !payload.employeeId) {
-         if (isProtectedWorkerApi) {
-           return NextResponse.json({ error: 'Unauthorized: Invalid Worker Token' }, { status: 401 });
-         }
+      if (payload?.employeeId) isValidWorker = true;
+    }
+
+    if (!isValidWorker) {
+      if (isProtectedWorkerApi) {
+        return NextResponse.json({ error: 'Unauthorized: Worker authentication required' }, { status: 401 });
       }
+      return NextResponse.redirect(new URL('/worker/login', request.url));
     }
   }
 
-  // Cron Route Protection
+  // 🔒 4. Customer Protected Route Protection
+  if (isProtectedCustomerRoute) {
+    let isValidCustomer = false;
+    if (customerToken) {
+      const customerPayload = await verifyCustomerSession(customerToken);
+      if (customerPayload?.id) isValidCustomer = true;
+    }
+
+    if (!isValidCustomer) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 🔒 5. Logged-in Customer Auth Page Redirect (/login, /signup -> /account)
+  if (isAuthPage && customerToken) {
+    const customerPayload = await verifyCustomerSession(customerToken);
+    if (customerPayload?.id) {
+      return NextResponse.redirect(new URL('/account', request.url));
+    }
+  }
+
+  // 🔒 6. Cron Route Protection
   if (isCronRoute) {
     const authHeader = request.headers.get('authorization');
     const expectedSecret = process.env.CRON_SECRET;

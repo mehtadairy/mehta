@@ -25,11 +25,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: verifyResult.error || 'Invalid OTP' }, { status: 400 });
     }
 
-    // Check if customer exists
+    // Check if customer exists matching 10-digit, 91-prefix, or +91-prefix
+    const phone91 = `91${cleanPhone}`;
+    const phonePlus91 = `+91${cleanPhone}`;
+
     let { data: customer, error: fetchError } = await supabase
       .from('customers')
       .select('id, name, email, phone, role')
-      .eq('phone', cleanPhone)
+      .or(`phone.eq.${cleanPhone},phone.eq.${phone91},phone.eq.${phonePlus91}`)
       .maybeSingle();
 
     if (fetchError) {
