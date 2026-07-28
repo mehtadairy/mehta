@@ -568,6 +568,15 @@ function AccountContent() {
   };
 
   const handleOpenAddressForm = () => {
+    if (profile?.saved_addresses && profile.saved_addresses.length >= 2) {
+      window.dispatchEvent(new CustomEvent("showToast", {
+        detail: {
+          message: "Maximum 2 saved addresses allowed. Please delete an existing address to add a new one.",
+          type: "warning"
+        }
+      }));
+      return;
+    }
     setAddrName(profile?.name || localStorage.getItem("mehta_user_name") || "");
     setAddrPhone(profile?.phone || localStorage.getItem("mehta_user_phone") || "");
     setAddrFlat("");
@@ -586,6 +595,16 @@ function AccountContent() {
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addrName || !addrPhone || !addrFlat || !addrArea || !addrCity || !addrState || !addrPincode || !profile) return;
+
+    if (profile.saved_addresses && profile.saved_addresses.length >= 2) {
+      window.dispatchEvent(new CustomEvent("showToast", {
+        detail: {
+          message: "Maximum 2 saved addresses allowed. Please delete an existing address to add a new one.",
+          type: "warning"
+        }
+      }));
+      return;
+    }
 
     try {
       const fullAddress = `${addrFlat}, ${addrArea}`;
@@ -1576,6 +1595,9 @@ function AccountContent() {
                     <div className="flex justify-between items-center border-b border-brand-beige pb-3">
                       <h3 className="font-serif text-lg font-bold text-brand-charcoal flex flex-col sm:flex-row sm:items-center gap-2">
                         Address Book
+                        <span className="text-xs font-sans font-bold bg-[#FAF6EE] text-[#D46D2D] border border-[#EAE0D3] px-2.5 py-0.5 rounded-full">
+                          {profile?.saved_addresses?.length || 0}/2 Addresses Saved
+                        </span>
                         {nearestBranch && (
                           <span className="text-[0.6rem] bg-[#D46D2D] text-white px-2 py-0.5 rounded-full uppercase tracking-widest font-sans inline-flex items-center gap-1 w-fit mt-1 sm:mt-0">
                             <MapPin className="w-3 h-3" /> Closest Store: {nearestBranch}
@@ -1583,12 +1605,18 @@ function AccountContent() {
                         )}
                       </h3>
                       {!showAddressForm && (
-                        <button
-                          onClick={handleOpenAddressForm}
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-orange hover:underline animate-pulse"
-                        >
-                          <Plus className="h-4 w-4" /> Add Address
-                        </button>
+                        (profile?.saved_addresses?.length || 0) < 2 ? (
+                          <button
+                            onClick={handleOpenAddressForm}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-orange hover:underline animate-pulse cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" /> Add Address
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                            Max 2 addresses reached. Delete one to add a new address.
+                          </span>
+                        )
                       )}
                     </div>
 

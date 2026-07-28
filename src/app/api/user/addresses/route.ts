@@ -42,27 +42,40 @@ export async function POST(request: Request) {
       .or(`id.eq.${customerId},auth_user_id.eq.${customerId}`)
       .single();
 
-    if (fetchError) {
+    if (fetchError || !customer) {
       console.error('Supabase fetch error:', fetchError);
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
 
-    // Note: The previous code updated `profiles`. Wait, `profiles` or `customers`?
-    // Looking at the codebase, they used `profiles` table for addresses. Let's use customer.phone to link to profiles or just update profiles where id = customer.id or phone = customer.phone.
-    // Assuming `profiles` table is linked by phone.
+    // Fetch saved addresses from profiles table
     const { data: profile, error: profileFetchError } = await supabase
       .from('profiles')
       .select('saved_addresses')
       .eq('phone', customer.phone)
       .single();
 
+    // Also count existing addresses in `addresses` table
+    const { count: dbAddressCount } = await supabase
+      .from('addresses')
+      .select('id', { count: 'exact', head: true })
+      .eq('customer_id', customer.id);
+
     const currentAddresses = profile?.saved_addresses || [];
+    const totalExistingCount = Math.max(currentAddresses.length, dbAddressCount || 0);
+
+    // 🔒 Enforce Maximum 2 Saved Addresses Rule
+    if (totalExistingCount >= 2) {
+      return NextResponse.json({
+        success: false,
+        message: 'Maximum 2 saved addresses allowed. Please delete an existing address first to add a new one.'
+      }, { status: 400 });
+    }
+
     const newAddresses = [...currentAddresses, address];
 
     // Update with new addresses
     let updateQuery;
     if (profileFetchError) {
-       // Insert if doesn't exist
        updateQuery = supabase.from('profiles').insert([{ phone: customer.phone, saved_addresses: newAddresses }]).select().single();
     } else {
        updateQuery = supabase.from('profiles').update({ saved_addresses: newAddresses }).eq('phone', customer.phone).select().single();
@@ -102,11 +115,14 @@ export async function DELETE(request: Request) {
       .or(`id.eq.${customerId},auth_user_id.eq.${customerId}`)
       .single();
 
-    if (fetchError) {
+    if (fetchError || !customer) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
 
-    // Fetch current addresses
+    // Delete from `addresses` table if exists
+    await supabase.from('addresses').delete().eq('id', addressId).eq('customer_id', customer.id);
+
+    // Fetch current addresses from profiles
     const { data: profile, error: profileFetchError } = await supabase
       .from('profiles')
       .select('saved_addresses')
@@ -114,7 +130,7 @@ export async function DELETE(request: Request) {
       .single();
 
     if (profileFetchError || !profile) {
-      return NextResponse.json({ success: false, message: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ success: true, message: 'Address removed' });
     }
 
     const currentAddresses = profile.saved_addresses || [];
