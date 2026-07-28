@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
+import { verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
+
 export async function GET(request: Request) {
   try {
+    // 🔒 Double-Check Admin Authorization
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
     // 1. Fetch Orders
     const { data: userOrders, error: ordersError } = await supabaseServer
       .from('orders')

@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
+import { verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
+
 export async function POST(request: Request) {
   try {
+    // 🔒 Double-Check Worker Authorization
+    const cookieStore = await cookies();
+    const workerToken = cookieStore.get('mehta_worker_token')?.value || cookieStore.get('mehta_admin_token')?.value;
+    const payload = workerToken ? await verifySession(workerToken) : null;
+    if (!payload || (!payload.employeeId && payload.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'Unauthorized: Worker access required' }, { status: 401 });
+    }
+
     const { orderId, nextStatus, workerName } = await request.json();
 
     if (!orderId || !nextStatus) {
