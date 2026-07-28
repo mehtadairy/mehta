@@ -113,12 +113,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Performance Caching Headers for Static Assets & Images
-  if (pathname.startsWith('/_next/image') || pathname.match(/\.(png|jpg|jpeg|webp|avif|svg|ico)$/i)) {
-    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-  } else if (pathname.startsWith('/api/delivery/check') || pathname.startsWith('/api/products')) {
-    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
-  }
+  // 🔒 OWASP Security Headers Defense-in-Depth
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
 
   return response;
 }
