@@ -1092,7 +1092,7 @@ function ShopContent() {
                         layout
                         className="w-full"
                       >
-                        <ProductCard product={p} searchQuery={debouncedSearchQuery} />
+                        <ProductCard product={p} searchQuery={debouncedSearchQuery} activeWeights={selectedWeights} />
                       </motion.div>
                     ))}
                   </motion.div>

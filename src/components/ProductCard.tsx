@@ -12,6 +12,7 @@ import { HighlightText } from "@/components/HighlightText";
 interface ProductCardProps {
   product: Product;
   searchQuery?: string;
+  activeWeights?: string[];
 }
 
 /** Shimmer skeleton for image placeholder */
@@ -28,14 +29,52 @@ function ImageSkeleton() {
 
 import { sortWeights } from "@/lib/types";
 
-export default function ProductCard({ product, searchQuery }: ProductCardProps) {
+export default function ProductCard({ product, searchQuery, activeWeights }: ProductCardProps) {
   const weights = sortWeights(Object.keys(product.prices));
-  const [selectedWeight, setSelectedWeight] = useState(weights[0]);
+
+  const getInitialWeight = () => {
+    if (activeWeights && activeWeights.length > 0) {
+      for (const w of activeWeights) {
+        const target = w.toLowerCase().replace(/\s+/g, '');
+        const matched = weights.find(k => {
+          const keyNorm = k.toLowerCase().replace(/\s+/g, '');
+          if (target === '250g') return keyNorm.includes('250');
+          if (target === '500g') return keyNorm.includes('500');
+          if (target === '1kg') return keyNorm.includes('1k') || keyNorm.includes('1000') || (keyNorm.includes('1') && !keyNorm.includes('250') && !keyNorm.includes('500') && !keyNorm.includes('2.5') && !keyNorm.includes('25'));
+          return keyNorm === target;
+        });
+        if (matched) return matched;
+      }
+    }
+    return weights[0];
+  };
+
+  const [selectedWeight, setSelectedWeight] = useState(getInitialWeight());
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [cartAdded, setCartAdded] = useState(false);
   const { t } = useLanguage();
+
+  // Sync selectedWeight if activeWeights filter changes
+  useEffect(() => {
+    if (activeWeights && activeWeights.length > 0) {
+      for (const w of activeWeights) {
+        const target = w.toLowerCase().replace(/\s+/g, '');
+        const matched = weights.find(k => {
+          const keyNorm = k.toLowerCase().replace(/\s+/g, '');
+          if (target === '250g') return keyNorm.includes('250');
+          if (target === '500g') return keyNorm.includes('500');
+          if (target === '1kg') return keyNorm.includes('1k') || keyNorm.includes('1000') || (keyNorm.includes('1') && !keyNorm.includes('250') && !keyNorm.includes('500') && !keyNorm.includes('2.5') && !keyNorm.includes('25'));
+          return keyNorm === target;
+        });
+        if (matched) {
+          setSelectedWeight(matched);
+          break;
+        }
+      }
+    }
+  }, [activeWeights]);
 
   // Sync wishlist status on mount
   useEffect(() => {
