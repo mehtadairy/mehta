@@ -243,26 +243,8 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
     console.log(`[InvoiceService] Assigned unique invoice number: ${invoiceNumber}`);
 
     const orderWithInvoice = { ...order, invoice_number: invoiceNumber, invoice_created_at: new Date().toISOString() };
-    const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
-    console.log(`[InvoiceService] Generated PDF buffer (${pdfBuffer.length} bytes)`);
-
-    // Upload to Supabase Storage in invoices/YYYY/MM/
-    const storagePath = `${currentYear}/${currentMonth}/${invoiceNumber}.pdf`;
-    const uploadResult = await supabase.storage.from('invoices').upload(storagePath, pdfBuffer, {
-      contentType: 'application/pdf',
-      upsert: true
-    });
-
-    if (uploadResult.error) {
-      console.error("[InvoiceService] Failed to upload PDF file to storage:", uploadResult.error.message);
-    } else {
-      console.log(`[InvoiceService] Uploaded invoice ${storagePath} to storage successfully.`);
-    }
-
-    // Retrieve public URL from Supabase Storage
-    const { data: publicUrlData } = supabase.storage.from('invoices').getPublicUrl(storagePath);
-    const pdfUrl = publicUrlData?.publicUrl || `https://mehtadairy.com/api/invoices/download?invoiceId=${orderId}`;
-    console.log(`[InvoiceService] Resolved public URL: ${pdfUrl}`);
+    const pdfUrl = `/api/invoices/download?invoiceId=${orderId}`;
+    console.log(`[InvoiceService] On-demand PDF streaming URL resolved: ${pdfUrl}`);
 
     let customerId: string | null = order.customer_id || null;
     if (!customerId && order.user_phone) {
@@ -295,7 +277,9 @@ export async function createInvoice(orderId: string): Promise<InvoiceData | null
 
     if (order.user_email) {
       console.log(`[InvoiceService] Queueing invoice email delivery to ${order.user_email}`);
-      sendInvoiceEmail(newInvoice.id, order.user_email, pdfBuffer).catch(err => console.error("[InvoiceService] Email delivery failure:", err));
+      generateInvoicePDF(orderWithInvoice)
+        .then(buffer => sendInvoiceEmail(newInvoice.id, order.user_email, buffer))
+        .catch(err => console.error("[InvoiceService] Email delivery failure:", err));
     }
 
     if (order.user_phone) {

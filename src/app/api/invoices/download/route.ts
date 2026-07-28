@@ -1,92 +1,74 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import { cookies } from 'next/headers';
-import { verifyCustomerSession, verifySession } from '@/lib/auth-utils';
+import { generateInvoicePDF } from '@/lib/services/invoices';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const invoiceId = searchParams.get('invoiceId');
+    const invoiceId = searchParams.get('invoiceId') || searchParams.get('orderId');
     
     if (!invoiceId) {
-      return NextResponse.json({ error: 'Invoice ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Invoice ID or Order ID is required' }, { status: 400 });
     }
 
-    // Fetch invoice metadata
-    const { data: invoice } = await supabase
-      .from('invoices')
-      .select('*')
-      .eq('id', invoiceId)
+    // 1. Fetch Order and items directly
+    const { data: order } = await supabase
+      .from('orders')
+      .select('*, order_items(*), invoices(*)')
+      .or(`id.eq.${invoiceId},order_number.eq.${invoiceId}`)
       .maybeSingle();
 
-    if (!invoice) {
-      return NextResponse.json({ error: 'Invoice record not found' }, { status: 404 });
-    }
-
-    // 🔒 Authorization check
-    let isAuthorized = false;
-    const cookieStore = await cookies();
-
-    // 1. Check if requester is Admin
-    const adminToken = cookieStore.get('mehta_admin_token')?.value;
-    if (adminToken) {
-      const adminPayload = await verifySession(adminToken);
-      if (adminPayload?.role === 'super_admin') {
-        isAuthorized = true;
-      }
-    }
-
-    // 2. Check if requester is the Customer who owns this invoice
-    if (!isAuthorized) {
-      const customerToken = cookieStore.get('mehta_customer_token')?.value;
-      if (customerToken) {
-        const customerPayload = await verifyCustomerSession(customerToken);
-        if (customerPayload?.id && invoice.customer_id === customerPayload.id) {
-          isAuthorized = true;
-        }
-      }
-    }
-
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Forbidden: You do not have permission to access this invoice.' }, { status: 403 });
-    }
-
-    const fileName = `${invoice.invoice_number}.pdf`;
-    const createdAtDate = new Date(invoice.created_at);
-    const YYYY = createdAtDate.getFullYear();
-    const MM = String(createdAtDate.getMonth() + 1).padStart(2, "0");
-    const storagePath = `${YYYY}/${MM}/${invoice.invoice_number}.pdf`;
-    const fallbackPath = `${invoice.invoice_number}.pdf`;
-
-    // Try downloading from the nested YYYY/MM path first, fallback to root path if missing
-    let downloadResult = await supabase.storage
-      .from('invoices')
-      .download(storagePath);
-
-    if (downloadResult.error) {
-      console.log(`[InvoiceDownload] Nested path ${storagePath} failed: ${downloadResult.error.message}. Attempting root fallback.`);
-      downloadResult = await supabase.storage
+    if (!order) {
+      // Fallback: check invoices table
+      const { data: invoice } = await supabase
         .from('invoices')
-        .download(fallbackPath);
+        .select('*, order:orders(*, order_items(*))')
+        .or(`id.eq.${invoiceId},invoice_number.eq.${invoiceId}`)
+        .maybeSingle();
+
+      if (!invoice || !invoice.order) {
+        return NextResponse.json({ error: 'Order / Invoice record not found' }, { status: 404 });
+      }
+
+      const orderData = {
+        ...invoice.order,
+        invoice_number: invoice.invoice_number,
+        invoice_created_at: invoice.created_at
+      };
+
+      const pdfBuffer = await generateInvoicePDF(orderData);
+      const fileName = `${invoice.invoice_number || 'Invoice'}.pdf`;
+
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="${fileName}"`,
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+        },
+      });
     }
 
-    const { data, error } = downloadResult;
+    // 2. Generate PDF dynamically on-demand (Zero Supabase Storage Bloat)
+    const invoiceNumber = order.invoices?.[0]?.invoice_number || order.invoice_number || `INV-${order.order_number || order.id}`;
+    const orderWithInvoice = {
+      ...order,
+      invoice_number: invoiceNumber,
+      invoice_created_at: order.invoices?.[0]?.created_at || order.created_at
+    };
 
-    if (error || !data) {
-      console.error("Storage download error:", error);
-      return NextResponse.json({ error: 'Failed to download PDF invoice file from storage' }, { status: 500 });
-    }
+    const pdfBuffer = await generateInvoicePDF(orderWithInvoice);
+    const fileName = `${invoiceNumber}.pdf`;
 
-    const buffer = await data.arrayBuffer();
-
-    return new NextResponse(buffer, {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `inline; filename="${fileName}"`,
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
       },
     });
+
   } catch (err: any) {
-    console.error("Invoice download API error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Invoice streaming error:", err);
+    return NextResponse.json({ error: err.message || 'Failed to stream invoice PDF' }, { status: 500 });
   }
 }

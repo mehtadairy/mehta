@@ -29,73 +29,88 @@ let cachedBannersTime = 0;
 let cachedIngredients: any[] | null = null;
 let cachedIngredientsTime = 0;
 
+let pendingProductsPromise: Promise<Product[]> | null = null;
+let pendingCategoriesPromise: Promise<any[]> | null = null;
+let pendingBannersPromise: Promise<any[]> | null = null;
+
+const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges';
+
 export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
   const now = Date.now();
   if (cachedProducts && !forceRefresh && (now - cachedProductsTime < CACHE_TTL)) {
     return cachedProducts;
   }
 
-  let queryResult;
-  // Try to load with joined ingredients first
-  const { data, error } = await supabase
-    .from('products')
-    .select('*, product_ingredients(ingredient:ingredients(*))');
-  
-  if (error) {
-    console.warn('Could not fetch products with ingredients relation, falling back...', error.message);
-    const { data: simpleData, error: simpleError } = await supabase
-      .from('products')
-      .select('*');
-    if (simpleError) {
-      console.error('Error fetching products:', simpleError);
-      return [];
-    }
-    queryResult = simpleData;
-  } else {
-    queryResult = data;
+  if (pendingProductsPromise && !forceRefresh) {
+    return pendingProductsPromise;
   }
 
-  const mapped = queryResult.map(p => {
-    // Extract dynamic ingredients names and ids if available
-    let productIngredients = p.ingredients || [];
-    let ingredientIds: string[] = [];
-    if (p.product_ingredients && p.product_ingredients.length > 0) {
-      productIngredients = p.product_ingredients
-        .map((pi: any) => pi.ingredient?.name)
-        .filter(Boolean);
-      ingredientIds = p.product_ingredients
-        .map((pi: any) => pi.ingredient?.id)
-        .filter(Boolean);
-    }
+  pendingProductsPromise = (async () => {
+    let queryResult: any[] = [];
+    const { data, error } = await supabase
+      .from('products')
+      .select(`${PRODUCT_FIELDS}, product_ingredients(ingredient:ingredients(id, name))`);
     
-    return {
-      id: p.id,
-      name: p.name,
-      category: p.category_slug,
-      description: p.description,
-      images: p.images,
-      prices: p.prices,
-      popular: p.popular,
-      festivalSpecial: p.festival_special,
-      rating: p.rating,
-      reviewsCount: p.reviews_count,
-      stock: p.stock,
-      ingredients: productIngredients,
-      ingredientIds: ingredientIds,
-      shelfLife: p.shelf_life,
-      storageInstructions: p.storage_instructions,
-      allergens: p.allergens || [],
-      dietaryTags: p.dietary_tags || [],
-      highlights: p.highlights || [],
-      position: p.position || 0
-    };
-  });
+    if (error) {
+      console.warn('Could not fetch products with ingredients relation, falling back...', error.message);
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('products')
+        .select(PRODUCT_FIELDS);
+      if (simpleError) {
+        console.error('Error fetching products:', simpleError);
+        pendingProductsPromise = null;
+        return [];
+      }
+      queryResult = simpleData || [];
+    } else {
+      queryResult = data || [];
+    }
 
-  mapped.sort((a, b) => (a.position || 0) - (b.position || 0));
+    const mapped = queryResult.map(p => {
+      let productIngredients = p.ingredients || [];
+      let ingredientIds: string[] = [];
+      if (p.product_ingredients && p.product_ingredients.length > 0) {
+        productIngredients = p.product_ingredients
+          .map((pi: any) => pi.ingredient?.name)
+          .filter(Boolean);
+        ingredientIds = p.product_ingredients
+          .map((pi: any) => pi.ingredient?.id)
+          .filter(Boolean);
+      }
+      
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category_slug,
+        description: p.description,
+        images: p.images,
+        prices: p.prices,
+        popular: p.popular,
+        festivalSpecial: p.festival_special,
+        rating: p.rating,
+        reviewsCount: p.reviews_count,
+        stock: p.stock,
+        ingredients: productIngredients,
+        ingredientIds: ingredientIds,
+        shelfLife: p.shelf_life,
+        storageInstructions: p.storage_instructions,
+        allergens: p.allergens || [],
+        dietaryTags: p.dietary_tags || [],
+        highlights: p.highlights || [],
+        position: p.position || 0,
+        badges: p.badges || []
+      };
+    });
 
-  cachedProducts = mapped;
-  cachedProductsTime = now;
-  return mapped;
+    mapped.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+    cachedProducts = mapped;
+    cachedProductsTime = Date.now();
+    pendingProductsPromise = null;
+    return mapped;
+  })();
+
+  return pendingProductsPromise;
 }
 
 export async function fetchCategories(forceRefresh = false): Promise<any[]> {
@@ -104,14 +119,31 @@ export async function fetchCategories(forceRefresh = false): Promise<any[]> {
     return cachedCategories;
   }
 
-  const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
-  if (error || !data) return [];
-  const filtered = data.filter((c: any) => c.status !== 'inactive' && c.is_active !== false);
-  const sorted = sortCategories(filtered);
-  
-  cachedCategories = sorted;
-  cachedCategoriesTime = now;
-  return sorted;
+  if (pendingCategoriesPromise && !forceRefresh) {
+    return pendingCategoriesPromise;
+  }
+
+  pendingCategoriesPromise = (async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name, slug, description, image, icon, sort_order, status, is_active')
+      .order('sort_order', { ascending: true });
+
+    if (error || !data) {
+      pendingCategoriesPromise = null;
+      return [];
+    }
+
+    const filtered = data.filter((c: any) => c.status !== 'inactive' && c.is_active !== false);
+    const sorted = sortCategories(filtered);
+    
+    cachedCategories = sorted;
+    cachedCategoriesTime = Date.now();
+    pendingCategoriesPromise = null;
+    return sorted;
+  })();
+
+  return pendingCategoriesPromise;
 }
 
 export async function fetchBanners(forceRefresh = false): Promise<any[]> {
@@ -120,15 +152,30 @@ export async function fetchBanners(forceRefresh = false): Promise<any[]> {
     return cachedBanners;
   }
 
-  const { data, error } = await supabase.from('banners').select('*').eq('active', true).order('created_at', { ascending: true });
-  if (error) {
-    console.error("fetchBanners error:", error);
-    return [];
+  if (pendingBannersPromise && !forceRefresh) {
+    return pendingBannersPromise;
   }
-  
-  cachedBanners = data;
-  cachedBannersTime = now;
-  return data;
+
+  pendingBannersPromise = (async () => {
+    const { data, error } = await supabase
+      .from('banners')
+      .select('id, image_url, badge, headline, boldline, sub, cta_label, link, is_graphic_only, active, created_at')
+      .eq('active', true)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("fetchBanners error:", error);
+      pendingBannersPromise = null;
+      return [];
+    }
+    
+    cachedBanners = data;
+    cachedBannersTime = Date.now();
+    pendingBannersPromise = null;
+    return data;
+  })();
+
+  return pendingBannersPromise;
 }
 
 export async function fetchIngredients(forceRefresh = false): Promise<any[]> {

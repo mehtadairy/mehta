@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { getOptimizedImageUrl, BLUR_PLACEHOLDER } from "@/lib/image-utils";
 import { ShoppingBasket, Heart, Eye, X, Check, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Product, generateSlug } from "@/lib/types";
@@ -217,10 +219,15 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
 
           <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
             <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-              <img
-                src={product.images[0]}
+              <Image
+                src={getOptimizedImageUrl(product.images[0], 300, 75)}
                 alt={product.name}
+                width={300}
+                height={300}
                 loading="lazy"
+                placeholder="blur"
+                blurDataURL={BLUR_PLACEHOLDER}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
                   imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
                 }`}
@@ -350,10 +357,15 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
 
               {/* Image */}
               <div className="w-full sm:w-5/12 aspect-square bg-[#FAF6EE] rounded-2xl flex items-center justify-center p-4 flex-shrink-0">
-                <img
-                  src={product.images[0]}
+                <Image
+                  src={getOptimizedImageUrl(product.images[0], 500, 80)}
                   alt={product.name}
+                  width={400}
+                  height={400}
                   loading="lazy"
+                  placeholder="blur"
+                  blurDataURL={BLUR_PLACEHOLDER}
+                  sizes="(max-width: 640px) 100vw, 400px"
                   className="w-full h-full object-contain rounded-full"
                 />
               </div>

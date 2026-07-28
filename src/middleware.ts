@@ -87,6 +87,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Performance Caching Headers for Static Assets & Images
+  if (pathname.startsWith('/_next/image') || pathname.match(/\.(png|jpg|jpeg|webp|avif|svg|ico)$/i)) {
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  } else if (pathname.startsWith('/api/delivery/check') || pathname.startsWith('/api/products')) {
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  }
+
   return response;
 }
 
