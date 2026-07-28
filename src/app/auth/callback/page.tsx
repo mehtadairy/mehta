@@ -8,13 +8,14 @@ import { Loader2 } from "lucide-react";
 export default function AuthCallback() {
   const router = useRouter();
   const [errorMsg, setErrorMsg] = useState("");
+  const supabase = createBrowserSupabaseClient();
 
   useEffect(() => {
     let isSubscribed = true;
 
     const handleAuthCallback = async () => {
       try {
-        const { data: { subscription } } = createBrowserSupabaseClient.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!isSubscribed) return;
 
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {

@@ -96,24 +96,56 @@ export async function POST(request: Request) {
       }
     }
 
-    const updatedPayload = {
-      ...orderPayload,
+    const updatedPayload: any = {
+      id: orderPayload.id,
       order_number: generatedOrderNumber,
       payment_status: 'Paid',
       status: 'Processing',
       payment_id: razorpay_payment_id,
-      paid_at: new Date().toISOString(),
+      payment_method: orderPayload.payment_method || 'Razorpay',
+      subtotal: Number(orderPayload.subtotal),
+      discount: Number(orderPayload.discount) || 0,
+      total: Number(orderPayload.total),
+      delivery_charge: Number(orderPayload.delivery_charge) || 0,
+      shipping_address: orderPayload.shipping_address || {},
+      user_name: orderPayload.user_name || orderPayload.userName || '',
+      user_phone: orderPayload.user_phone || orderPayload.userPhone || '',
+      user_email: orderPayload.user_email || orderPayload.userEmail || '',
+      coupon_code: orderPayload.coupon_code || null,
+      customer_id: orderPayload.customer_id || null,
       source: orderPayload.source || 'website'
     };
 
-    const { data: savedOrder, error: saveErr } = await supabase
+    console.log("Upserting paid order fallback in verify route:", updatedPayload.order_number);
+    let { data: savedOrder, error: saveErr } = await supabase
       .from('orders')
       .upsert([updatedPayload], { onConflict: 'id' })
       .select()
       .single();
 
+    // Self-healing retry: If customer_id FK violation or other DB constraint failure occurs
     if (saveErr) {
-      console.error("Error direct-upserting paid order:", saveErr);
+      console.warn("Direct upsert of paid order failed, retrying with customer_id set to null...", saveErr.message);
+      const cleanPayload = {
+        ...updatedPayload,
+        customer_id: null // Bypass FK/RLS constraints
+      };
+      const { data: retryData, error: retryError } = await supabase
+        .from('orders')
+        .upsert([cleanPayload], { onConflict: 'id' })
+        .select()
+        .single();
+      
+      saveErr = retryError;
+      if (retryData) savedOrder = retryData;
+    }
+
+    if (saveErr || !savedOrder) {
+      console.error("Critical error saving paid order in verification endpoint:", saveErr);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to save paid order in database: ' + (saveErr?.message || 'Unknown') 
+      }, { status: 500 });
     }
 
     // Save order items if missing

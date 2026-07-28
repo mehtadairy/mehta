@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     }
 
     const finalOrderData: any = {
-      id: id || orderPayload.id,
+      id: orderPayload.id,
       order_number: generatedOrderNumber,
       customer_id: customerId || orderPayload?.customer_id || null,
       user_name: orderPayload?.user_name || orderPayload?.userName || rawAddr?.name || 'Customer',
@@ -138,9 +138,9 @@ export async function POST(request: Request) {
     console.log("Inserting COD order to DB:", finalOrderData.order_number);
     let { data: newOrder, error: orderError } = await supabase.from('orders').upsert([finalOrderData], { onConflict: 'id' }).select().single();
     
-    // Self-healing retry: If customer_id column error occurs
+    // Self-healing retry: If customer_id column error or foreign key violation occurs
     if (orderError) {
-      console.warn("Retrying COD order insertion with minimal clean schema...", orderError.message);
+      console.warn("Retrying COD order insertion with minimal clean schema and customer_id set to null...", orderError.message);
       const cleanPayload: any = {
         id: finalOrderData.id,
         order_number: finalOrderData.order_number,
@@ -156,9 +156,9 @@ export async function POST(request: Request) {
         payment_method: finalOrderData.payment_method,
         payment_status: finalOrderData.payment_status,
         status: finalOrderData.status,
-        source: 'website'
+        source: 'website',
+        customer_id: null // Set to null to bypass RLS/FK constraint failures
       };
-      if (finalOrderData.customer_id) cleanPayload.customer_id = finalOrderData.customer_id;
 
       const { data: retryData, error: retryError } = await supabase.from('orders').upsert([cleanPayload], { onConflict: 'id' }).select().single();
       orderError = retryError;

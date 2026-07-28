@@ -64,11 +64,21 @@ export async function POST(request: Request) {
           source: 'website'
         };
 
-        const { error: orderError } = await supabase.from('orders').upsert([cleanOrderData], { onConflict: 'id' });
+        let { error: orderError } = await supabase.from('orders').upsert([cleanOrderData], { onConflict: 'id' });
         
         if (orderError) {
+          console.warn("Draft order upsert failed, retrying with customer_id=null...", orderError.message);
+          const cleanPayload = {
+            ...cleanOrderData,
+            customer_id: null
+          };
+          const { error: retryError } = await supabase.from('orders').upsert([cleanPayload], { onConflict: 'id' });
+          orderError = retryError;
+        }
+
+        if (orderError) {
           console.warn("Draft order upsert notice (non-fatal):", orderError.message);
-        } else if (orderItems.length > 0) {
+        } else if (orderItems && orderItems.length > 0) {
           const finalOrderItems = orderItems.map((item: any) => ({
             order_id: orderPayload.id,
             product_id: item.product_id || item.productId,
