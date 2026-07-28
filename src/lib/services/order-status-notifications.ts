@@ -23,6 +23,21 @@ export class OrderStatusNotificationService {
         return;
       }
 
+      // 🔒 1.5 Duplicate Notification Prevention Check
+      const { data: existingLog } = await supabase
+        .from('notification_logs')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('event_name', `order_status_${newStatus.toLowerCase().replace(/\s+/g, '_')}`)
+        .eq('status', 'delivered')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingLog) {
+        console.log(`[OrderStatusNotificationService] Notification for status ${newStatus} on order ${orderId} already sent. Skipping duplicate.`);
+        return;
+      }
+
       // 2. Determine Customer Phone
       const phone = order.user_phone ? `91${order.user_phone.replace(/\D/g, '').slice(-10)}` : null;
       

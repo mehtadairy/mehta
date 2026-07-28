@@ -40,6 +40,27 @@ async function logNotification(
 
 // --- EMAIL ENGINE ---
 export async function sendReactEmail(to: string, subject: string, reactComponent: React.ReactElement, eventType: string, orderId?: string) {
+  // 🔒 Duplicate Email Prevention Check
+  if (orderId) {
+    try {
+      const { data: existingLog } = await supabase
+        .from('notification_logs')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('event_type', eventType)
+        .eq('status', 'sent')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingLog) {
+        console.log(`[Email Engine] Duplicate email event ${eventType} for order ${orderId} skipped.`);
+        return { success: true, message: 'Duplicate email skipped' };
+      }
+    } catch (e) {
+      console.warn("[Email Engine] Deduplication check warning:", e);
+    }
+  }
+
   if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_mock_key') {
     console.log(`[Email Mock Simulation] Sending to ${to}: Subject: ${subject}`);
     await logNotification(orderId, to, 'email', 'sent', eventType, "[Simulated Mode] Email mock succeeded");
