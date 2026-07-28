@@ -57,12 +57,14 @@ export async function POST(request: Request) {
 
     let serverSubtotal = 0;
     const verifiedOrderItems = orderItems.map((item: any) => {
+      const qty = Math.max(1, Number(item.quantity) || 1);
       const dbProduct = dbProducts.find((p: any) => p.id === item.product_id);
       // Look up price by variant weight
       const verifiedPrice = dbProduct?.prices?.[item.weight] ?? dbProduct?.prices?.[Object.keys(dbProduct?.prices || {})[0]] ?? 0;
-      serverSubtotal += verifiedPrice * item.quantity;
+      serverSubtotal += verifiedPrice * qty;
       return {
         ...item,
+        quantity: qty,
         price: verifiedPrice // Enforce DB price
       };
     });
@@ -93,7 +95,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const expectedTotal = serverSubtotal + deliveryCharge;
+    const discountVal = Math.max(0, Number(orderPayload?.discount) || 0);
+    const expectedTotal = Math.max(0, serverSubtotal + deliveryCharge - discountVal);
 
     const rawAddr = shippingAddress || orderPayload?.shipping_address || orderPayload?.shippingAddress;
 
@@ -184,6 +187,21 @@ export async function POST(request: Request) {
     const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
     if (itemsError) {
       console.error("Failed to insert COD order items notice:", itemsError.message);
+    }
+
+    // 📦 Inventory Stock Reduction
+    for (const item of finalOrderItems) {
+      if (item.product_id && item.quantity) {
+        try {
+          const { data: prod } = await supabase.from('products').select('stock').eq('id', item.product_id).single();
+          if (prod && typeof prod.stock === 'number') {
+            const newStock = Math.max(0, prod.stock - item.quantity);
+            await supabase.from('products').update({ stock: newStock }).eq('id', item.product_id);
+          }
+        } catch (e) {
+          console.warn("Stock reduction warning for product:", item.product_id, e);
+        }
+      }
     }
 
     // Insert Payment Log

@@ -26,6 +26,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing required validation fields' }, { status: 400 });
     }
 
+    // 🔒 Server-Side Price & Quantity Validation
+    for (const item of orderItems) {
+      const qty = Number(item.quantity);
+      const prc = Number(item.price);
+      if (isNaN(qty) || qty <= 0 || isNaN(prc) || prc < 0) {
+        return NextResponse.json({ success: false, error: 'Invalid item quantity or price' }, { status: 400 });
+      }
+    }
+
     const secret = process.env.RAZORPAY_KEY_SECRET || '';
 
     // 1. Verify Razorpay Signature

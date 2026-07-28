@@ -530,6 +530,15 @@ function CheckoutContent() {
   const totalPayable = Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
 
   const handleOpenNewAddressForm = () => {
+    if (!editingAddressId && addresses.length >= 2) {
+      window.dispatchEvent(new CustomEvent("showToast", {
+        detail: {
+          message: "Maximum 2 saved addresses allowed. Please select an existing address or delete one to add a new address.",
+          type: "warning"
+        }
+      }));
+      return;
+    }
     setNewName(localStorage.getItem("mehta_user_name") || "");
     setNewPhone(localStorage.getItem("mehta_user_phone") || "");
     setNewFlat("");
@@ -565,6 +574,16 @@ function CheckoutContent() {
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newPhone || !newFlat || !newArea || !newCity || !newState || !newPincode) return;
+
+    if (!editingAddressId && addresses.length >= 2) {
+      window.dispatchEvent(new CustomEvent("showToast", {
+        detail: {
+          message: "Maximum 2 saved addresses allowed. Please select an existing address or delete one to add a new address.",
+          type: "warning"
+        }
+      }));
+      return;
+    }
 
     const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
     let customerId = localStorage.getItem("mehta_user_id");
