@@ -163,19 +163,66 @@ export default function WorkerPanel() {
   const playStandardSound = () => {
     if (!settings.enableSound || isMuted) return;
     try {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-      audio.volume = settings.volume;
-      audio.play().catch(e => console.log("Sound autoplay blocked:", e));
-    } catch (e) {}
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playTone = (startTime: number, freq: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        // Exponential decay for a natural chime sound
+        gain.gain.setValueAtTime(settings.volume * 0.4, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      
+      // Premium dual-tone chime: E5 (659.25Hz) followed by G5 (783.99Hz)
+      playTone(ctx.currentTime, 659.25, 0.6);
+      playTone(ctx.currentTime + 0.15, 783.99, 0.8);
+    } catch (e) {
+      console.warn("Synthesized sound play failed:", e);
+    }
   };
 
   const playErrorSound = () => {
     if (!settings.enableSound || isMuted) return;
     try {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/911/911-200.wav");
-      audio.volume = settings.volume;
-      audio.play().catch(e => console.log("Sound autoplay blocked:", e));
-    } catch (e) {}
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playBeep = (startTime: number, freq: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(settings.volume * 0.25, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      
+      // Warning double-beep
+      playBeep(ctx.currentTime, 180, 0.25);
+      playBeep(ctx.currentTime + 0.12, 180, 0.25);
+    } catch (e) {
+      console.warn("Synthesized sound play failed:", e);
+    }
   };
 
   // Sound Repeat loop (alarm) until order is acknowledged
