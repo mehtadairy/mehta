@@ -25,7 +25,7 @@ END $$;
 -- 2. Table for Detailed Shiprocket Shipments
 CREATE TABLE IF NOT EXISTS public.shiprocket_shipments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
   shiprocket_order_id BIGINT,
   shipment_id BIGINT,
   courier_id INT,
