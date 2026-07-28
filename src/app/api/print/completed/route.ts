@@ -30,7 +30,10 @@ export async function POST(request: Request) {
 
     console.log(`[PrintCompletedAPI] Marking order ${order.order_number} as printed by ${printedBy} on printer ${printerName}`);
 
-    // 2. Update orders print status and advance step to 'Preparing'
+    // 2. Update orders print status and advance step to 'Preparing' (unless already in advanced state)
+    const advancedStatuses = ['Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    const targetStatus = advancedStatuses.includes(order.status) ? order.status : 'Preparing';
+
     const { error: updateError } = await supabaseServer
       .from('orders')
       .update({
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
         printed_at: new Date().toISOString(),
         printed_by: printedBy || 'Agent',
         print_status: 'printed',
-        status: order.status === 'Cancelled' ? 'Cancelled' : 'Preparing' // Advance status to Preparing to trigger kitchen prep
+        status: targetStatus
       })
       .eq('id', orderId);
 

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { generateInvoicePDF } from '@/lib/services/invoices';
 
+import { verifyCustomerSession, verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -11,12 +14,37 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Invoice ID or Order ID is required' }, { status: 400 });
     }
 
+    // 🔒 Verify session for IDOR protection
+    const cookieStore = await cookies();
+    const customerToken = cookieStore.get('mehta_customer_token')?.value;
+    const adminToken = cookieStore.get('mehta_admin_token')?.value || cookieStore.get('mehta_worker_token')?.value;
+
+    let authenticatedUserId: string | null = null;
+    let isStaff = false;
+
+    if (adminToken) {
+      const staffPayload = await verifySession(adminToken);
+      if (staffPayload?.role === 'super_admin' || staffPayload?.employeeId) isStaff = true;
+    }
+
+    if (!isStaff && customerToken) {
+      const custPayload = await verifyCustomerSession(customerToken);
+      if (custPayload?.id) authenticatedUserId = custPayload.id;
+    }
+
     // 1. Fetch Order and items directly
     const { data: order } = await supabase
       .from('orders')
       .select('*, order_items(*), invoices(*)')
       .or(`id.eq.${invoiceId},order_number.eq.${invoiceId}`)
       .maybeSingle();
+
+    if (order && !isStaff) {
+      const isOwner = (authenticatedUserId && order.customer_id === authenticatedUserId);
+      if (!isOwner) {
+        return NextResponse.json({ error: 'Unauthorized to download this invoice' }, { status: 403 });
+      }
+    }
 
     if (!order) {
       // Fallback: check invoices table
