@@ -31,7 +31,10 @@ import {
   Loader2, 
   AlertTriangle,
   ChevronDown,
-  Lock
+  Lock,
+  Volume2,
+  VolumeX,
+  Sliders
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPrinters from "@/components/AdminPrinters";
@@ -95,7 +98,21 @@ export default function WorkerPanel() {
   const [manualInvoiceOrder, setManualInvoiceOrder] = useState<string>("");
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
-  // Check login state on mount
+  // --- NOTIFICATION ENGINE STATES ---
+  const [settings, setSettings] = useState({
+    enableSound: true,
+    enableDesktop: true,
+    repeatSound: true,
+    volume: 0.8,
+    duration: 10
+  });
+  const [isMuted, setIsMuted] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const [alarmOrders, setAlarmOrders] = useState<any[]>([]);
+  const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check login state and settings on mount
   useEffect(() => {
     const stored = localStorage.getItem("mehta_worker_auth");
     const storedInfo = localStorage.getItem("mehta_worker_info");
@@ -103,47 +120,148 @@ export default function WorkerPanel() {
       setIsAuth(true);
       setWorkerInfo(JSON.parse(storedInfo));
     }
+
+    const storedSettings = localStorage.getItem("mehta_worker_notif_settings");
+    if (storedSettings) {
+      try {
+        setSettings(JSON.parse(storedSettings));
+      } catch (e) {}
+    }
+  }, []);
+
+  // Request browser notification permissions
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default' && settings.enableDesktop) {
+        Notification.requestPermission();
+      }
+    }
+  }, [settings.enableDesktop]);
+
+  // Online/Offline Connection State
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      setIsOnline(true);
+      loadPanelData(); // Fetch missed data
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // --- REALTIME NOTIFICATIONS ---
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
   const [fullscreenOrderAlert, setFullscreenOrderAlert] = useState<any>(null);
 
+  const playStandardSound = () => {
+    if (!settings.enableSound || isMuted) return;
+    try {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
+      audio.volume = settings.volume;
+      audio.play().catch(e => console.log("Sound autoplay blocked:", e));
+    } catch (e) {}
+  };
+
+  const playErrorSound = () => {
+    if (!settings.enableSound || isMuted) return;
+    try {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/911/911-200.wav");
+      audio.volume = settings.volume;
+      audio.play().catch(e => console.log("Sound autoplay blocked:", e));
+    } catch (e) {}
+  };
+
+  // Sound Repeat loop (alarm) until order is acknowledged
+  useEffect(() => {
+    if (alarmOrders.length > 0 && settings.repeatSound && !isMuted) {
+      if (!alarmIntervalRef.current) {
+        // Play immediately
+        playStandardSound();
+        alarmIntervalRef.current = setInterval(() => {
+          playStandardSound();
+        }, 5000);
+      }
+    } else {
+      if (alarmIntervalRef.current) {
+        clearInterval(alarmIntervalRef.current);
+        alarmIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (alarmIntervalRef.current) {
+        clearInterval(alarmIntervalRef.current);
+        alarmIntervalRef.current = null;
+      }
+    };
+  }, [alarmOrders, settings.repeatSound, isMuted, settings.volume, settings.enableSound]);
+
+  const showDesktopNotification = (order: any) => {
+    if (!settings.enableDesktop || typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      const title = `🍬 New Order Received (#${order.orderNumber || order.id.substring(0, 6)})`;
+      const body = `Customer: ${order.userName || 'Guest'}\nAmount: ₹${order.total}\nType: ${order.source === 'whatsapp' ? 'WhatsApp' : 'Website'}`;
+      const notif = new Notification(title, {
+        body,
+        icon: '/logo.png'
+      });
+      notif.onclick = () => {
+        window.focus();
+        setSelectedOrder(order);
+        setAlarmOrders(prev => prev.filter(o => o.id !== order.id));
+      };
+    }
+  };
+
   useEffect(() => {
     if (!isAuth) return;
 
-    const playNotificationSound = () => {
-      try {
-        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-        audio.play().catch(err => console.log("Autoplay blocked by browser:", err));
-      } catch (e) {
-        console.error("Audio error:", e);
-      }
-    };
-
-    const playDingDongSound = () => {
-      try {
-        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-        audio.play().catch(err => console.log("Autoplay blocked by browser:", err));
-        setTimeout(() => {
-          const audio2 = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-          audio2.play().catch(err => console.log("Autoplay blocked by browser:", err));
-        }, 600);
-      } catch (e) {
-        console.error("Audio error:", e);
-      }
-    };
-
     const channel = supabase
-      .channel("live-order-chimes")
+      .channel("live-worker-realtime")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders" },
-        (payload) => {
+        async (payload) => {
           console.log("New order detected realtime:", payload.new);
-          playDingDongSound();
-          setFullscreenOrderAlert(payload.new);
+          // Format new order obj
+          const o = payload.new;
+          const formatted = {
+            id: o.id,
+            orderNumber: o.order_number,
+            date: new Date(o.created_at).toLocaleDateString(),
+            createdAtRaw: o.created_at,
+            status: o.status,
+            total: o.total,
+            paymentStatus: o.payment_status,
+            userName: o.user_name,
+            userPhone: o.user_phone,
+            userEmail: o.user_email,
+            shippingAddress: o.shipping_address,
+            printed: o.printed,
+            printStatus: o.print_status || 'pending',
+            source: o.source,
+            deliveryType: o.delivery_type,
+            items: []
+          };
+          
+          playStandardSound();
+          setAlarmOrders(prev => {
+            if (prev.some(x => x.id === formatted.id)) return prev;
+            return [...prev, formatted];
+          });
+          setFullscreenOrderAlert(formatted);
+          showDesktopNotification(formatted);
           loadPanelData();
+          // Auto-scroll only if worker is already near the top
+          if (typeof window !== 'undefined' && window.scrollY < 200) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }
       )
       .on(
@@ -151,14 +269,26 @@ export default function WorkerPanel() {
         { event: "INSERT", schema: "public", table: "notifications" },
         (payload) => {
           console.log("New notification detected realtime:", payload.new);
-          if (payload.new && payload.new.type === 'worker') {
-            playNotificationSound();
-            setNewOrderAlert({
-              title: payload.new.title,
-              message: payload.new.message
-            });
-            loadPanelData();
+          const notif = payload.new;
+          if (notif.type === 'print_failed') {
+            playErrorSound();
+          } else {
+            playStandardSound();
           }
+          setNewOrderAlert({
+            title: notif.title,
+            message: notif.message
+          });
+          loadPanelData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          console.log("Order updated detected realtime:", payload.new);
+          // Update printed/printStatus if changed
+          loadPanelData();
         }
       )
       .subscribe();
@@ -166,7 +296,7 @@ export default function WorkerPanel() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuth]);
+  }, [isAuth, settings, isMuted]);
 
   // Fetch data on activeTab change or auth success
   useEffect(() => {
@@ -342,6 +472,37 @@ export default function WorkerPanel() {
     setWorkerInfo(null);
     localStorage.removeItem("mehta_worker_auth");
     localStorage.removeItem("mehta_worker_info");
+  };
+
+  const handleMarkNotifRead = async (id: string) => {
+    try {
+      await fetch(`/api/notifications`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch(e) {}
+  };
+
+  const handleMarkAllNotifsRead = async () => {
+    try {
+      await fetch(`/api/notifications`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ readAll: true })
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch(e) {}
+  };
+
+  const handleClearAllNotifs = async () => {
+    try {
+      await fetch(`/api/notifications?clearAll=true`, {
+        method: "DELETE"
+      });
+      setNotifications([]);
+    } catch(e) {}
   };
 
   const handleReprintOrder = async (orderId: string) => {
@@ -580,7 +741,8 @@ export default function WorkerPanel() {
     { id: "whatsapp_orders", label: "🟢 WhatsApp Orders", icon: MessageCircle },
     { id: "invoices", label: "Invoice Management", icon: FileText },
     { id: "customers", label: "Customer Directory", icon: Users },
-    { id: "printers", label: "Print Agent Settings", icon: Printer }
+    { id: "printers", label: "Print Agent Settings", icon: Printer },
+    { id: "settings", label: "Notification Settings", icon: Lock }
   ];
 
   return (
@@ -658,16 +820,57 @@ export default function WorkerPanel() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-1.5 rounded-lg border border-[#EAE0D3] hover:bg-[#FCF9F2] text-[#2A1E17]"
+              className="p-1.5 rounded-lg border border-[#EAE0D3] hover:bg-[#FCF9F2] text-[#2A1E17] cursor-pointer"
             >
               <Menu className="h-4 w-4" />
             </button>
             <h1 className="font-serif text-sm font-bold text-[#2A1E17] uppercase tracking-wider">
               {MENU_ITEMS.find(m => m.id === activeTab)?.label}
             </h1>
+            
+            {/* Live Connection Badge */}
+            {!isOnline ? (
+              <span className="text-[10px] font-extrabold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                🔴 Offline
+              </span>
+            ) : (
+              <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                🟢 Online
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Alarm orders alert flash */}
+            {alarmOrders.length > 0 && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg font-bold animate-pulse">
+                🚨 {alarmOrders.length} Unacknowledged Orders
+              </span>
+            )}
+
+            {/* Mute/Unmute Toggle */}
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              title={isMuted ? "Unmute terminal sound" : "Mute terminal sound"}
+              className="p-1.5 rounded-lg border border-[#EAE0D3] hover:bg-[#FCF9F2] text-[#7E6B5A] cursor-pointer transition-all"
+            >
+              {isMuted ? <VolumeX className="h-4 w-4 text-rose-600" /> : <Volume2 className="h-4 w-4 text-emerald-600" />}
+            </button>
+
+            {/* Bell notification badge */}
+            <button
+              onClick={() => setIsNotificationDrawerOpen(true)}
+              title="Open Notification Drawer"
+              className="relative p-1.5 rounded-lg border border-[#EAE0D3] hover:bg-[#FCF9F2] text-[#2A1E17] cursor-pointer transition-all"
+            >
+              <Bell className="h-4 w-4" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
+            </button>
+
             {/* Worker metadata badge */}
             <div className="hidden sm:flex flex-col text-right">
               <span className="text-xs font-bold text-[#2A1E17]">{workerInfo?.name}</span>
@@ -1297,6 +1500,116 @@ export default function WorkerPanel() {
                     </div>
                   </div>
                 )}
+
+                {/* ── TAB: SETTINGS ── */}
+                {activeTab === "settings" && (
+                  <div className="bg-white border border-[#EAE0D3] rounded-xl p-5 shadow-2xs flex flex-col gap-6 max-w-2xl">
+                    <div>
+                      <h3 className="font-serif text-sm font-bold uppercase tracking-wider border-b border-[#EAE0D3]/50 pb-2 flex items-center gap-2">
+                        <Sliders className="h-4 w-4 text-[#D46D2D]" /> Notification & Alarm Settings
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1 font-medium">Configure how this terminal responds to incoming orders.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-5 text-xs font-bold text-gray-700">
+                      {/* Enable Sound */}
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer">
+                        <div className="flex flex-col gap-0.5">
+                          <span>Enable Sound Alerts</span>
+                          <span className="text-[10px] text-gray-400 font-medium">Play chime sounds on new order arrival.</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={settings.enableSound}
+                          onChange={(e) => {
+                            const updated = { ...settings, enableSound: e.target.checked };
+                            setSettings(updated);
+                            localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
+                          }}
+                          className="accent-[#D46D2D] w-4.5 h-4.5"
+                        />
+                      </label>
+
+                      {/* Enable Desktop Alerts */}
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer">
+                        <div className="flex flex-col gap-0.5">
+                          <span>Desktop Push Notifications</span>
+                          <span className="text-[10px] text-gray-400 font-medium">Show system alerts even when the browser is in the background.</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={settings.enableDesktop}
+                          onChange={(e) => {
+                            const updated = { ...settings, enableDesktop: e.target.checked };
+                            setSettings(updated);
+                            localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
+                          }}
+                          className="accent-[#D46D2D] w-4.5 h-4.5"
+                        />
+                      </label>
+
+                      {/* Repeat Alarm */}
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer">
+                        <div className="flex flex-col gap-0.5">
+                          <span>Repeat Alarm Sound</span>
+                          <span className="text-[10px] text-gray-400 font-medium">Repeat the chime every 5 seconds until you acknowledge or accept the order.</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={settings.repeatSound}
+                          onChange={(e) => {
+                            const updated = { ...settings, repeatSound: e.target.checked };
+                            setSettings(updated);
+                            localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
+                          }}
+                          className="accent-[#D46D2D] w-4.5 h-4.5"
+                        />
+                      </label>
+
+                      {/* Volume Slider */}
+                      <div className="flex flex-col gap-2 p-3.5 bg-gray-50 border border-gray-150 rounded-xl">
+                        <div className="flex justify-between items-center">
+                          <span>Terminal Alarm Volume</span>
+                          <span className="text-amber-700">{Math.round(settings.volume * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <VolumeX className="h-4 w-4 text-gray-400" />
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settings.volume}
+                            onChange={(e) => {
+                              const updated = { ...settings, volume: parseFloat(e.target.value) };
+                              setSettings(updated);
+                              localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
+                            }}
+                            className="flex-1 accent-[#D46D2D] h-1 bg-gray-200 rounded-lg cursor-pointer"
+                          />
+                          <Volume2 className="h-4 w-4 text-amber-600" />
+                        </div>
+                      </div>
+
+                      {/* Notification Alert Duration */}
+                      <div className="flex flex-col gap-1.5 p-3.5 bg-gray-50 border border-gray-150 rounded-xl">
+                        <label className="block">Banner Auto-Dismiss Duration (seconds)</label>
+                        <input
+                          type="number"
+                          min="3"
+                          max="60"
+                          value={settings.duration}
+                          onChange={(e) => {
+                            const updated = { ...settings, duration: parseInt(e.target.value) || 10 };
+                            setSettings(updated);
+                            localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
+                          }}
+                          className="w-full mt-1 border border-[#EAE0D3] rounded-lg p-2 bg-white text-xs focus:outline-none focus:border-[#D46D2D]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           )}
@@ -1556,6 +1869,129 @@ export default function WorkerPanel() {
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── NOTIFICATION DRAWER / CENTER ── */}
+      <AnimatePresence>
+        {isNotificationDrawerOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden font-sans select-none">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsNotificationDrawerOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            />
+
+            {/* Drawer Container */}
+            <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                className="w-screen max-w-md bg-white shadow-2xl flex flex-col"
+              >
+                {/* Header */}
+                <div className="p-4 border-b border-[#EAE0D3] bg-[#FCF9F2]/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-[#D46D2D]" />
+                    <span className="font-serif text-sm font-bold uppercase tracking-wider text-[#2A1E17]">Notification Hub</span>
+                    {notifications.filter(n => !n.read).length > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                        {notifications.filter(n => !n.read).length} New
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setIsNotificationDrawerOpen(false)}
+                    className="p-1 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
+
+                {/* Bulk Action Controls */}
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-150 flex items-center justify-between text-[11px] font-bold text-gray-500">
+                  <button
+                    onClick={handleMarkAllNotifsRead}
+                    disabled={notifications.length === 0}
+                    className="hover:text-[#D46D2D] disabled:opacity-40 cursor-pointer"
+                  >
+                    ✓ Mark all as read
+                  </button>
+                  <button
+                    onClick={handleClearAllNotifs}
+                    disabled={notifications.length === 0}
+                    className="hover:text-red-600 disabled:opacity-40 cursor-pointer"
+                  >
+                    🗑 Clear all history
+                  </button>
+                </div>
+
+                {/* Notifications List */}
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                  {notifications.map((n) => {
+                    let typeBadgeColor = "bg-gray-100 text-gray-700";
+                    if (n.type === "website") typeBadgeColor = "bg-blue-50 text-blue-700 border border-blue-150";
+                    if (n.type === "whatsapp") typeBadgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-150";
+                    if (n.type === "print_failed") typeBadgeColor = "bg-rose-50 text-rose-700 border border-rose-150";
+                    if (n.type === "print_success") typeBadgeColor = "bg-green-50 text-green-700 border border-green-150";
+
+                    return (
+                      <div
+                        key={n.id}
+                        onClick={async () => {
+                          await handleMarkNotifRead(n.id);
+                          if (n.order_id) {
+                            const foundOrder = orders.find(o => o.id === n.order_id);
+                            if (foundOrder) {
+                              setSelectedOrder(foundOrder);
+                              setActiveTab("orders");
+                            }
+                          }
+                          setIsNotificationDrawerOpen(false);
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                          n.read
+                            ? "bg-white border-gray-100 hover:border-gray-200 opacity-75"
+                            : "bg-amber-50/30 border-amber-100 hover:border-amber-200 shadow-3xs"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${typeBadgeColor}`}>
+                            {n.type || "System"}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <h4 className={`text-xs font-bold ${n.read ? "text-[#2A1E17]/85" : "text-[#2A1E17]"}`}>
+                            {n.title}
+                          </h4>
+                          <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                            {n.message}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {notifications.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
+                      <Bell className="h-10 w-10 text-gray-200 mb-3" />
+                      <h4 className="font-serif font-bold text-xs text-[#2A1E17]">No Notifications yet</h4>
+                      <p className="text-[10px] text-gray-400 mt-1 max-w-[200px]">New updates and orders will appear here in real-time.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
 
