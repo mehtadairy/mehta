@@ -98,9 +98,26 @@ async function auditLog(
  * 6. Stores all IDs & links into Supabase
  * 7. Sends WhatsApp & Email tracking notifications
  */
+const activeShipmentLocks = new Set<string>();
+
 export async function createShiprocketOrder(orderId: string): Promise<ShipmentCreationResult> {
   console.log(`[ShiprocketShipment] Starting automated shipment creation for order: ${orderId}...`);
 
+  if (activeShipmentLocks.has(orderId)) {
+    console.warn(`[ShiprocketShipment] Concurrent shipment creation blocked for order: ${orderId}`);
+    return { success: true, orderId, isFallback: false, error: 'Shipment creation already in progress' };
+  }
+
+  activeShipmentLocks.add(orderId);
+
+  try {
+    return await executeShipmentWorkflow(orderId);
+  } finally {
+    activeShipmentLocks.delete(orderId);
+  }
+}
+
+async function executeShipmentWorkflow(orderId: string): Promise<ShipmentCreationResult> {
   // 1. Fetch Order and Items from Supabase DB
   const { data: order, error: orderErr } = await supabase
     .from('orders')

@@ -14,10 +14,10 @@ export async function POST(request: Request) {
     const headers = request.headers;
     const configuredSecret = process.env.SHIPROCKET_WEBHOOK_SECRET || 'shiprocket_wh_secret_mehta_2026';
 
-    // 1. Security Verification: Validate secret header if provided
+    // 1. Security Verification: Validate x-shiprocket-secret header
     const receivedSecret = headers.get('x-shiprocket-secret') || headers.get('x-api-key') || '';
-    if (configuredSecret && receivedSecret && receivedSecret !== configuredSecret) {
-      console.warn('[ShiprocketWebhook] Webhook authentication failed: invalid secret header.');
+    if (configuredSecret && (!receivedSecret || receivedSecret !== configuredSecret)) {
+      console.warn('[ShiprocketWebhook] Webhook authentication failed: invalid or missing secret header.');
       return NextResponse.json({ error: 'Unauthorized webhook request' }, { status: 401 });
     }
 
@@ -98,7 +98,24 @@ export async function POST(request: Request) {
       dbShipmentStatus = 'Delivery Failed';
     }
 
-    // 4. Update Database Tables
+    // 4. Deduplication Check: Skip database update & notification if status hasn't changed
+    const isDuplicateEvent = order.shipment_status === dbShipmentStatus;
+
+    if (isDuplicateEvent) {
+      console.log(`[ShiprocketWebhook] Duplicate webhook event received for Order ${order.order_number || order.id} (Status already ${dbShipmentStatus}). Skipping redundant update.`);
+      await supabase.from('shipping_logs').insert([{
+        order_id: order.id,
+        action: 'WEBHOOK_DUPLICATE_SKIPPED',
+        request_payload: payload,
+        response_payload: { status: 'skipped_duplicate', currentStatus: dbShipmentStatus },
+        status: 'SUCCESS',
+        created_at: new Date().toISOString()
+      }]);
+
+      return NextResponse.json({ status: 'ok', detail: 'duplicate_skipped', orderId: order.id });
+    }
+
+    // Update Database Tables
     const updatePayload: any = {
       status: dbStatus,
       shipment_status: dbShipmentStatus

@@ -65,9 +65,9 @@ export async function getShiprocketToken(): Promise<ShiprocketAuthResult> {
     console.warn('[ShiprocketAuth] Notice: DB config read warning:', e);
   }
 
-  // 3. Credentials resolution
-  const email = process.env.SHIPROCKET_EMAIL || process.env.NEXT_PUBLIC_SHIPROCKET_EMAIL;
-  const password = process.env.SHIPROCKET_PASSWORD || process.env.NEXT_PUBLIC_SHIPROCKET_PASSWORD;
+  // 3. Credentials resolution (backend secrets only)
+  const email = process.env.SHIPROCKET_EMAIL;
+  const password = process.env.SHIPROCKET_PASSWORD;
 
   if (!email || !password) {
     console.warn('[ShiprocketAuth] Credentials missing in environment variables. Operating in simulation fallback mode.');

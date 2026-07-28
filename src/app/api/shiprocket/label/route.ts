@@ -1,8 +1,28 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { verifySession } from '@/lib/auth-utils';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
 export async function GET(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const workerToken = cookieStore.get('mehta_worker_token')?.value;
+
+    let isAuthorized = false;
+    if (adminToken) {
+      const adminPayload = await verifySession(adminToken);
+      if (adminPayload?.role === 'super_admin') isAuthorized = true;
+    }
+    if (!isAuthorized && workerToken) {
+      const workerPayload = await verifySession(workerToken);
+      if (workerPayload?.employeeId) isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Unauthorized: Admin or Worker authentication required' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 

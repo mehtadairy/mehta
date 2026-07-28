@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { verifySession, verifyCustomerSession } from '@/lib/auth-utils';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { getShiprocketToken } from '@/lib/services/shiprocket/auth';
 
@@ -24,10 +26,39 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // 🔒 2. Authorization & Privacy Check (IDOR Protection)
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const customerToken = cookieStore.get('mehta_customer_token')?.value;
+
+    let isAuthorizedUser = false;
+
+    if (adminToken) {
+      const adminPayload = await verifySession(adminToken);
+      if (adminPayload?.role === 'super_admin') isAuthorizedUser = true;
+    }
+
+    if (!isAuthorizedUser && customerToken) {
+      const customerPayload = await verifyCustomerSession(customerToken);
+      if (customerPayload?.id && (order.customer_id === customerPayload.id || order.user_phone === customerPayload.phone)) {
+        isAuthorizedUser = true;
+      }
+    }
+
+    const rawAddr = order.shipping_address || {};
+    const sanitizedAddress = isAuthorizedUser
+      ? rawAddr
+      : {
+          city: rawAddr.city || 'City',
+          state: rawAddr.state || 'State',
+          pincode: rawAddr.pincode || '******',
+          street: '***** Street Address (Redacted for Privacy) *****',
+        };
+
     const awbNumber = order.awb_number || order.shiprocket_shipments?.[0]?.awb_number;
     let liveTrackingData = null;
 
-    // 2. Try fetching live status from Shiprocket API if AWB exists
+    // 3. Fetch live status from Shiprocket API if AWB exists
     if (awbNumber) {
       try {
         const authRes = await getShiprocketToken();
@@ -57,9 +88,13 @@ export async function GET(request: Request) {
         awbNumber: awbNumber || 'AWB-PENDING',
         trackingUrl: order.tracking_url || `https://shiprocket.co/tracking/${awbNumber}`,
         deliveryEta: order.delivery_eta || '2-4 Days',
-        shippingAddress: order.shipping_address,
+        shippingAddress: sanitizedAddress,
         createdAt: order.created_at,
-        items: order.order_items
+        items: (order.order_items || []).map((item: any) => ({
+          name: item.product_name || item.name,
+          weight: item.weight,
+          quantity: item.quantity
+        }))
       },
       liveTracking: liveTrackingData
     });
