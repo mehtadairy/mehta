@@ -1604,7 +1604,11 @@ function CheckoutContent() {
 
                 <div className="flex justify-between text-xs text-[#7E6B5A]">
                   <span>Delivery Charge</span>
-                  {effectiveDeliveryCharge === 0 ? (
+                  {isPincodeLoading ? (
+                    <span className="text-[10px] font-bold text-[#D46D2D] animate-pulse flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Calculating rate...
+                    </span>
+                  ) : effectiveDeliveryCharge === 0 ? (
                     <span className="text-emerald-600 font-bold uppercase text-[10px] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Free</span>
                   ) : (
                     <span className="font-bold text-[#2A1E17]">₹{effectiveDeliveryCharge}</span>
