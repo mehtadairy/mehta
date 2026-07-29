@@ -1,6 +1,8 @@
 import { getShiprocketToken } from './auth';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
+import { calculatePackageDimensions } from './weight-calculator';
+
 const SHIPROCKET_SERVICEABILITY_URL = 'https://apiv2.shiprocket.in/v1/external/courier/serviceability/';
 
 export interface CourierOption {
@@ -23,6 +25,10 @@ export interface ServiceabilityResult {
   pincode: string;
   pickupPincode: string;
   weightInKg: number;
+  length?: number;
+  breadth?: number;
+  height?: number;
+  declaredValue?: number;
   deliveryCharge: number;
   estimatedDeliveryTime: string;
   codAvailable: boolean;
@@ -41,11 +47,20 @@ export async function checkShiprocketServiceability(
   deliveryPincode: string,
   weightInKg: number = 0.5,
   isCod: boolean = false,
-  subtotal: number = 0
+  subtotal: number = 0,
+  customLength?: number,
+  customBreadth?: number,
+  customHeight?: number
 ): Promise<ServiceabilityResult> {
   const cleanPincode = (deliveryPincode || '').trim();
   const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE || '396001';
   const actualWeight = Math.max(0.1, Number(weightInKg) || 0.5);
+  const declaredValue = Math.max(0, Number(subtotal) || 0);
+
+  const dims = calculatePackageDimensions(actualWeight);
+  const length = customLength || dims.length;
+  const breadth = customBreadth || dims.breadth;
+  const height = customHeight || dims.height;
 
   if (!cleanPincode || cleanPincode.length < 6) {
     return {
@@ -54,6 +69,10 @@ export async function checkShiprocketServiceability(
       pincode: cleanPincode,
       pickupPincode,
       weightInKg: actualWeight,
+      length,
+      breadth,
+      height,
+      declaredValue,
       deliveryCharge: 0,
       estimatedDeliveryTime: 'N/A',
       codAvailable: false,
@@ -70,15 +89,21 @@ export async function checkShiprocketServiceability(
     return getFallbackServiceability(cleanPincode, actualWeight, isCod, subtotal);
   }
 
-  // 2. Query Shiprocket API
+  // 2. Query Shiprocket Rate Calculator API
   try {
     const url = new URL(SHIPROCKET_SERVICEABILITY_URL);
     url.searchParams.append('pickup_postcode', pickupPincode);
     url.searchParams.append('delivery_postcode', cleanPincode);
     url.searchParams.append('weight', String(actualWeight));
     url.searchParams.append('cod', isCod ? '1' : '0');
+    if (declaredValue > 0) {
+      url.searchParams.append('declared_value', String(declaredValue));
+    }
+    url.searchParams.append('length', String(length));
+    url.searchParams.append('breadth', String(breadth));
+    url.searchParams.append('height', String(height));
 
-    console.log(`[ShiprocketServiceability] Checking serviceability for pincode ${cleanPincode}, weight ${actualWeight}kg...`);
+    console.log(`[ShiprocketServiceability] Querying Rate API: Pincode=${cleanPincode}, Weight=${actualWeight}kg, Dims=${length}x${breadth}x${height}cm, DeclaredValue=₹${declaredValue}, COD=${isCod}`);
 
     const response = await fetch(url.toString(), {
       method: 'GET',

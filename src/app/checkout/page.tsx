@@ -9,6 +9,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import { BUSINESS } from "@/lib/businessConfig";
+import { calculateCartTotalWeight } from "@/lib/services/shiprocket/weight-calculator";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -493,6 +494,9 @@ function CheckoutContent() {
       if (!selectedAddress || !selectedAddress.pincode) return;
 
       const userPincode = selectedAddress.pincode.trim();
+      const cartWeightKg = calculateCartTotalWeight(cart);
+      const isCodPayment = paymentMethod === 'COD';
+
       setIsPincodeLoading(true);
       try {
         const res = await fetch('/api/delivery/check-serviceability', {
@@ -500,8 +504,9 @@ function CheckoutContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pincode: userPincode,
-            weightInKg: 0.5,
-            subtotal: cartSubtotal
+            weightInKg: cartWeightKg,
+            subtotal: cartSubtotal,
+            isCod: isCodPayment
           })
         });
         const result = await res.json();
@@ -531,7 +536,7 @@ function CheckoutContent() {
     };
 
     fetchDeliveryZone();
-  }, [selectedAddressId, deliveryMethod, cartSubtotal, cart.length, addresses]);
+  }, [selectedAddressId, deliveryMethod, cartSubtotal, cart, paymentMethod, addresses]);
 
   const effectiveDeliveryCharge = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : deliveryCharge;
   const totalPayable = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
@@ -1342,8 +1347,9 @@ function CheckoutContent() {
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                           pincode: val,
-                                          weightInKg: 0.5,
-                                          subtotal: cartSubtotal
+                                          weightInKg: calculateCartTotalWeight(cart),
+                                          subtotal: cartSubtotal,
+                                          isCod: paymentMethod === 'COD'
                                         })
                                       });
                                       const result = await checkRes.json();

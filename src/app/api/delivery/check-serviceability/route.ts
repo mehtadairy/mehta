@@ -4,7 +4,7 @@ import { checkShiprocketServiceability } from '@/lib/services/shiprocket/service
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { pincode, weightInKg, isCod, subtotal } = body || {};
+    const { pincode, weightInKg, isCod, subtotal, length, breadth, height } = body || {};
 
     if (!pincode) {
       return NextResponse.json({ success: false, error: 'Pincode is required' }, { status: 400 });
@@ -14,7 +14,10 @@ export async function POST(request: Request) {
       String(pincode).trim(),
       Number(weightInKg) || 0.5,
       Boolean(isCod),
-      Number(subtotal) || 0
+      Number(subtotal) || 0,
+      length ? Number(length) : undefined,
+      breadth ? Number(breadth) : undefined,
+      height ? Number(height) : undefined
     );
 
     return NextResponse.json(result);
@@ -31,6 +34,9 @@ export async function GET(request: Request) {
     const weight = searchParams.get('weight');
     const cod = searchParams.get('cod');
     const subtotal = searchParams.get('subtotal');
+    const length = searchParams.get('length');
+    const breadth = searchParams.get('breadth');
+    const height = searchParams.get('height');
 
     if (!pincode) {
       return NextResponse.json({ success: false, error: 'Pincode is required' }, { status: 400 });
@@ -40,7 +46,10 @@ export async function GET(request: Request) {
       pincode.trim(),
       Number(weight) || 0.5,
       cod === '1' || cod === 'true',
-      Number(subtotal) || 0
+      Number(subtotal) || 0,
+      length ? Number(length) : undefined,
+      breadth ? Number(breadth) : undefined,
+      height ? Number(height) : undefined
     );
 
     return NextResponse.json(result);
