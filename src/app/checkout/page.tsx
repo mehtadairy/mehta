@@ -495,7 +495,7 @@ function CheckoutContent() {
 
       const userPincode = selectedAddress.pincode.trim();
       const cartWeightKg = calculateCartTotalWeight(cart);
-      const isCodPayment = paymentMethod === 'COD';
+      const isCodPayment = paymentOption === 'COD';
 
       setIsPincodeLoading(true);
       try {
@@ -536,7 +536,7 @@ function CheckoutContent() {
     };
 
     fetchDeliveryZone();
-  }, [selectedAddressId, deliveryMethod, cartSubtotal, cart, paymentMethod, addresses]);
+  }, [selectedAddressId, deliveryMethod, cartSubtotal, cart, paymentOption, addresses]);
 
   const effectiveDeliveryCharge = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : deliveryCharge;
   const totalPayable = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
@@ -1349,7 +1349,7 @@ function CheckoutContent() {
                                           pincode: val,
                                           weightInKg: calculateCartTotalWeight(cart),
                                           subtotal: cartSubtotal,
-                                          isCod: paymentMethod === 'COD'
+                                          isCod: paymentOption === 'COD'
                                         })
                                       });
                                       const result = await checkRes.json();
