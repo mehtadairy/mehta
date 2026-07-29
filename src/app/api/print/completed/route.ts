@@ -12,48 +12,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { orderId, printerName, printedBy } = await request.json();
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    const { orderId, jobId, printerName, printedBy } = await request.json();
+    if (!orderId && !jobId) {
+      return NextResponse.json({ error: 'Order ID or Job ID is required' }, { status: 400 });
     }
+
+    let targetOrderId = orderId;
 
     // 1. Fetch order details to log correctly
-    const { data: order, error: fetchError } = await supabaseServer
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .maybeSingle();
+    if (targetOrderId) {
+      const { data: order } = await supabaseServer
+        .from('orders')
+        .select('*')
+        .eq('id', targetOrderId)
+        .maybeSingle();
 
-    if (fetchError || !order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
-
-    console.log(`[PrintCompletedAPI] Marking order ${order.order_number} as printed by ${printedBy} on printer ${printerName}`);
-
-    // 2. Update orders print status and advance step to 'Preparing' (unless already in advanced state)
-    const advancedStatuses = ['Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
-    const targetStatus = advancedStatuses.includes(order.status) ? order.status : 'Preparing';
-
-    const { error: updateError } = await supabaseServer
-      .from('orders')
-      .update({
-        printed: true,
-        printed_at: new Date().toISOString(),
-        printed_by: printedBy || 'Agent',
-        print_status: 'printed',
-        status: targetStatus
-      })
-      .eq('id', orderId);
-
-    if (updateError) {
-      throw updateError;
+      if (order) {
+        const advancedStatuses = ['Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+        const targetStatus = advancedStatuses.includes(order.status) ? order.status : 'Preparing';
+        await supabaseServer
+          .from('orders')
+          .update({
+            printed: true,
+            printed_at: new Date().toISOString(),
+            printed_by: printedBy || 'Agent',
+            print_status: 'printed',
+            status: targetStatus
+          })
+          .eq('id', targetOrderId);
+      }
     }
 
     // Update print_jobs table status
-    await supabaseServer
-      .from('print_jobs')
-      .update({ status: 'printed', updated_at: new Date().toISOString() })
-      .eq('order_id', orderId);
+    if (jobId) {
+      await supabaseServer
+        .from('print_jobs')
+        .update({ status: 'printed', updated_at: new Date().toISOString() })
+        .eq('id', jobId);
+    } else if (orderId) {
+      await supabaseServer
+        .from('print_jobs')
+        .update({ status: 'printed', updated_at: new Date().toISOString() })
+        .eq('order_id', orderId);
+    }
 
     // 3. Log success entry in print_logs
     await supabaseServer

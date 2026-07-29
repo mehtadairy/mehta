@@ -16,14 +16,16 @@ export class PrintingService {
           .eq('order_id', order.id);
       }
       
-      // Prevent duplicate printing queue entries for the same order
+      // Prevent duplicate printing queue entries for the same order across multiple webhooks
       const { data: existingJobs } = await supabase
         .from('print_jobs')
-        .select('target_printer')
+        .select('target_printer, status')
         .eq('order_id', order.id);
         
-      const existingPrinters = existingJobs?.map(j => j.target_printer) || [];
-      const jobs = [];
+      if (existingJobs && existingJobs.length > 0 && !isReprint) {
+        console.log(`[PrintingService] Print jobs already exist for order ${order.id}. Skipping duplicate trigger.`);
+        return;
+      }
       
       // Load print toggles from database configuration
       const { data: printerSettings } = await supabase
@@ -33,10 +35,16 @@ export class PrintingService {
         .maybeSingle();
 
       const queues = [];
-      if (printerSettings?.print_billing !== false) queues.push('billing');
-      if (printerSettings?.print_kitchen === true) queues.push('kitchen');
-      if (printerSettings?.print_packing !== false) queues.push('packing');
-      if (queues.length === 0) queues.push('packing');
+      const printBilling = printerSettings?.print_billing !== false;
+      const printKitchen = printerSettings?.print_kitchen_receipt === true || printerSettings?.print_kitchen === true;
+      const printPacking = printerSettings?.print_packing_slip === true || printerSettings?.print_packing === true;
+
+      if (printBilling) queues.push('billing');
+      if (printKitchen) queues.push('kitchen');
+      if (printPacking) queues.push('packing');
+
+      // Default to billing if no queue selected
+      if (queues.length === 0) queues.push('billing');
       
       // Determine items list
       const items = order.items || order.order_items || [];
@@ -95,11 +103,8 @@ export class PrintingService {
         shopFSSAI: '10713006000140'
       };
 
+      const jobs = [];
       for (const target of queues) {
-        if (existingPrinters.includes(target)) {
-          console.log(`[PrintingService] Print job for '${target}' already exists for order ${order.id}. Skipping duplicate.`);
-          continue;
-        }
         jobs.push({
           order_id: order.id,
           branch_id: branchId,
@@ -111,7 +116,7 @@ export class PrintingService {
 
       if (jobs.length > 0) {
         await supabase.from('print_jobs').insert(jobs);
-        console.log(`[PrintingService] Queued ${jobs.length} jobs successfully for order ${order.id}.`);
+        console.log(`[PrintingService] Queued ${jobs.length} job(s) (${queues.join(', ')}) for order ${order.id}.`);
       }
 
       // Mark order print status as pending
@@ -128,6 +133,19 @@ export class PrintingService {
   static async queueOrderCancellationPrint(order: any, reason: string = 'Customer Request', branchId: string = 'Main') {
     try {
       console.log(`[PrintingService] Queueing CANCELLED ORDER slip for order ${order.order_number || order.id}...`);
+
+      // Prevent duplicate cancellation slip queueing
+      const { data: existingCancelJob } = await supabase
+        .from('print_jobs')
+        .select('id')
+        .eq('order_id', order.id)
+        .eq('target_printer', 'cancellation')
+        .maybeSingle();
+
+      if (existingCancelJob) {
+        console.log(`[PrintingService] Cancellation slip already queued for order ${order.id}. Skipping duplicate.`);
+        return;
+      }
 
       const items = order.items || order.order_items || [];
       const formattedItems = items.map((i: any) => ({
@@ -155,19 +173,6 @@ export class PrintingService {
         paperWidth: '58mm',
         shopPhone: '9913252232'
       };
-
-      // Check if cancellation job already exists
-      const { data: existingCancelJob } = await supabase
-        .from('print_jobs')
-        .select('id')
-        .eq('order_id', order.id)
-        .eq('target_printer', 'cancellation')
-        .maybeSingle();
-
-      if (existingCancelJob) {
-        console.log(`[PrintingService] Cancellation slip already queued for order ${order.id}. Skipping duplicate.`);
-        return;
-      }
 
       await supabase.from('print_jobs').insert([{
         order_id: order.id,

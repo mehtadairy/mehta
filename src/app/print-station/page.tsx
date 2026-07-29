@@ -68,7 +68,7 @@ export default function PrintStation() {
           // Assume printed after print dialog closes
           // Or we can just use a timeout since kiosk mode prints immediately
           setTimeout(async () => {
-            await markOrderPrinted(orderToPrint.id);
+            await markOrderPrinted(orderToPrint.id, orderToPrint.jobId);
           }, 1000);
           
         }, 1000);
@@ -79,7 +79,7 @@ export default function PrintStation() {
     }
   };
 
-  const markOrderPrinted = async (orderId: string) => {
+  const markOrderPrinted = async (orderId: string, jobId?: string) => {
     try {
       addLog(`Marking order ${orderId.slice(0,8)} as printed...`);
       const res = await fetch("/api/print/completed", {
@@ -90,6 +90,7 @@ export default function PrintStation() {
         },
         body: JSON.stringify({
           orderId,
+          jobId,
           printerName: "Magic POS Kiosk",
           printedBy: "Auto Print Station",
         }),
