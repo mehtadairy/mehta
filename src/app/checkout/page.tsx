@@ -1330,25 +1330,33 @@ function CheckoutContent() {
                                   if (fetchedState) {
                                     setNewState(fetchedState);
                                     try {
-                                     const res = await fetch(`/api/delivery/check?pincode=${val}&subtotal=${cartSubtotal}`);
-                                     const result = await res.json();
-                                     if (result.success) {
-                                       setPincodeStatus({
-                                         type: 'success',
-                                         message: `Serviceable Area! Shipping: ₹${result.deliveryCharge}${result.freeDeliveryEligible ? ' (Free Shipping Threshold Met)' : ''} | Delivery: ${result.estimatedDeliveryTime || '1-2 Days'}`
-                                       });
-                                     } else {
-                                       setPincodeStatus({
-                                         type: 'warning',
-                                         message: "This area is outside our home delivery region. Only Self Pickup will be available."
-                                       });
-                                     }
-                                   } catch (err) {
-                                     setPincodeStatus({
-                                       type: 'warning',
-                                       message: "Unable to verify delivery status. Standard fallback applies."
-                                     });
-                                   }
+                                      const checkRes = await fetch('/api/delivery/check-serviceability', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          pincode: val,
+                                          weightInKg: 0.5,
+                                          subtotal: cartSubtotal
+                                        })
+                                      });
+                                      const result = await checkRes.json();
+                                      if (result.success && result.serviceable) {
+                                        setPincodeStatus({
+                                          type: 'success',
+                                          message: `Serviceable Area! Shipping: ₹${result.deliveryCharge}${result.freeDeliveryEligible ? ' (Free Shipping Threshold Met)' : ''} | Delivery: ${result.estimatedDeliveryTime || '1-2 Days'}`
+                                        });
+                                      } else {
+                                        setPincodeStatus({
+                                          type: 'warning',
+                                          message: "This area is outside our home delivery region. Only Self Pickup will be available."
+                                        });
+                                      }
+                                    } catch (err) {
+                                      setPincodeStatus({
+                                        type: 'warning',
+                                        message: "Unable to verify delivery status. Standard fallback applies."
+                                      });
+                                    }
                                   }
                                 } else {
                                   setPincodeStatus({

@@ -15,7 +15,10 @@ export async function GET(req: Request) {
       );
     }
 
-    const result = await calculateDeliveryCharge(pincode, subtotal);
+    const weightStr = searchParams.get('weight') || '0.5';
+    const weight = parseFloat(weightStr);
+
+    const result = await calculateDeliveryCharge(pincode, subtotal, weight);
 
     if (!result.success) {
       const status = result.error?.includes('Database') ? 500 : 404;
