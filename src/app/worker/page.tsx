@@ -1178,7 +1178,24 @@ export default function WorkerPanel() {
                                 </td>
                                 <td className="py-3 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
-                                    {(o.status === "Cancelled" || o.status === "Cancellation Requested") ? (
+                                    {o.status === "Cancellation Requested" ? (
+                                      <div className="flex items-center gap-1">
+                                        <button 
+                                          onClick={() => setShowStatusConfirm({ orderId: o.id, nextStatus: "Cancelled" })}
+                                          className="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[0.65rem] font-black uppercase tracking-wider cursor-pointer shadow-2xs"
+                                          title="Approve Customer Cancellation Request"
+                                        >
+                                          ✓ Approve Cancel
+                                        </button>
+                                        <button 
+                                          onClick={() => setShowStatusConfirm({ orderId: o.id, nextStatus: "Processing" })}
+                                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded text-[0.65rem] font-bold cursor-pointer"
+                                          title="Reject Request & Resume Order"
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    ) : o.status === "Cancelled" ? (
                                       <span className="px-3 py-1.5 bg-red-600 text-white text-[0.62rem] font-black rounded-lg uppercase tracking-wider">
                                         CANCELLED
                                       </span>

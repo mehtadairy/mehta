@@ -168,6 +168,33 @@ export function OrderCard({
         </div>
       </div>
 
+      {/* ── CANCELLATION APPROVAL BANNER (High Visibility) ── */}
+      {order.status === 'Cancellation Requested' && (
+        <div className="bg-rose-50 border border-rose-300 rounded-lg p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 my-1">
+          <div className="flex items-center gap-2 text-rose-900">
+            <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider block">Customer Cancellation Request</span>
+              <span className="text-[11px] text-rose-700 font-medium">Reason: {order.cancellationReason || "Customer requested order cancellation"}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <button
+              onClick={() => onUpdateStatus(order.id, 'Cancelled')}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded shadow-xs flex items-center gap-1 cursor-pointer"
+            >
+              ✓ Approve Cancellation
+            </button>
+            <button
+              onClick={() => onUpdateStatus(order.id, 'Processing')}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold px-3 py-1 rounded border border-gray-300 cursor-pointer"
+            >
+              Reject Request
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── SECOND ROW: PRODUCT CHIPS (Visible by default) ── */}
       <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100">
         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Items:</span>
@@ -269,9 +296,11 @@ export function OrderCard({
                   className="bg-white border border-gray-300 rounded px-2 py-1 text-xs font-bold text-gray-900 outline-none cursor-pointer"
                 >
                   <option value="Processing">Processing</option>
+                  <option value="Preparing">Preparing</option>
                   <option value="Packed">Packed</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
+                  <option value="Cancellation Requested">Cancellation Requested</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
               </div>

@@ -45,6 +45,19 @@ export async function POST(request: Request) {
     // 3. Dispatch WhatsApp Notification & Timeline Event
     OrderStatusNotificationService.handleStatusChange(orderId, newStatus, 'Admin').catch(console.error);
 
+    // 4. If status is updated to Cancelled, queue POS cancellation slip
+    if (newStatus === 'Cancelled') {
+      try {
+        const { data: fullOrder } = await supabase.from('orders').select('*, order_items(*)').eq('id', orderId).single();
+        if (fullOrder) {
+          const { PrintingService } = await import('@/lib/services/printing');
+          await PrintingService.queueOrderCancellationPrint(fullOrder, 'Cancelled by Admin');
+        }
+      } catch (printErr) {
+        console.warn("[AdminUpdateOrder] Cancellation print queue warning:", printErr);
+      }
+    }
+
     return NextResponse.json({ success: true });
 
   } catch (error: any) {

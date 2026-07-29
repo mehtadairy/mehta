@@ -37,10 +37,21 @@ export async function POST(request: Request) {
     }]);
 
     // 3. Dispatch WhatsApp Notification & Timeline Event
-    // We import here or at the top
     const { OrderStatusNotificationService } = await import('@/lib/services/order-status-notifications');
-    // Fire and forget (don't await) so we don't slow down the worker response
     OrderStatusNotificationService.handleStatusChange(orderId, nextStatus, workerName).catch(console.error);
+
+    // 4. If status is updated to Cancelled, queue POS cancellation slip
+    if (nextStatus === 'Cancelled') {
+      try {
+        const { data: fullOrder } = await supabaseServer.from('orders').select('*, order_items(*)').eq('id', orderId).single();
+        if (fullOrder) {
+          const { PrintingService } = await import('@/lib/services/printing');
+          await PrintingService.queueOrderCancellationPrint(fullOrder, `Approved by Worker ${workerName || ''}`);
+        }
+      } catch (printErr) {
+        console.warn("[WorkerUpdateOrder] Cancellation print queue warning:", printErr);
+      }
+    }
 
     return NextResponse.json({ success: true });
 
