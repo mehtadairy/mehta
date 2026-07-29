@@ -483,6 +483,12 @@ function CheckoutContent() {
   // Dynamic Delivery Calculation via Shiprocket
   useEffect(() => {
     const fetchDeliveryZone = async () => {
+      if (!cart || cart.length === 0 || cartSubtotal === 0) {
+        setDeliveryCharge(0);
+        setDeliveryDays("");
+        return;
+      }
+
       const selectedAddress = addresses.find(a => a.id === selectedAddressId);
       if (!selectedAddress || !selectedAddress.pincode) return;
 
@@ -525,9 +531,10 @@ function CheckoutContent() {
     };
 
     fetchDeliveryZone();
-  }, [selectedAddressId, deliveryMethod, cartSubtotal, addresses]);
+  }, [selectedAddressId, deliveryMethod, cartSubtotal, cart.length, addresses]);
 
-  const totalPayable = Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
+  const effectiveDeliveryCharge = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : deliveryCharge;
+  const totalPayable = (!cart || cart.length === 0 || cartSubtotal === 0) ? 0 : Math.max(0, cartSubtotal - discountAmount + deliveryCharge);
 
   const handleOpenNewAddressForm = () => {
     if (!editingAddressId && addresses.length >= 2) {
@@ -1591,10 +1598,10 @@ function CheckoutContent() {
 
                 <div className="flex justify-between text-xs text-[#7E6B5A]">
                   <span>Delivery Charge</span>
-                  {deliveryCharge === 0 ? (
+                  {effectiveDeliveryCharge === 0 ? (
                     <span className="text-emerald-600 font-bold uppercase text-[10px] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Free</span>
                   ) : (
-                    <span className="font-bold text-[#2A1E17]">₹{deliveryCharge}</span>
+                    <span className="font-bold text-[#2A1E17]">₹{effectiveDeliveryCharge}</span>
                   )}
                 </div>
 
