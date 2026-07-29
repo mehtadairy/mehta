@@ -68,7 +68,8 @@ import {
     MessageCircle,
     Printer,
     GripVertical,
-    ShieldCheck
+    ShieldCheck,
+    Truck
 } from "lucide-react";
 
 export default function AdminPanel() {
