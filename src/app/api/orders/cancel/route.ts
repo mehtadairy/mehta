@@ -148,25 +148,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // 9. Handle Print Agent
-    // Delete any pending jobs for this order
-    const { data: deletedJobs } = await supabase.from('print_jobs').delete().eq('order_id', orderId).select();
-
-    // If no jobs were deleted, it means it already printed! We must queue a cancellation slip.
-    if (!deletedJobs || deletedJobs.length === 0) {
+    // 9. Handle Print Agent Cancellation Slip Queueing
+    try {
+      const { PrintingService } = await import('@/lib/services/printing');
       const branchId = (order.shipping_address as any)?.branch_id || 'Main';
-      await supabase.from('print_jobs').insert([{
-        order_id: orderId,
-        order_number: order.order_number,
-        target_printer: branchId,
-        document_type: 'cancellation_slip',
-        payload: {
-          orderNumber: order.order_number,
-          customerName: order.user_name || 'Customer',
-          reason: reason
-        },
-        status: 'pending'
-      }]);
+      await PrintingService.queueOrderCancellationPrint(order, reason, branchId);
+    } catch (printErr) {
+      console.error("[CancelOrder] Failed to queue cancellation print slip:", printErr);
     }
 
     // 10. Notify Admin

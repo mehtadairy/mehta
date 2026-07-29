@@ -49,6 +49,12 @@ export async function POST(request: Request) {
       throw updateError;
     }
 
+    // Update print_jobs table status
+    await supabaseServer
+      .from('print_jobs')
+      .update({ status: 'printed', updated_at: new Date().toISOString() })
+      .eq('order_id', orderId);
+
     // 3. Log success entry in print_logs
     await supabaseServer
       .from('print_logs')

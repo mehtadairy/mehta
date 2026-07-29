@@ -2,8 +2,7 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
 export class PrintingService {
   /**
-   * Dispatches print jobs to the queue.
-   * Assumes 3 jobs by default: kitchen, billing, packing (unless specified).
+   * Dispatches standard print jobs to the print_jobs queue.
    */
   static async queueOrderPrints(order: any, branchId: string = 'Main', isReprint: boolean = false) {
     try {
@@ -33,12 +32,10 @@ export class PrintingService {
         .eq('branch', branchId)
         .maybeSingle();
 
-      // Load print toggles from database configuration
       const queues = [];
       if (printerSettings?.print_billing !== false) queues.push('billing');
       if (printerSettings?.print_kitchen === true) queues.push('kitchen');
       if (printerSettings?.print_packing !== false) queues.push('packing');
-      // Always ensure at least packing is queued if nothing matches
       if (queues.length === 0) queues.push('packing');
       
       // Determine items list
@@ -49,6 +46,7 @@ export class PrintingService {
         weight: i.weight,
         price: i.price
       }));
+
       // Cleanly format shipping address for printing
       let addressStr = '';
       let shippingName = '';
@@ -71,7 +69,7 @@ export class PrintingService {
         }
       }
 
-      // Base JSON payload for Print Agent to render into ESC/POS
+      // Base JSON payload for Print Agent
       const payload = {
         orderId: order.id,
         orderNumber: order.orderNumber || order.order_number,
@@ -86,11 +84,11 @@ export class PrintingService {
         deliveryType: order.delivery_type || order.deliveryType || 'Home',
         total: order.total,
         date: order.created_at || order.createdAt || new Date().toISOString(),
-        paymentStatus: order.paymentStatus || order.payment_status,
+        paymentStatus: order.paymentStatus || order.payment_status || 'Pending',
         items: formattedItems,
         trackingUrl: `https://mehtadairy.com/tracking?id=${order.id}`,
         isReprint: isReprint,
-        paperWidth: '58mm', // Forcing 58mm because their physical printer truncates 80mm
+        paperWidth: printerSettings?.paper_width || '58mm',
         shopPhone: '9913252232',
         shopEmail: 'support@mehtadairy.com',
         shopGST: '24ACKPM9230A2ZW',
@@ -111,17 +109,80 @@ export class PrintingService {
         });
       }
 
-      if (jobs.length === 0) {
-        console.log(`[PrintingService] No new print jobs to queue for order ${order.id}.`);
+      if (jobs.length > 0) {
+        await supabase.from('print_jobs').insert(jobs);
+        console.log(`[PrintingService] Queued ${jobs.length} jobs successfully for order ${order.id}.`);
+      }
+
+      // Mark order print status as pending
+      await supabase.from('orders').update({ printed: false, print_status: 'pending' }).eq('id', order.id);
+
+    } catch (err) {
+      console.error("[PrintingService] Failed to queue print jobs:", err);
+    }
+  }
+
+  /**
+   * Dispatches ORDER CANCELLED slip to the print queue.
+   */
+  static async queueOrderCancellationPrint(order: any, reason: string = 'Customer Request', branchId: string = 'Main') {
+    try {
+      console.log(`[PrintingService] Queueing CANCELLED ORDER slip for order ${order.order_number || order.id}...`);
+
+      const items = order.items || order.order_items || [];
+      const formattedItems = items.map((i: any) => ({
+        name: i.productName || i.product_name,
+        qty: i.quantity,
+        weight: i.weight,
+        price: i.price
+      }));
+
+      const cancellationPayload = {
+        printType: 'cancellation_slip',
+        isCancellation: true,
+        header: '*** ORDER CANCELLED ***',
+        orderId: order.id,
+        orderNumber: order.order_number || order.orderNumber,
+        customerName: order.user_name || order.userName || 'Guest Customer',
+        customerPhone: order.user_phone || order.userPhone || 'N/A',
+        orderDate: order.created_at || order.createdAt || new Date().toISOString(),
+        cancellationDate: new Date().toISOString(),
+        paymentStatus: order.payment_status || 'Pending',
+        refundStatus: order.payment_status === 'Refund Pending' ? 'Refund Pending' : (order.payment_method === 'COD' ? 'N/A' : 'Processing'),
+        cancellationReason: reason,
+        items: formattedItems,
+        total: order.total || 0,
+        paperWidth: '58mm',
+        shopPhone: '9913252232'
+      };
+
+      // Check if cancellation job already exists
+      const { data: existingCancelJob } = await supabase
+        .from('print_jobs')
+        .select('id')
+        .eq('order_id', order.id)
+        .eq('target_printer', 'cancellation')
+        .maybeSingle();
+
+      if (existingCancelJob) {
+        console.log(`[PrintingService] Cancellation slip already queued for order ${order.id}. Skipping duplicate.`);
         return;
       }
 
-      const { error } = await supabase.from('print_jobs').insert(jobs);
-      if (error) throw error;
-      
-      console.log(`[PrintingService] Queued ${jobs.length} jobs successfully.`);
+      await supabase.from('print_jobs').insert([{
+        order_id: order.id,
+        branch_id: branchId,
+        target_printer: 'cancellation',
+        status: 'pending',
+        esc_pos_data: JSON.stringify(cancellationPayload)
+      }]);
+
+      // Update orders print_status
+      await supabase.from('orders').update({ printed: false, print_status: 'pending' }).eq('id', order.id);
+
+      console.log(`[PrintingService] Cancellation slip queued successfully for order ${order.order_number || order.id}.`);
     } catch (err) {
-      console.error("[PrintingService] Failed to queue print jobs:", err);
+      console.error('[PrintingService] Failed to queue cancellation print slip:', err);
     }
   }
 }

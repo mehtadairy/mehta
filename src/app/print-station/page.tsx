@@ -173,110 +173,165 @@ export default function PrintStation() {
       {/* --- RECEIPT TEMPLATE (Only visible during print) --- */}
       {currentOrder && (
         <div className="print-show print-receipt">
-          <div className="receipt-header">
-            <h2>MEHTA SWEET MART</h2>
-            <p className="subtitle">Fresh Sweets & Snacks</p>
-            <div className="fancy-divider">
-              <span className="line"></span>
-              <span className="diamond">✧</span>
-              <span className="line"></span>
-            </div>
-          </div>
-          
-          <div className="receipt-section">
-            <div className="detail-row">
-              <div className="detail-label"><ClipboardList size={12} className="icon"/> Order ID</div>
-              <div className="detail-value">{currentOrder.orderNumber || currentOrder.id?.slice(0,8)}</div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label"><CalendarDays size={12} className="icon"/> Date</div>
-              <div className="detail-value">{new Date(currentOrder.createdAt || new Date()).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label"><Clock size={12} className="icon"/> Time</div>
-              <div className="detail-value">{new Date(currentOrder.createdAt || new Date()).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
-            </div>
-          </div>
-          
-          <div className="dashed-divider"></div>
+          {currentOrder.isCancellation ? (
+            // --- CANCELLED ORDER RECEIPT SLIP ---
+            <div className="cancellation-receipt">
+              <div className="receipt-header" style={{ borderBottom: '2px solid black', paddingBottom: '8px' }}>
+                <h1 style={{ fontSize: '22px', fontWeight: '900', margin: '0', textTransform: 'uppercase', color: 'black' }}>
+                  *** ORDER CANCELLED ***
+                </h1>
+                <p className="subtitle" style={{ fontSize: '13px', fontWeight: '700', marginTop: '4px' }}>
+                  MEHTA SWEET MART
+                </p>
+              </div>
 
-          <div className="receipt-section">
-            <div className="detail-row">
-              <div className="detail-label"><User size={12} className="icon"/> Customer</div>
-              <div className="detail-value font-semibold">{currentOrder.userName}</div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label"><Phone size={12} className="icon"/> Phone</div>
-              <div className="detail-value">{currentOrder.userPhone}</div>
-            </div>
-          </div>
+              <div className="receipt-section" style={{ marginTop: '10px' }}>
+                <div className="detail-row"><div className="detail-label">Order Number:</div><div className="detail-value font-bold">{currentOrder.orderNumber}</div></div>
+                <div className="detail-row"><div className="detail-label">Customer:</div><div className="detail-value font-bold">{currentOrder.userName}</div></div>
+                <div className="detail-row"><div className="detail-label">Mobile:</div><div className="detail-value">{currentOrder.userPhone}</div></div>
+                <div className="detail-row"><div className="detail-label">Order Date:</div><div className="detail-value">{new Date(currentOrder.createdAt || new Date()).toLocaleString('en-IN')}</div></div>
+                <div className="detail-row"><div className="detail-label">Cancelled At:</div><div className="detail-value">{new Date().toLocaleString('en-IN')}</div></div>
+                <div className="detail-row"><div className="detail-label">Payment Status:</div><div className="detail-value">{currentOrder.paymentStatus}</div></div>
+                <div className="detail-row"><div className="detail-label">Reason:</div><div className="detail-value font-bold">{currentOrder.cancellationReason || 'Customer Request'}</div></div>
+              </div>
 
-          <div className="dashed-divider"></div>
+              <div className="dashed-divider" style={{ margin: '8px 0' }}></div>
 
-          <div className="receipt-section">
-            <div className="detail-row align-top">
-              <div className="detail-label"><MapPin size={12} className="icon"/> Address</div>
-              <div className="detail-value address-text">
-                {currentOrder.shippingAddress?.street}<br/>
-                {currentOrder.shippingAddress?.city} - {currentOrder.shippingAddress?.pincode}
+              <table className="receipt-items">
+                <thead>
+                  <tr className="table-header-row">
+                    <th className="left">CANCELLED ITEM</th>
+                    <th className="center">QTY</th>
+                    <th className="right">AMT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentOrder.items && currentOrder.items.map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="left font-semibold">{item.productName} {item.weight ? `(${item.weight})` : ''}</td>
+                      <td className="center">{item.quantity}</td>
+                      <td className="right">₹{item.subtotal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="double-divider" style={{ margin: '8px 0' }}></div>
+
+              <div className="summary-row grand-total" style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                <span>TOTAL CANCELLED</span>
+                <span>₹{currentOrder.total}</span>
               </div>
             </div>
-          </div>
-
-          <table className="receipt-items">
-            <thead>
-              <tr className="table-header-row">
-                <th className="left">ITEM</th>
-                <th className="center">QTY</th>
-                <th className="right">AMT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentOrder.items.map((item: any, idx: number) => (
-                <tr key={idx}>
-                  <td className="left font-semibold">{item.productName} {item.weight ? `(${item.weight})` : ''}</td>
-                  <td className="center">{item.quantity}</td>
-                  <td className="right">₹{item.subtotal}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="receipt-summary">
-            <div className="summary-row">
-              <span>Subtotal</span>
-              <span>₹{currentOrder.subtotal}</span>
-            </div>
-            {currentOrder.deliveryCharge > 0 && (
-              <div className="summary-row">
-                <span>Delivery Charge</span>
-                <span>₹{currentOrder.deliveryCharge}</span>
+          ) : (
+            // --- REGULAR NEW ORDER RECEIPT ---
+            <div className="standard-receipt">
+              <div className="receipt-header">
+                <h2>MEHTA SWEET MART</h2>
+                <p className="subtitle">Fresh Sweets & Snacks</p>
+                <div className="fancy-divider">
+                  <span className="line"></span>
+                  <span className="diamond">✧</span>
+                  <span className="line"></span>
+                </div>
               </div>
-            )}
-            <div className="summary-row">
-              <span>Payment Status</span>
-              <span>{currentOrder.paymentStatus}</span>
-            </div>
-            
-            <div className="double-divider"></div>
-            
-            <div className="summary-row grand-total">
-              <span>TOTAL</span>
-              <span>₹{currentOrder.total}</span>
-            </div>
-            
-            <div className="double-divider"></div>
-          </div>
+              
+              <div className="receipt-section">
+                <div className="detail-row">
+                  <div className="detail-label"><ClipboardList size={12} className="icon"/> Order ID</div>
+                  <div className="detail-value">{currentOrder.orderNumber || currentOrder.id?.slice(0,8)}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label"><CalendarDays size={12} className="icon"/> Date</div>
+                  <div className="detail-value">{new Date(currentOrder.createdAt || new Date()).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label"><Clock size={12} className="icon"/> Time</div>
+                  <div className="detail-value">{new Date(currentOrder.createdAt || new Date()).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
+                </div>
+              </div>
+              
+              <div className="dashed-divider"></div>
 
-          <div className="receipt-footer">
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://mehtadairy.com/track/${currentOrder.id}`)}`} alt="QR Code" className="qr-code" />
-            <div className="scan-text">
-              <Smartphone size={10} style={{display: 'inline', marginRight: '2px', verticalAlign: 'text-top'}}/> Scan to track your order
+              <div className="receipt-section">
+                <div className="detail-row">
+                  <div className="detail-label"><User size={12} className="icon"/> Customer</div>
+                  <div className="detail-value font-semibold">{currentOrder.userName}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label"><Phone size={12} className="icon"/> Phone</div>
+                  <div className="detail-value">{currentOrder.userPhone}</div>
+                </div>
+              </div>
+
+              <div className="dashed-divider"></div>
+
+              <div className="receipt-section">
+                <div className="detail-row align-top">
+                  <div className="detail-label"><MapPin size={12} className="icon"/> Address</div>
+                  <div className="detail-value address-text">
+                    {currentOrder.shippingAddress?.street}<br/>
+                    {currentOrder.shippingAddress?.city} - {currentOrder.shippingAddress?.pincode}
+                  </div>
+                </div>
+              </div>
+
+              <table className="receipt-items">
+                <thead>
+                  <tr className="table-header-row">
+                    <th className="left">ITEM</th>
+                    <th className="center">QTY</th>
+                    <th className="right">AMT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentOrder.items.map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="left font-semibold">{item.productName} {item.weight ? `(${item.weight})` : ''}</td>
+                      <td className="center">{item.quantity}</td>
+                      <td className="right">₹{item.subtotal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="receipt-summary">
+                <div className="summary-row">
+                  <span>Subtotal</span>
+                  <span>₹{currentOrder.subtotal}</span>
+                </div>
+                {currentOrder.deliveryCharge > 0 && (
+                  <div className="summary-row">
+                    <span>Delivery Charge</span>
+                    <span>₹{currentOrder.deliveryCharge}</span>
+                  </div>
+                )}
+                <div className="summary-row">
+                  <span>Payment Status</span>
+                  <span>{currentOrder.paymentStatus}</span>
+                </div>
+                
+                <div className="double-divider"></div>
+                
+                <div className="summary-row grand-total">
+                  <span>TOTAL</span>
+                  <span>₹{currentOrder.total}</span>
+                </div>
+                
+                <div className="double-divider"></div>
+              </div>
+
+              <div className="receipt-footer">
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://mehtadairy.com/track/${currentOrder.id}`)}`} alt="QR Code" className="qr-code" />
+                <div className="scan-text">
+                  <Smartphone size={10} style={{display: 'inline', marginRight: '2px', verticalAlign: 'text-top'}}/> Scan to track your order
+                </div>
+                <div className="dashed-divider" style={{margin: '10px 0'}}></div>
+                <p className="thank-you"><Heart size={10} style={{display: 'inline', fill: 'black'}}/> Thank You!</p>
+                <p>We appreciate your order.</p>
+              </div>
             </div>
-            <div className="dashed-divider" style={{margin: '10px 0'}}></div>
-            <p className="thank-you"><Heart size={10} style={{display: 'inline', fill: 'black'}}/> Thank You!</p>
-            <p>We appreciate your order.</p>
-          </div>
+          )}
         </div>
       )}
 
