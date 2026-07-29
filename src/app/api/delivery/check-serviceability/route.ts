@@ -1,28 +1,36 @@
 import { NextResponse } from 'next/server';
-import { checkShiprocketServiceability } from '@/lib/services/shiprocket/serviceability';
+import { getShippingSettings, calculateSlabShipping } from '@/lib/services/shipping-calculator';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { pincode, weightInKg, isCod, subtotal, length, breadth, height } = body || {};
+    const { pincode, state, cart = [] } = body || {};
 
-    if (!pincode) {
-      return NextResponse.json({ success: false, error: 'Pincode is required' }, { status: 400 });
+    if (!pincode && !state) {
+      return NextResponse.json({ success: false, error: 'Pincode or state is required' }, { status: 400 });
     }
 
-    const result = await checkShiprocketServiceability(
-      String(pincode).trim(),
-      Number(weightInKg) || 0.5,
-      Boolean(isCod),
-      Number(subtotal) || 0,
-      length ? Number(length) : undefined,
-      breadth ? Number(breadth) : undefined,
-      height ? Number(height) : undefined
-    );
+    const settings = await getShippingSettings();
+    const calculation = calculateSlabShipping(cart, { pincode, state }, settings);
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      success: true,
+      serviceable: true,
+      deliveryCharge: calculation.totalShippingCharge,
+      baseDeliveryCharge: calculation.baseShippingCharge,
+      coinKhakhraSurcharge: calculation.coinKhakhraSurcharge,
+      hasCoinKhakhra: calculation.hasCoinKhakhra,
+      isCoinKhakhraAlone: calculation.isCoinKhakhraAlone,
+      estimatedDeliveryTime: calculation.estimatedDeliveryTime,
+      zone: calculation.zone,
+      slabsCount: calculation.slabsCount,
+      ratePerSlab: calculation.ratePerSlab,
+      totalWeightKg: calculation.totalWeightKg,
+      billableWeightKg: calculation.billableWeightKg,
+      settings
+    });
   } catch (error: any) {
-    console.error('Serviceability API error:', error);
+    console.error('Delivery calculation API error:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -30,31 +38,24 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const pincode = searchParams.get('pincode');
-    const weight = searchParams.get('weight');
-    const cod = searchParams.get('cod');
-    const subtotal = searchParams.get('subtotal');
-    const length = searchParams.get('length');
-    const breadth = searchParams.get('breadth');
-    const height = searchParams.get('height');
+    const pincode = searchParams.get('pincode') || undefined;
+    const state = searchParams.get('state') || undefined;
 
-    if (!pincode) {
-      return NextResponse.json({ success: false, error: 'Pincode is required' }, { status: 400 });
-    }
+    const settings = await getShippingSettings();
+    const calculation = calculateSlabShipping([], { pincode, state }, settings);
 
-    const result = await checkShiprocketServiceability(
-      pincode.trim(),
-      Number(weight) || 0.5,
-      cod === '1' || cod === 'true',
-      Number(subtotal) || 0,
-      length ? Number(length) : undefined,
-      breadth ? Number(breadth) : undefined,
-      height ? Number(height) : undefined
-    );
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      success: true,
+      serviceable: true,
+      deliveryCharge: calculation.totalShippingCharge,
+      baseDeliveryCharge: calculation.baseShippingCharge,
+      coinKhakhraSurcharge: calculation.coinKhakhraSurcharge,
+      estimatedDeliveryTime: calculation.estimatedDeliveryTime,
+      zone: calculation.zone,
+      settings
+    });
   } catch (error: any) {
-    console.error('Serviceability API error:', error);
+    console.error('Delivery calculation API error:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

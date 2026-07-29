@@ -480,22 +480,22 @@ function CheckoutContent() {
 
   const [shiprocketCouriers, setShiprocketCouriers] = useState<any[]>([]);
   const [selectedCourierId, setSelectedCourierId] = useState<number | null>(null);
+  const [baseDeliveryCharge, setBaseDeliveryCharge] = useState<number>(0);
+  const [coinKhakhraSurcharge, setCoinKhakhraSurcharge] = useState<number>(0);
 
-  // Dynamic Delivery Calculation via Shiprocket
+  // Dynamic Delivery Calculation via Admin Slab Rules
   useEffect(() => {
     const fetchDeliveryZone = async () => {
       if (!cart || cart.length === 0 || cartSubtotal === 0) {
         setDeliveryCharge(0);
+        setBaseDeliveryCharge(0);
+        setCoinKhakhraSurcharge(0);
         setDeliveryDays("");
         return;
       }
 
       const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-      if (!selectedAddress || !selectedAddress.pincode) return;
-
-      const userPincode = selectedAddress.pincode.trim();
-      const cartWeightKg = calculateCartTotalWeight(cart);
-      const isCodPayment = paymentOption === 'COD';
+      if (!selectedAddress) return;
 
       setIsPincodeLoading(true);
       try {
@@ -503,33 +503,28 @@ function CheckoutContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            pincode: userPincode,
-            weightInKg: cartWeightKg,
-            subtotal: cartSubtotal,
-            isCod: isCodPayment
+            pincode: selectedAddress.pincode,
+            state: selectedAddress.state,
+            cart: cart
           })
         });
         const result = await res.json();
 
-        if (result.success && result.serviceable) {
+        if (result.success) {
           setPincodeError("");
           setDeliveryDays(result.estimatedDeliveryTime || "1-3 Days");
-          setDeliveryCharge(result.deliveryCharge);
-          setShiprocketCouriers(result.availableCouriers || []);
-          if (result.recommendedCourier) {
-            setSelectedCourierId(result.recommendedCourier.courierId);
-          }
+          setBaseDeliveryCharge(result.baseDeliveryCharge ?? result.deliveryCharge);
+          setCoinKhakhraSurcharge(result.coinKhakhraSurcharge || 0);
+          setDeliveryCharge(result.deliveryCharge || 0);
         } else {
           setDeliveryCharge(0);
+          setBaseDeliveryCharge(0);
+          setCoinKhakhraSurcharge(0);
           setDeliveryDays("");
-          setShiprocketCouriers([]);
-          setPincodeError(`We do not currently deliver to this pincode (${userPincode}) for Home Delivery.`);
+          setPincodeError("Unable to calculate shipping charge for this location.");
         }
       } catch (err) {
         console.error("Failed to check delivery charge:", err);
-        setDeliveryCharge(70);
-        setDeliveryDays("2-4 Days");
-        setPincodeError("Unable to verify delivery zone. Standard rates applied.");
       } finally {
         setIsPincodeLoading(false);
       }
@@ -1598,7 +1593,7 @@ function CheckoutContent() {
                 </div>
 
                 <div className="flex justify-between text-xs text-[#7E6B5A]">
-                  <span>Delivery Charge</span>
+                  <span>Shipping Charge</span>
                   {isPincodeLoading ? (
                     <span className="text-[10px] font-bold text-[#D46D2D] animate-pulse flex items-center gap-1">
                       <Loader2 className="w-3 h-3 animate-spin" /> Calculating rate...
@@ -1606,9 +1601,18 @@ function CheckoutContent() {
                   ) : effectiveDeliveryCharge === 0 ? (
                     <span className="text-emerald-600 font-bold uppercase text-[10px] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Free</span>
                   ) : (
-                    <span className="font-bold text-[#2A1E17]">₹{effectiveDeliveryCharge}</span>
+                    <span className="font-bold text-[#2A1E17]">₹{baseDeliveryCharge || (effectiveDeliveryCharge - coinKhakhraSurcharge)}</span>
                   )}
                 </div>
+
+                {coinKhakhraSurcharge > 0 && (
+                  <div className="flex justify-between text-xs text-[#7E6B5A]">
+                    <span className="text-[#D46D2D] font-medium flex items-center gap-1">
+                      Coin Khakhra Surcharge
+                    </span>
+                    <span className="font-bold text-[#D46D2D]">₹{coinKhakhraSurcharge}</span>
+                  </div>
+                )}
 
                 <div className="h-px bg-[#EAE0D3]"></div>
 

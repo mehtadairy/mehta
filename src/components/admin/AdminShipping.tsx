@@ -55,6 +55,192 @@ interface ShippingOrder {
   shipping_address?: any;
 }
 
+function AdminShippingRulesCard() {
+  const [gujaratRate, setGujaratRate] = useState<number>(20);
+  const [outsideGujaratRate, setOutsideGujaratRate] = useState<number>(35);
+  const [southIndiaRate, setSouthIndiaRate] = useState<number>(40);
+  const [khakhraSurcharge, setKhakhraSurcharge] = useState<number>(20);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; message: string }>({ type: '', message: '' });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data } = await supabase.from('shipping_settings').select('*').limit(1).maybeSingle();
+        if (data) {
+          if (data.gujarat_rate_per_500g !== undefined) setGujaratRate(Number(data.gujarat_rate_per_500g));
+          if (data.outside_gujarat_rate_per_500g !== undefined) setOutsideGujaratRate(Number(data.outside_gujarat_rate_per_500g));
+          if (data.south_india_rate_per_500g !== undefined) setSouthIndiaRate(Number(data.south_india_rate_per_500g));
+          if (data.coin_khakhra_surcharge !== undefined) setKhakhraSurcharge(Number(data.coin_khakhra_surcharge));
+        }
+      } catch (err) {
+        console.warn("Failed loading shipping settings:", err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveStatus({ type: '', message: '' });
+
+    try {
+      const payload = {
+        gujarat_rate_per_500g: Number(gujaratRate),
+        outside_gujarat_rate_per_500g: Number(outsideGujaratRate),
+        south_india_rate_per_500g: Number(southIndiaRate),
+        coin_khakhra_surcharge: Number(khakhraSurcharge),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: existing } = await supabase.from('shipping_settings').select('id').limit(1).maybeSingle();
+
+      let err;
+      if (existing?.id) {
+        const res = await supabase.from('shipping_settings').update(payload).eq('id', existing.id);
+        err = res.error;
+      } else {
+        const res = await supabase.from('shipping_settings').insert([payload]);
+        err = res.error;
+      }
+
+      if (err) throw err;
+
+      setSaveStatus({ type: 'success', message: 'Shipping settings saved! All website checkout calculations updated immediately.' });
+    } catch (err: any) {
+      setSaveStatus({ type: 'error', message: `Failed to save: ${err.message || 'Error updating settings'}` });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-[#EAE0D3] rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EAE0D3] pb-4">
+        <div>
+          <h2 className="font-serif font-bold text-lg text-brand-charcoal flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-brand-orange" /> Admin Shipping Rules Configuration
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure price per started 500g slab (₹) for regions and special product surcharge. No individual pincodes needed.
+          </p>
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100 self-start sm:self-auto">
+          Active Engine: 500g Slab Rules
+        </span>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Gujarat */}
+          <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
+            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
+              <span>Gujarat Rate</span>
+              <span className="text-[9px] text-brand-orange bg-white px-2 py-0.5 rounded border border-[#EAE0D3]">Per 500g Slab</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-brand-charcoal">₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={gujaratRate}
+                onChange={(e) => setGujaratRate(Number(e.target.value))}
+                className="w-full bg-white border border-[#EAE0D3] rounded-lg py-2 pl-7 pr-3 text-xs font-bold text-brand-charcoal focus:outline-none focus:border-brand-orange"
+                required
+              />
+            </div>
+            <span className="text-[0.62rem] text-muted-foreground">e.g. 250g=₹{gujaratRate}, 750g=₹{gujaratRate * 2}</span>
+          </div>
+
+          {/* Outside Gujarat */}
+          <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
+            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
+              <span>Outside Gujarat Rate</span>
+              <span className="text-[9px] text-brand-orange bg-white px-2 py-0.5 rounded border border-[#EAE0D3]">Per 500g Slab</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-brand-charcoal">₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={outsideGujaratRate}
+                onChange={(e) => setOutsideGujaratRate(Number(e.target.value))}
+                className="w-full bg-white border border-[#EAE0D3] rounded-lg py-2 pl-7 pr-3 text-xs font-bold text-brand-charcoal focus:outline-none focus:border-brand-orange"
+                required
+              />
+            </div>
+            <span className="text-[0.62rem] text-muted-foreground">e.g. 250g=₹{outsideGujaratRate}, 750g=₹{outsideGujaratRate * 2}</span>
+          </div>
+
+          {/* South India */}
+          <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
+            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
+              <span>South India Rate</span>
+              <span className="text-[9px] text-brand-orange bg-white px-2 py-0.5 rounded border border-[#EAE0D3]">Per 500g Slab</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-brand-charcoal">₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={southIndiaRate}
+                onChange={(e) => setSouthIndiaRate(Number(e.target.value))}
+                className="w-full bg-white border border-[#EAE0D3] rounded-lg py-2 pl-7 pr-3 text-xs font-bold text-brand-charcoal focus:outline-none focus:border-brand-orange"
+                required
+              />
+            </div>
+            <span className="text-[0.62rem] text-muted-foreground">KA, KL, TN, AP, TS, PY</span>
+          </div>
+
+          {/* Coin Khakhra Surcharge */}
+          <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
+            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
+              <span>Coin Khakhra Surcharge</span>
+              <span className="text-[9px] text-brand-orange bg-white px-2 py-0.5 rounded border border-[#EAE0D3]">Fixed Once</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-brand-charcoal">₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={khakhraSurcharge}
+                onChange={(e) => setKhakhraSurcharge(Number(e.target.value))}
+                className="w-full bg-white border border-[#EAE0D3] rounded-lg py-2 pl-7 pr-3 text-xs font-bold text-brand-charcoal focus:outline-none focus:border-brand-orange"
+                required
+              />
+            </div>
+            <span className="text-[0.62rem] text-muted-foreground">Added once when ordered with other items</span>
+          </div>
+        </div>
+
+        {saveStatus.message && (
+          <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+            saveStatus.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            {saveStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />}
+            <span>{saveStatus.message}</span>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="bg-brand-orange hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? "Saving Settings..." : "Save Shipping Rates"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function AdminShipping() {
   const [activeTab, setActiveTab] = useState<ShippingTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,6 +395,9 @@ export default function AdminShipping() {
           </button>
         </div>
       </div>
+
+      {/* --- ADMIN SHIPPING RULES CONFIGURATION CARD --- */}
+      <AdminShippingRulesCard />
 
       {/* Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
