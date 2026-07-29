@@ -115,10 +115,14 @@ export default function WorkerPanel() {
   // Check login state and settings on mount
   useEffect(() => {
     const stored = localStorage.getItem("mehta_worker_auth");
-    const storedInfo = localStorage.getItem("mehta_worker_info");
-    if (stored === "true" && storedInfo) {
+    const storedUser = localStorage.getItem("mehta_worker_user") || localStorage.getItem("mehta_worker_info");
+    if (stored === "true" || storedUser) {
       setIsAuth(true);
-      setWorkerInfo(JSON.parse(storedInfo));
+      if (storedUser) {
+        try {
+          setWorkerInfo(JSON.parse(storedUser));
+        } catch (e) {}
+      }
     }
 
     const storedSettings = localStorage.getItem("mehta_worker_notif_settings");
