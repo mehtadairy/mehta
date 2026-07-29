@@ -208,7 +208,7 @@ async function executeShipmentWorkflow(orderId: string): Promise<ShipmentCreatio
     order_id: order.order_number || order.id,
     order_date: formattedDate,
     pickup_location: pickupLocation,
-    channel_id: "",
+    channel_id: process.env.SHIPROCKET_CHANNEL_ID || "11648558",
     comment: "Mehta Sweet Mart Online Order",
     billing_customer_name: firstName,
     billing_last_name: lastName,
