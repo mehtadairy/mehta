@@ -1327,63 +1327,58 @@ function CheckoutContent() {
                               setPincodeStatus({ type: '', message: '' });
 
                               try {
-                                const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
-                                const data = await res.json();
+                                // 1. Verify Shiprocket Serviceability first
+                                const checkRes = await fetch('/api/delivery/check-serviceability', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    pincode: val,
+                                    weightInKg: calculateCartTotalWeight(cart),
+                                    subtotal: cartSubtotal,
+                                    isCod: paymentOption === 'COD'
+                                  })
+                                });
+                                const result = await checkRes.json();
 
-                                if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice) {
-                                  const office = data[0].PostOffice[0];
-                                  const fetchedCity = (office.Block && office.Block.toLowerCase() !== "na") ? office.Block : (office.District || office.Division || office.Name);
-                                  const fetchedState = office.State;
-                                  
-                                  if (fetchedCity) {
-                                    setCustomCities(prev => Array.from(new Set([...prev, fetchedCity])));
-                                    setNewCity(fetchedCity);
-                                  }
-                                  if (fetchedState) {
-                                    setNewState(fetchedState);
-                                    try {
-                                      const checkRes = await fetch('/api/delivery/check-serviceability', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          pincode: val,
-                                          weightInKg: calculateCartTotalWeight(cart),
-                                          subtotal: cartSubtotal,
-                                          isCod: paymentOption === 'COD'
-                                        })
-                                      });
-                                      const result = await checkRes.json();
-                                      if (result.success && result.serviceable) {
-                                        setPincodeStatus({
-                                          type: 'success',
-                                          message: `Serviceable Area! Shipping: ₹${result.deliveryCharge}${result.freeDeliveryEligible ? ' (Free Shipping Threshold Met)' : ''} | Delivery: ${result.estimatedDeliveryTime || '1-2 Days'}`
-                                        });
-                                      } else {
-                                        setPincodeStatus({
-                                          type: 'warning',
-                                          message: "This area is outside our home delivery region. Only Self Pickup will be available."
-                                        });
-                                      }
-                                    } catch (err) {
-                                      setPincodeStatus({
-                                        type: 'warning',
-                                        message: "Unable to verify delivery status. Standard fallback applies."
-                                      });
-                                    }
-                                  }
+                                if (result.success && result.serviceable) {
+                                  setPincodeStatus({
+                                    type: 'success',
+                                    message: `Serviceable Area! Shipping: ₹${result.deliveryCharge} | Delivery: ${result.estimatedDeliveryTime || '1-3 Days'}`
+                                  });
                                 } else {
                                   setPincodeStatus({
-                                    type: 'error',
-                                    message: "Invalid PIN code. Please enter a valid 6-digit Indian PIN code."
+                                    type: 'warning',
+                                    message: "This pincode is currently unserviceable for home delivery."
                                   });
-                                  setNewCity("");
-                                  setNewState("");
+                                }
+
+                                // 2. Try fetching City & State details safely
+                                try {
+                                  const postalRes = await fetch(`https://api.postalpincode.in/pincode/${val}`);
+                                  if (postalRes.ok) {
+                                    const postalData = await postalRes.json();
+                                    if (postalData && postalData[0] && postalData[0].Status === "Success" && postalData[0].PostOffice) {
+                                      const office = postalData[0].PostOffice[0];
+                                      const fetchedCity = (office.Block && office.Block.toLowerCase() !== "na") ? office.Block : (office.District || office.Division || office.Name);
+                                      const fetchedState = office.State;
+                                      
+                                      if (fetchedCity) {
+                                        setCustomCities(prev => Array.from(new Set([...prev, fetchedCity])));
+                                        setNewCity(fetchedCity);
+                                      }
+                                      if (fetchedState) {
+                                        setNewState(fetchedState);
+                                      }
+                                    }
+                                  }
+                                } catch (postalErr) {
+                                  console.warn("External postal pincode API offline/blocked. Using serviceability info.", postalErr);
                                 }
                               } catch (err) {
-                                console.error("Error fetching pincode info:", err);
+                                console.warn("Pincode serviceability check notice:", err);
                                 setPincodeStatus({
-                                  type: 'error',
-                                  message: "Error fetching location details. Select City & State manually."
+                                  type: 'warning',
+                                  message: "Unable to verify delivery status. Standard rates applied."
                                 });
                               } finally {
                                 setIsPincodeLoading(false);
