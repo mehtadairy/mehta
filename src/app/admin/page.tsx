@@ -266,6 +266,39 @@ export default function AdminPanel() {
     const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
     const [cancellationAlert, setCancellationAlert] = useState<any>(null);
 
+    // Shared AudioContext — created once, unlocked on first user gesture
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const audioUnlockedRef = useRef(false);
+
+    // --- AUDIO CONTEXT UNLOCK (Chrome autoplay fix) ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        audioCtxRef.current = new AudioContextClass();
+
+        const unlock = () => {
+            if (audioUnlockedRef.current) return;
+            audioCtxRef.current?.resume().then(() => {
+                audioUnlockedRef.current = true;
+                console.log('[Audio] AudioContext unlocked');
+            }).catch(err => console.warn('[Audio] resume failed:', err));
+        };
+
+        window.addEventListener('click', unlock, { once: true });
+        window.addEventListener('keydown', unlock, { once: true });
+        window.addEventListener('touchstart', unlock, { once: true });
+
+        return () => {
+            window.removeEventListener('click', unlock);
+            window.removeEventListener('keydown', unlock);
+            window.removeEventListener('touchstart', unlock);
+            audioCtxRef.current?.close().catch(() => {});
+            audioCtxRef.current = null;
+        };
+    }, []);
+
     const loadData = async () => {
         setOrdersLoading(true);
         try {
@@ -355,15 +388,15 @@ export default function AdminPanel() {
     }, [activeTab, isAdminAuth]);
 
     const playDingDongSound = () => {
-        // 1. Web Audio API synthesized dual-tone bell chime (guaranteed fallback even offline)
-        try {
-            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioCtx) {
-                const ctx = new AudioCtx();
+        const ctx = audioCtxRef.current;
+        if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
+
+        const doPlay = () => {
+            try {
                 const playNote = (freq: number, startTime: number, duration: number) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.type = "sine";
+                    osc.type = 'sine';
                     osc.frequency.setValueAtTime(freq, startTime);
                     gain.gain.setValueAtTime(0.4, startTime);
                     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
@@ -373,23 +406,17 @@ export default function AdminPanel() {
                     osc.stop(startTime + duration);
                 };
                 const now = ctx.currentTime;
-                playNote(880, now, 0.4);       // A5 note
-                playNote(1174.66, now + 0.25, 0.6); // D6 note (high chime)
+                playNote(880, now, 0.4);          // A5
+                playNote(1174.66, now + 0.25, 0.6); // D6 (high chime)
+            } catch (e) {
+                console.warn('[Audio] playDingDongSound oscillator error:', e);
             }
-        } catch (e) {
-            console.log("Web audio chime error:", e);
-        }
+        };
 
-        // 2. Play external audio sound
-        try {
-            const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-            audio.play().catch(err => console.log("Autoplay blocked:", err));
-            setTimeout(() => {
-                const audio2 = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav");
-                audio2.play().catch(err => console.log("Autoplay blocked:", err));
-            }, 600);
-        } catch (e) {
-            console.error("Audio error:", e);
+        if (ctx.state === 'suspended') {
+            ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
+        } else {
+            doPlay();
         }
     };
 

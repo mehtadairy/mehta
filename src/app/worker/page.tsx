@@ -111,6 +111,9 @@ export default function WorkerPanel() {
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [alarmOrders, setAlarmOrders] = useState<any[]>([]);
   const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Shared AudioContext — created once, unlocked on first user gesture
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
 
   // Check login state and settings on mount
   useEffect(() => {
@@ -142,6 +145,37 @@ export default function WorkerPanel() {
     }
   }, [settings.enableDesktop]);
 
+  // --- AUDIO CONTEXT UNLOCK (Chrome autoplay fix) ---
+  // Create the AudioContext immediately so it is ready. Chrome starts it in
+  // 'suspended' state; we resume it on the first user interaction.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    audioCtxRef.current = new AudioContextClass();
+
+    const unlock = () => {
+      if (audioUnlockedRef.current) return;
+      audioCtxRef.current?.resume().then(() => {
+        audioUnlockedRef.current = true;
+        console.log('[Audio] AudioContext unlocked');
+      }).catch(err => console.warn('[Audio] resume failed:', err));
+    };
+
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+    };
+  }, []);
+
   // Online/Offline Connection State
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -166,66 +200,66 @@ export default function WorkerPanel() {
 
   const playStandardSound = () => {
     if (!settings.enableSound || isMuted) return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      
-      const playTone = (startTime: number, freq: number, duration: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, startTime);
-        
-        // Exponential decay for a natural chime sound
-        gain.gain.setValueAtTime(settings.volume * 0.4, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-      };
-      
-      // Premium dual-tone chime: E5 (659.25Hz) followed by G5 (783.99Hz)
-      playTone(ctx.currentTime, 659.25, 0.6);
-      playTone(ctx.currentTime + 0.15, 783.99, 0.8);
-    } catch (e) {
-      console.warn("Synthesized sound play failed:", e);
+    const ctx = audioCtxRef.current;
+    if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
+    // Resume the context if it is still suspended (e.g. before first gesture)
+    const doPlay = () => {
+      try {
+        const playTone = (startTime: number, freq: number, duration: number) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(settings.volume * 0.4, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        };
+        // Premium dual-tone chime: E5 (659.25 Hz) then G5 (783.99 Hz)
+        playTone(ctx.currentTime, 659.25, 0.6);
+        playTone(ctx.currentTime + 0.15, 783.99, 0.8);
+      } catch (e) {
+        console.warn('[Audio] playStandardSound oscillator error:', e);
+      }
+    };
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
+    } else {
+      doPlay();
     }
   };
 
   const playErrorSound = () => {
     if (!settings.enableSound || isMuted) return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      
-      const playBeep = (startTime: number, freq: number, duration: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(freq, startTime);
-        
-        gain.gain.setValueAtTime(settings.volume * 0.25, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-      };
-      
-      // Warning double-beep
-      playBeep(ctx.currentTime, 180, 0.25);
-      playBeep(ctx.currentTime + 0.12, 180, 0.25);
-    } catch (e) {
-      console.warn("Synthesized sound play failed:", e);
+    const ctx = audioCtxRef.current;
+    if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
+    const doPlay = () => {
+      try {
+        const playBeep = (startTime: number, freq: number, duration: number) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(settings.volume * 0.25, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        };
+        // Warning double-beep
+        playBeep(ctx.currentTime, 180, 0.25);
+        playBeep(ctx.currentTime + 0.12, 180, 0.25);
+      } catch (e) {
+        console.warn('[Audio] playErrorSound oscillator error:', e);
+      }
+    };
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
+    } else {
+      doPlay();
     }
   };
 
