@@ -5,13 +5,10 @@ import { verifySession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
 // Lean field definitions — never fetch more columns than needed
-const ORDER_FIELDS = 'id, order_number, user_name, user_phone, user_email, total, status, payment_status, shipment_status, created_at, shipping_address, items';
+const ORDER_FIELDS = 'id, order_number, user_name, user_phone, user_email, total, status, payment_status, shipment_status, created_at, shipping_address';
 const ORDER_ITEMS_FIELDS = 'id, product_id, product_name, quantity, price, weight';
 const INVOICE_FIELDS = 'id, invoice_number, order_id, pdf_url, created_at';
 const CUSTOMER_FIELDS = 'id, name, phone, email, created_at, profile_image';
-const PAYMENT_FIELDS = 'id, razorpay_order_id, order_id, amount, status, created_at';
-const NOTIFICATION_FIELDS = 'id, order_id, customer_phone, template_name, status, error_message, created_at';
-const RECOVERY_FIELDS = 'id, payment_id, amount, status, failure_reason, created_at, payload';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -57,9 +54,10 @@ export async function GET(request: Request) {
       // 3. Payments — lean fields only
       supabaseServer
         .from('payments')
-        .select(PAYMENT_FIELDS, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1),
+        .range(offset, offset + limit - 1)
+        .catch(err => ({ data: [], count: 0, error: err })),
 
       // 4. Invoices — lean fields only
       supabaseServer
@@ -71,7 +69,7 @@ export async function GET(request: Request) {
       // 5. Notifications — lean fields + hard limit 100
       supabaseServer
         .from('notification_logs')
-        .select(NOTIFICATION_FIELDS)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(100)
         .catch(err => ({ data: [], error: err })),
@@ -79,7 +77,7 @@ export async function GET(request: Request) {
       // 6. Payment Recoveries — lean fields + hard limit 200
       supabaseServer
         .from('payment_recovery')
-        .select(RECOVERY_FIELDS)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(200)
         .catch(err => ({ data: [], error: err })),
