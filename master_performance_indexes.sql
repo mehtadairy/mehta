@@ -3,9 +3,10 @@
 -- Mehta Sweet Mart Production Database Engine Tuning
 -- ====================================================================
 
--- 0. Ensure required columns exist on orders table
+-- 0. Ensure required columns exist safely
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipment_status TEXT DEFAULT 'Pending';
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'PENDING';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS category_slug TEXT;
 
 -- 1. Orders Indexes
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON public.orders(customer_id);
@@ -23,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_invoices_order_id ON public.invoices(order_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON public.invoices(invoice_number);
 
 -- 4. Products Indexes
-CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
+CREATE INDEX IF NOT EXISTS idx_products_category_slug ON public.products(category_slug);
 
 -- 5. WhatsApp & Cart Indexes (Safe creation if tables exist)
 DO $$ 
