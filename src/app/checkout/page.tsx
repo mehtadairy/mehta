@@ -480,16 +480,12 @@ function CheckoutContent() {
 
   const [shiprocketCouriers, setShiprocketCouriers] = useState<any[]>([]);
   const [selectedCourierId, setSelectedCourierId] = useState<number | null>(null);
-  const [baseDeliveryCharge, setBaseDeliveryCharge] = useState<number>(0);
-  const [coinKhakhraSurcharge, setCoinKhakhraSurcharge] = useState<number>(0);
 
-  // Dynamic Delivery Calculation via Admin Slab Rules
+  // Dynamic Delivery Calculation via Admin 500g Slab Rules
   useEffect(() => {
     const fetchDeliveryZone = async () => {
       if (!cart || cart.length === 0 || cartSubtotal === 0) {
         setDeliveryCharge(0);
-        setBaseDeliveryCharge(0);
-        setCoinKhakhraSurcharge(0);
         setDeliveryDays("");
         return;
       }
@@ -513,13 +509,9 @@ function CheckoutContent() {
         if (result.success) {
           setPincodeError("");
           setDeliveryDays(result.estimatedDeliveryTime || "1-3 Days");
-          setBaseDeliveryCharge(result.baseDeliveryCharge ?? result.deliveryCharge);
-          setCoinKhakhraSurcharge(result.coinKhakhraSurcharge || 0);
           setDeliveryCharge(result.deliveryCharge || 0);
         } else {
           setDeliveryCharge(0);
-          setBaseDeliveryCharge(0);
-          setCoinKhakhraSurcharge(0);
           setDeliveryDays("");
           setPincodeError("Unable to calculate shipping charge for this location.");
         }
@@ -1601,18 +1593,9 @@ function CheckoutContent() {
                   ) : effectiveDeliveryCharge === 0 ? (
                     <span className="text-emerald-600 font-bold uppercase text-[10px] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Free</span>
                   ) : (
-                    <span className="font-bold text-[#2A1E17]">₹{baseDeliveryCharge || (effectiveDeliveryCharge - coinKhakhraSurcharge)}</span>
+                    <span className="font-bold text-[#2A1E17]">₹{effectiveDeliveryCharge}</span>
                   )}
                 </div>
-
-                {coinKhakhraSurcharge > 0 && (
-                  <div className="flex justify-between text-xs text-[#7E6B5A]">
-                    <span className="text-[#D46D2D] font-medium flex items-center gap-1">
-                      Coin Khakhra Surcharge
-                    </span>
-                    <span className="font-bold text-[#D46D2D]">₹{coinKhakhraSurcharge}</span>
-                  </div>
-                )}
 
                 <div className="h-px bg-[#EAE0D3]"></div>
 

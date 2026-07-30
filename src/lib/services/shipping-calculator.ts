@@ -6,7 +6,6 @@ export interface ShippingSettings {
   gujarat_rate_per_500g: number;
   outside_gujarat_rate_per_500g: number;
   south_india_rate_per_500g: number;
-  coin_khakhra_surcharge: number;
   palitana_free_shipping: boolean;
   updated_at?: string;
 }
@@ -15,7 +14,6 @@ export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {
   gujarat_rate_per_500g: 20,
   outside_gujarat_rate_per_500g: 35,
   south_india_rate_per_500g: 40,
-  coin_khakhra_surcharge: 20,
   palitana_free_shipping: true
 };
 
@@ -49,7 +47,6 @@ export async function getShippingSettings(): Promise<ShippingSettings> {
       gujarat_rate_per_500g: Number(data.gujarat_rate_per_500g) || DEFAULT_SHIPPING_SETTINGS.gujarat_rate_per_500g,
       outside_gujarat_rate_per_500g: Number(data.outside_gujarat_rate_per_500g) || DEFAULT_SHIPPING_SETTINGS.outside_gujarat_rate_per_500g,
       south_india_rate_per_500g: Number(data.south_india_rate_per_500g) || DEFAULT_SHIPPING_SETTINGS.south_india_rate_per_500g,
-      coin_khakhra_surcharge: Number(data.coin_khakhra_surcharge) || DEFAULT_SHIPPING_SETTINGS.coin_khakhra_surcharge,
       palitana_free_shipping: data.palitana_free_shipping ?? DEFAULT_SHIPPING_SETTINGS.palitana_free_shipping,
       updated_at: data.updated_at
     };
@@ -68,7 +65,6 @@ export async function updateShippingSettings(settings: Partial<ShippingSettings>
       gujarat_rate_per_500g: Number(settings.gujarat_rate_per_500g),
       outside_gujarat_rate_per_500g: Number(settings.outside_gujarat_rate_per_500g),
       south_india_rate_per_500g: Number(settings.south_india_rate_per_500g),
-      coin_khakhra_surcharge: Number(settings.coin_khakhra_surcharge),
       palitana_free_shipping: settings.palitana_free_shipping ?? true,
       updated_at: new Date().toISOString()
     };
@@ -93,35 +89,20 @@ export async function updateShippingSettings(settings: Partial<ShippingSettings>
   }
 }
 
-/**
- * Checks if a cart item is Coin Khakhra
- */
-export function isCoinKhakhraItem(item: any): boolean {
-  if (!item) return false;
-  const name = String(item.name || item.productName || '').toLowerCase();
-  const weight = String(item.weight || '').toLowerCase();
-  return name.includes('coin khakhra') || (name.includes('khakhra') && weight.includes('180'));
-}
-
 export interface ShippingCalculationResult {
   zone: 'Local (Palitana)' | 'Gujarat' | 'South India' | 'Outside Gujarat';
   ratePerSlab: number;
   totalWeightKg: number;
-  billableWeightKg: number;
   slabsCount: number;
-  baseShippingCharge: number;
-  hasCoinKhakhra: boolean;
-  isCoinKhakhraAlone: boolean;
-  coinKhakhraSurcharge: number;
   totalShippingCharge: number;
   estimatedDeliveryTime: string;
 }
 
 /**
- * Calculates exact slab shipping charge based on admin settings:
- * - 500g Started Slab calculation (e.g. 250g -> 1 slab, 750g -> 2 slabs)
- * - Coin Khakhra Special Surcharge rules
- * - State & Pincode region detection
+ * Calculates exact slab shipping charge using started 500g slabs:
+ * Formula:
+ *   Slabs = CEILING(total_weight_kg / 0.5)
+ *   Shipping Charge = Slabs * Region Price
  */
 export function calculateSlabShipping(
   cart: any[],
@@ -131,24 +112,14 @@ export function calculateSlabShipping(
   const cleanPin = (address?.pincode || '').trim();
   const cleanState = (address?.state || '').trim().toLowerCase();
 
-  // 1. Separate Coin Khakhra items
-  const khakhraItems = cart.filter(item => isCoinKhakhraItem(item));
-  const nonKhakhraItems = cart.filter(item => !isCoinKhakhraItem(item));
-
-  const hasCoinKhakhra = khakhraItems.length > 0;
-  const isCoinKhakhraAlone = hasCoinKhakhra && nonKhakhraItems.length === 0;
-
-  // 2. Compute billable weight
-  // If Coin Khakhra is ordered with other items, ignore its weight and add surcharge once
-  const cartForWeight = isCoinKhakhraAlone ? cart : nonKhakhraItems;
+  // 1. Total cart weight calculation for ALL products
   const totalWeightKg = calculateCartTotalWeight(cart);
-  const billableWeightKg = calculateCartTotalWeight(cartForWeight);
 
-  // 3. Compute Started 500g Slabs
+  // 2. Compute Started 500g Slabs
   // Every started 500g = 1 slab
-  const slabsCount = billableWeightKg > 0 ? Math.ceil(billableWeightKg / 0.5) : 0;
+  const slabsCount = totalWeightKg > 0 ? Math.ceil(totalWeightKg / 0.5) : 0;
 
-  // 4. Region Detection
+  // 3. Region Detection
   let zone: 'Local (Palitana)' | 'Gujarat' | 'South India' | 'Outside Gujarat';
   let ratePerSlab = settings.outside_gujarat_rate_per_500g;
   let estimatedDeliveryTime = '2-4 Days';
@@ -185,26 +156,14 @@ export function calculateSlabShipping(
     }
   }
 
-  // 5. Calculate base shipping charge
-  const baseShippingCharge = zone === 'Local (Palitana)' ? 0 : (slabsCount * ratePerSlab);
-
-  // 6. Coin Khakhra Surcharge (fixed ₹20 if ordered alongside other products)
-  const coinKhakhraSurcharge = (hasCoinKhakhra && !isCoinKhakhraAlone && zone !== 'Local (Palitana)') 
-    ? settings.coin_khakhra_surcharge 
-    : 0;
-
-  const totalShippingCharge = baseShippingCharge + coinKhakhraSurcharge;
+  // 4. Calculate total shipping charge
+  const totalShippingCharge = zone === 'Local (Palitana)' ? 0 : (slabsCount * ratePerSlab);
 
   return {
     zone,
     ratePerSlab,
     totalWeightKg,
-    billableWeightKg,
     slabsCount,
-    baseShippingCharge,
-    hasCoinKhakhra,
-    isCoinKhakhraAlone,
-    coinKhakhraSurcharge,
     totalShippingCharge,
     estimatedDeliveryTime
   };

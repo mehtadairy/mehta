@@ -17,16 +17,11 @@ export async function POST(request: Request) {
       success: true,
       serviceable: true,
       deliveryCharge: calculation.totalShippingCharge,
-      baseDeliveryCharge: calculation.baseShippingCharge,
-      coinKhakhraSurcharge: calculation.coinKhakhraSurcharge,
-      hasCoinKhakhra: calculation.hasCoinKhakhra,
-      isCoinKhakhraAlone: calculation.isCoinKhakhraAlone,
       estimatedDeliveryTime: calculation.estimatedDeliveryTime,
       zone: calculation.zone,
       slabsCount: calculation.slabsCount,
       ratePerSlab: calculation.ratePerSlab,
       totalWeightKg: calculation.totalWeightKg,
-      billableWeightKg: calculation.billableWeightKg,
       settings
     });
   } catch (error: any) {
@@ -48,8 +43,6 @@ export async function GET(request: Request) {
       success: true,
       serviceable: true,
       deliveryCharge: calculation.totalShippingCharge,
-      baseDeliveryCharge: calculation.baseShippingCharge,
-      coinKhakhraSurcharge: calculation.coinKhakhraSurcharge,
       estimatedDeliveryTime: calculation.estimatedDeliveryTime,
       zone: calculation.zone,
       settings

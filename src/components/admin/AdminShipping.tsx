@@ -59,7 +59,6 @@ function AdminShippingRulesCard() {
   const [gujaratRate, setGujaratRate] = useState<number>(20);
   const [outsideGujaratRate, setOutsideGujaratRate] = useState<number>(35);
   const [southIndiaRate, setSouthIndiaRate] = useState<number>(40);
-  const [khakhraSurcharge, setKhakhraSurcharge] = useState<number>(20);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; message: string }>({ type: '', message: '' });
 
@@ -71,7 +70,6 @@ function AdminShippingRulesCard() {
           if (data.gujarat_rate_per_500g !== undefined) setGujaratRate(Number(data.gujarat_rate_per_500g));
           if (data.outside_gujarat_rate_per_500g !== undefined) setOutsideGujaratRate(Number(data.outside_gujarat_rate_per_500g));
           if (data.south_india_rate_per_500g !== undefined) setSouthIndiaRate(Number(data.south_india_rate_per_500g));
-          if (data.coin_khakhra_surcharge !== undefined) setKhakhraSurcharge(Number(data.coin_khakhra_surcharge));
         }
       } catch (err) {
         console.warn("Failed loading shipping settings:", err);
@@ -90,7 +88,6 @@ function AdminShippingRulesCard() {
         gujarat_rate_per_500g: Number(gujaratRate),
         outside_gujarat_rate_per_500g: Number(outsideGujaratRate),
         south_india_rate_per_500g: Number(southIndiaRate),
-        coin_khakhra_surcharge: Number(khakhraSurcharge),
         updated_at: new Date().toISOString()
       };
 
@@ -123,16 +120,16 @@ function AdminShippingRulesCard() {
             <MapPin className="w-5 h-5 text-brand-orange" /> Admin Shipping Rules Configuration
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Configure price per started 500g slab (₹) for regions and special product surcharge. No individual pincodes needed.
+            Configure price per started 500g slab (₹) for regions. Calculated automatically from total cart weight.
           </p>
         </div>
         <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100 self-start sm:self-auto">
-          Active Engine: 500g Slab Rules
+          Active Engine: Started 500g Slabs
         </span>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Gujarat */}
           <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
             <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
@@ -151,7 +148,7 @@ function AdminShippingRulesCard() {
                 required
               />
             </div>
-            <span className="text-[0.62rem] text-muted-foreground">e.g. 250g=₹{gujaratRate}, 750g=₹{gujaratRate * 2}</span>
+            <span className="text-[0.62rem] text-muted-foreground">e.g. 180g=₹{gujaratRate}, 500g=₹{gujaratRate}, 501g=₹{gujaratRate * 2}</span>
           </div>
 
           {/* Outside Gujarat */}
@@ -172,7 +169,7 @@ function AdminShippingRulesCard() {
                 required
               />
             </div>
-            <span className="text-[0.62rem] text-muted-foreground">e.g. 250g=₹{outsideGujaratRate}, 750g=₹{outsideGujaratRate * 2}</span>
+            <span className="text-[0.62rem] text-muted-foreground">e.g. 180g=₹{outsideGujaratRate}, 500g=₹{outsideGujaratRate}, 501g=₹{outsideGujaratRate * 2}</span>
           </div>
 
           {/* South India */}
@@ -194,27 +191,6 @@ function AdminShippingRulesCard() {
               />
             </div>
             <span className="text-[0.62rem] text-muted-foreground">KA, KL, TN, AP, TS, PY</span>
-          </div>
-
-          {/* Coin Khakhra Surcharge */}
-          <div className="bg-[#FAF6EE]/60 border border-[#EAE0D3] p-4 rounded-xl flex flex-col gap-1.5">
-            <label className="text-[0.68rem] font-bold text-brand-charcoal uppercase tracking-wider flex items-center justify-between">
-              <span>Coin Khakhra Surcharge</span>
-              <span className="text-[9px] text-brand-orange bg-white px-2 py-0.5 rounded border border-[#EAE0D3]">Fixed Once</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-brand-charcoal">₹</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={khakhraSurcharge}
-                onChange={(e) => setKhakhraSurcharge(Number(e.target.value))}
-                className="w-full bg-white border border-[#EAE0D3] rounded-lg py-2 pl-7 pr-3 text-xs font-bold text-brand-charcoal focus:outline-none focus:border-brand-orange"
-                required
-              />
-            </div>
-            <span className="text-[0.62rem] text-muted-foreground">Added once when ordered with other items</span>
           </div>
         </div>
 

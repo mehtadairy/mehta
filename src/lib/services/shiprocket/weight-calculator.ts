@@ -40,8 +40,8 @@ export function calculateCartTotalWeight(items: any[] = []): number {
     totalKg += unitKg * qty;
   }
 
-  // Ensure minimum weight of 0.5kg for shipping calculations
-  return Math.max(0.5, Math.round(totalKg * 100) / 100);
+  // Maintain precision in grams (e.g. 501g = 0.501kg) for started 500g slab calculation
+  return Math.max(0.001, Math.round(totalKg * 1000) / 1000);
 }
 
 /**
