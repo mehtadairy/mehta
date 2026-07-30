@@ -107,10 +107,11 @@ export default function AdminPanel() {
     const [dbCustomers, setDbCustomers] = useState<any[]>([]);
     const [paymentRecoveries, setPaymentRecoveries] = useState<any[]>([]);
     
-    // Order sections state
-    const [orderStatusFilter, setOrderStatusFilter] = useState<"All" | "Processing" | "Shipped" | "Delivered" | "Cancelled">("All");
-    const [orderSearchQuery, setOrderSearchQuery] = useState("");
-    const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+     // Order sections state
+     const [orderStatusFilter, setOrderStatusFilter] = useState<"All" | "Processing" | "Shipped" | "Delivered" | "Cancelled">("All");
+     const [orderSearchQuery, setOrderSearchQuery] = useState("");
+     const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+     const [apiDiagnostic, setApiDiagnostic] = useState<string | null>(null);
 
     // WhatsApp Orders states
     const [waStatusFilter, setWaStatusFilter] = useState<"All" | "Pending" | "Paid" | "Failed" | "Cancelled" | "Delivered" | "Processing">("All");
@@ -325,6 +326,8 @@ export default function AdminPanel() {
                   setPaymentRecoveries(data.paymentRecoveries);
               }
             } else {
+              const text = await res.text();
+              setApiDiagnostic(`Fetch failed: Status ${res.status} - ${text.substring(0, 150)}`);
               if (res.status === 401) {
                 localStorage.removeItem("mehta_admin_auth");
                 setIsAdminAuth(false);
@@ -332,8 +335,9 @@ export default function AdminPanel() {
                 setOrders(getOrders()); // fallback to local mock if error
               }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error loading admin data:", err);
+            setApiDiagnostic(`Exception: ${err.message || String(err)}`);
         } finally {
             setOrdersLoading(false);
         }
@@ -1421,6 +1425,13 @@ export default function AdminPanel() {
                     </div>
                 </div>
             </header>
+
+            {apiDiagnostic && (
+                <div className="bg-rose-50 border-b border-rose-200 p-3 text-xs text-rose-800 font-mono flex items-center justify-between">
+                    <span><strong>API Diagnostic Alert:</strong> {apiDiagnostic}</span>
+                    <button onClick={() => setApiDiagnostic(null)} className="font-bold hover:underline px-2 cursor-pointer">Clear</button>
+                </div>
+            )}
 
             {/* --- ADMIN SHELL WORKSPACE --- */}
             <section className="py-5 bg-[#F8F7F5] min-h-[calc(100vh-56px)]">
