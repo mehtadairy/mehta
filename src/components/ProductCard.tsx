@@ -33,6 +33,7 @@ import { sortWeights } from "@/lib/types";
 
 export default function ProductCard({ product, searchQuery, activeWeights }: ProductCardProps) {
   const weights = sortWeights(Object.keys(product.prices));
+  console.log("HELLO FROM PRODUCT CARD:", product.name);
 
   const getInitialWeight = () => {
     if (activeWeights && activeWeights.length > 0) {
