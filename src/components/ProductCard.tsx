@@ -213,28 +213,19 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
         </button>
 
         {/* Image — square with skeleton */}
-        <div 
-          className="relative w-full flex-shrink-0 overflow-hidden bg-[#FAF6EE] rounded-t-2xl"
-          style={{ aspectRatio: '1 / 1', height: 'auto' }}
-        >
+        <div className="relative aspect-square overflow-hidden bg-[#FAF6EE] rounded-t-2xl flex items-center justify-center">
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
  
-          <Link href={`/product/${generateSlug(product.name)}`} className="absolute inset-0 p-2">
+          <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
             <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-              <Image
+              <img
                 src={getOptimizedImageUrl(product.images[0], 300, 75)}
                 alt={product.name}
-                width={300}
-                height={300}
                 loading="lazy"
-                placeholder="blur"
-                blurDataURL={BLUR_PLACEHOLDER}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`product-card-image transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
+                className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
                   imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
                 }`}
-                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '9999px' }}
                 onLoad={() => setImageLoaded(true)}
               />
             </div>
@@ -361,15 +352,10 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
 
               {/* Image */}
               <div className="w-full sm:w-5/12 aspect-square bg-[#FAF6EE] rounded-2xl flex items-center justify-center p-4 flex-shrink-0">
-                <Image
+                <img
                   src={getOptimizedImageUrl(product.images[0], 500, 80)}
                   alt={product.name}
-                  width={400}
-                  height={400}
                   loading="lazy"
-                  placeholder="blur"
-                  blurDataURL={BLUR_PLACEHOLDER}
-                  sizes="(max-width: 640px) 100vw, 400px"
                   className="w-full h-full object-contain rounded-full"
                 />
               </div>
