@@ -275,7 +275,7 @@ function CheckoutContent() {
       try {
         const { data: order, error: orderErr } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, order_number, user_name, user_phone, user_email, total, status, payment_status, shipping_address, razorpay_order_id')
           .or(`id.eq.${waOrderParam},order_number.eq.${waOrderParam}`)
           .single();
 
@@ -287,7 +287,7 @@ function CheckoutContent() {
 
         const { data: items } = await supabase
           .from('order_items')
-          .select('*')
+          .select('id, order_id, product_id, product_name, quantity, price, weight, image_url')
           .eq('order_id', order.id);
 
         const waData = {
@@ -326,7 +326,7 @@ function CheckoutContent() {
         // 1. Fetch user session, delivery zones, and products in parallel
         const [authRes, zonesRes, allProds] = await Promise.all([
           supabase.auth.getUser(),
-          supabase.from('delivery_zones').select('*'),
+          supabase.from('delivery_zones').select('id, name, city, pincodes, pincode'),
           fetchProducts()
         ]);
 
@@ -384,7 +384,7 @@ function CheckoutContent() {
         }
 
         if (customerId) {
-          const { data: userAddrs } = await supabase.from('addresses').select('*').eq('customer_id', customerId);
+          const { data: userAddrs } = await supabase.from('addresses').select('id, full_name, mobile, address, landmark, city, state, pincode, is_default').eq('customer_id', customerId);
           if (userAddrs && userAddrs.length > 0) {
             const mapped = userAddrs.map(a => ({
               id: a.id,

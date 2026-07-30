@@ -77,7 +77,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
         // Fetch profile using customer table
         const { data: customer } = await supabase
           .from('customers')
-          .select('*')
+          .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
           .or(`id.eq.${user.id},auth_user_id.eq.${user.id}`)
           .maybeSingle();
 

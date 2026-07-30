@@ -184,7 +184,7 @@ export async function fetchIngredients(forceRefresh = false): Promise<any[]> {
     return cachedIngredients;
   }
 
-  const { data, error } = await supabase.from('ingredients').select('*').order('name', { ascending: true });
+  const { data, error } = await supabase.from('ingredients').select('id, name, icon').order('name', { ascending: true });
   if (error) {
     console.error('Error fetching ingredients:', error);
     return [];

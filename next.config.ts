@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Security headers for all routes
       {
         source: '/:path*',
         headers: [
@@ -47,7 +48,35 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' }
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+        ],
+      },
+      // Immutable static assets — 1-year cache, never re-validated
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Public images (logo, banners in /public) — 1-year cache
+      {
+        source: '/images/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Product/category data API — serve from edge cache for 1 min, revalidate in background
+      {
+        source: '/api/products/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+        ],
+      },
+      // Invoice download — private, short-lived cache
+      {
+        source: '/api/invoices/download',
+        headers: [
+          { key: 'Cache-Control', value: 'private, max-age=300, must-revalidate' },
         ],
       },
     ];

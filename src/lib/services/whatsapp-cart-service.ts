@@ -137,7 +137,7 @@ export async function getCart(phone: string): Promise<GetCartResult> {
 
   const { data: dbItems, error: itemsError } = await supabase
     .from('whatsapp_cart_items')
-    .select('*')
+    .select('id, cart_id, product_id, product_name, image, price, quantity, subtotal, created_at')
     .eq('cart_id', cart.id)
     .order('created_at', { ascending: true });
 
@@ -250,7 +250,7 @@ export async function checkoutCart(payload: {
 
   const { data: dbItems, error: itemsError } = await supabase
     .from('whatsapp_cart_items')
-    .select('*')
+    .select('id, cart_id, product_id, product_name, image, price, quantity, subtotal, created_at')
     .eq('cart_id', cart.id);
 
   if (itemsError || !dbItems || dbItems.length === 0) {

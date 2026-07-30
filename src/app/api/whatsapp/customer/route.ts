@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     // 1. Fetch or Upsert Customer
     const { data: customers, error: customerFetchError } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, name, phone, email, role, created_at')
       .eq('phone', cleanPhone);
 
     if (customerFetchError) {
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     // 2. Fetch or Upsert Address
     const { data: defaultAddresses, error: addressFetchError } = await supabase
       .from('addresses')
-      .select('*')
+      .select('id, customer_id, full_name, address, pincode, mobile, city, state, is_default, landmark')
       .eq('customer_id', customer.id)
       .eq('is_default', true);
 
@@ -156,7 +156,7 @@ export async function POST(req: Request) {
     if (!existingAddress) {
       const { data: allAddresses } = await supabase
         .from('addresses')
-        .select('*')
+        .select('id, customer_id, full_name, address, pincode, mobile, city, state, is_default, landmark, created_at')
         .eq('customer_id', customer.id);
 
       if (allAddresses && allAddresses.length > 0) {

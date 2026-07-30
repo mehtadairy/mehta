@@ -68,7 +68,7 @@ export default function ManualInvoiceForm({ onClose, onSuccess }: ManualInvoiceF
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data } = await supabase.from('products').select('*');
+      const { data } = await supabase.from('products').select('id, name, prices, images, stock');
       if (data) setAvailableProducts(data);
     };
     fetchProducts();

@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     // Lookup customer to get phone
     const { data: customer, error: customerErr } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, phone, name')
       .eq('id', customerId)
       .maybeSingle();
 

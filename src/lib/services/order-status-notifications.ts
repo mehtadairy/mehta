@@ -14,7 +14,7 @@ export class OrderStatusNotificationService {
       // 1. Fetch Order
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, order_number, user_name, user_phone, user_email, total, status, payment_status')
         .eq('id', orderId)
         .maybeSingle();
 

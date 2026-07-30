@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     let order: any = null;
 
     if (customerId && typeof customerId === 'string' && isValidUUID(customerId)) {
-      const { data, error: cErr } = await supabase.from('customers').select('*').eq('id', customerId).maybeSingle();
+      const { data, error: cErr } = await supabase.from('customers').select('id, name, email, phone, profile_image').eq('id', customerId).maybeSingle();
       if (cErr) {
         console.error('[InvoiceAPI] Step: customer_lookup failed with DB error:', cErr);
         return NextResponse.json({
@@ -191,39 +191,20 @@ export async function POST(req: Request) {
       }, { status: 200 });
     }
 
-    // STEP 4: Invoice Storage Upload & Public URL
-    let pdfUrl = invoiceData.pdf_url;
-    if (!pdfUrl || !pdfUrl.startsWith('http')) {
-      try {
-        console.log("[InvoiceAPI] Invoice upload started");
-        const currentYear = new Date().getFullYear();
-        const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
-        const storagePath = `${currentYear}/${currentMonth}/${invoiceData.invoice_number}.pdf`;
+    // STEP 4: On-Demand Download URL (NO Supabase Storage upload)
+    // PDFs are generated in memory on-demand — zero storage cost, zero egress accumulation.
+    const downloadUrl = `https://mehtadairy.com/api/invoices/download?invoiceId=${order.id}`;
+    let pdfUrl = downloadUrl;
+    console.log("[InvoiceAPI] Using on-demand download URL (no Storage upload):", pdfUrl);
 
-        const uploadResult = await supabase.storage.from('invoices').upload(storagePath, pdfBuffer, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
-
-        if (uploadResult.error) {
-          console.error("[InvoiceAPI] Storage upload error:", uploadResult.error.message);
-          throw new Error(uploadResult.error.message);
-        }
-        console.log("[InvoiceAPI] Invoice upload completed");
-
-        const { data: publicUrlData } = supabase.storage.from('invoices').getPublicUrl(storagePath);
-        pdfUrl = publicUrlData?.publicUrl || `https://mehtadairy.com/api/invoices/download?invoiceId=${order.id}`;
-        console.log("[InvoiceAPI] Public URL generated:", pdfUrl);
-
-        // Update invoice & order record with resolved public URL
-        await supabase.from('invoices').update({ pdf_url: pdfUrl }).eq('id', invoiceData.id);
-        await supabase.from('orders').update({ invoice_url: pdfUrl }).eq('id', order.id);
-      } catch (uploadErr: any) {
-        console.error("[InvoiceAPI] Step: storage_upload failed:", uploadErr);
-        pdfUrl = `https://mehtadairy.com/api/invoices/download?invoiceId=${order.id}`;
-      }
-    } else {
-      console.log("[InvoiceAPI] Public URL generated / resolved:", pdfUrl);
+    // Update invoice & order record with the on-demand URL
+    try {
+      await Promise.all([
+        supabase.from('invoices').update({ pdf_url: pdfUrl }).eq('id', invoiceData.id),
+        supabase.from('orders').update({ invoice_url: pdfUrl }).eq('id', order.id),
+      ]);
+    } catch (updateErr: any) {
+      console.warn('[InvoiceAPI] Non-blocking: could not update pdf_url on records:', updateErr);
     }
 
     // STEP 5: WhatsApp Invoice Sending

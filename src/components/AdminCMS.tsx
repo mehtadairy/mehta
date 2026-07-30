@@ -19,7 +19,7 @@ export default function AdminCMS() {
   }, []);
 
   const fetchPages = async () => {
-    const { data } = await supabase.from('cms_pages').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('cms_pages').select('id, slug, title, status, created_at, updated_at').order('created_at', { ascending: false });
     if (data) setPages(data);
   };
 

@@ -51,7 +51,7 @@ export async function calculateDeliveryCharge(
       let finalCharge = srResult.deliveryCharge;
       
       // Check if DB custom free delivery threshold applies
-      const { data: zones } = await supabase.from('delivery_zones').select('*');
+      const { data: zones } = await supabase.from('delivery_zones').select('id, name, city, pincodes, pincode, state');
       const matchedZone = (zones || []).find((zone: any) => {
         const pincodesStr = zone.pincodes || zone.pincode || '';
         return pincodesStr.split(',').map((p: string) => p.trim()).includes(cleanPincode);

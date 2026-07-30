@@ -13,8 +13,9 @@ export default function AdminRecovery({ initialData = [] }: { initialData?: any[
     try {
       const { data, error } = await supabase
         .from('payment_recovery')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, payment_id, amount, status, failure_reason, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
         
       if (data) setRecoveries(data);
     } catch (e) {

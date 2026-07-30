@@ -24,7 +24,7 @@ export async function handleCatalogOrder(phone: string, orderData: any) {
     if (customer?.id) {
       const { data: addressData } = await supabase
         .from('addresses')
-        .select('*')
+        .select('address, pincode, full_name, state')
         .eq('customer_id', customer.id)
         .eq('is_default', true)
         .maybeSingle();
@@ -36,7 +36,7 @@ export async function handleCatalogOrder(phone: string, orderData: any) {
       } else {
         const { data: anyAddress } = await supabase
           .from('addresses')
-          .select('*')
+          .select('address, pincode, full_name, state')
           .eq('customer_id', customer.id)
           .limit(1)
           .maybeSingle();

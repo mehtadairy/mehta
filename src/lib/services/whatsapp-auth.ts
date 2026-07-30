@@ -185,7 +185,7 @@ export async function verifyOTP(mobile: string, otp: string): Promise<{ success:
     // Get the latest unverified OTP
     const { data: record, error: fetchError } = await supabase
       .from('otp_verifications')
-      .select('*')
+      .select('id, mobile, otp, expires_at, verified')
       .eq('mobile', fullMobile)
       .eq('verified', false)
       .order('created_at', { ascending: false })

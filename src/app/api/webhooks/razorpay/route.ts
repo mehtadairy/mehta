@@ -91,7 +91,7 @@ export async function POST(req: Request) {
           }]);
 
           // Fetch full order details for notifications
-          const { data: order } = await supabase.from('orders').select('*').eq('id', payData.order_id).single();
+          const { data: order } = await supabase.from('orders').select('id, user_phone, user_email, user_name, order_number, status, total').eq('id', payData.order_id).single();
           if (order) {
             // Update order and cancellation status
             await supabase.from('orders').update({

@@ -33,7 +33,7 @@ export async function handleWhatsAppMessage(msg: any) {
   // 1. Manage Customer Session State
   let { data: session } = await supabase
     .from('customer_sessions')
-    .select('*')
+    .select('id, phone, customer_id, current_state, context, created_at, updated_at')
     .eq('phone', phone)
     .single();
 

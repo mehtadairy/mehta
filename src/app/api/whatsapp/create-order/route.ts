@@ -190,7 +190,7 @@ export async function POST(req: Request) {
 
     // 1. Try customer lookup by UUID
     if (targetCustomerId && typeof targetCustomerId === 'string' && isValidUUID(targetCustomerId)) {
-      const { data } = await supabase.from('customers').select('*').eq('id', targetCustomerId).maybeSingle();
+      const { data } = await supabase.from('customers').select('id, name, phone, email, role').eq('id', targetCustomerId).maybeSingle();
       customer = data;
     }
 
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
       const cleanDigits = String(targetPhone).replace(/\D/g, '').slice(-10);
       if (cleanDigits.length === 10) {
         const fullPhone = `91${cleanDigits}`;
-        const { data } = await supabase.from('customers').select('*').eq('phone', fullPhone).maybeSingle();
+        const { data } = await supabase.from('customers').select('id, name, phone, email, role').eq('phone', fullPhone).maybeSingle();
         customer = data;
 
         if (!customer) {
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
 
     // 3. Fallback: Lookup latest customer in DB
     if (!customer) {
-      const { data: latestCust } = await supabase.from('customers').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data: latestCust } = await supabase.from('customers').select('id, name, phone, email, role').order('created_at', { ascending: false }).limit(1).maybeSingle();
       customer = latestCust;
     }
 
@@ -234,7 +234,7 @@ export async function POST(req: Request) {
     // Fetch or create default shipping address for customer
     let { data: addressData } = await supabase
       .from('addresses')
-      .select('*')
+      .select('id, customer_id, full_name, address, pincode, mobile, state, city, is_default')
       .eq('customer_id', customer.id)
       .eq('is_default', true)
       .maybeSingle();
@@ -243,7 +243,7 @@ export async function POST(req: Request) {
     if (!resolvedAddress) {
       const { data: anyAddress } = await supabase
         .from('addresses')
-        .select('*')
+        .select('id, customer_id, full_name, address, pincode, mobile, state, city, is_default')
         .eq('customer_id', customer.id)
         .limit(1)
         .maybeSingle();
@@ -334,8 +334,8 @@ export async function POST(req: Request) {
       }, { status: 200 });
     }
 
-    // Verify products exist
-    const { data: allProducts, error: allProductsError } = await supabase.from('products').select('*');
+    // Verify products exist — lean select (only columns needed for order creation)
+    const { data: allProducts, error: allProductsError } = await supabase.from('products').select('id, name, prices, stock, weight_per_unit, images, retailer_id');
     if (allProductsError || !allProducts) {
       console.error("[CreateOrder] SUPABASE ERROR during products fetching:", allProductsError);
       return NextResponse.json({
@@ -554,7 +554,7 @@ export async function POST(req: Request) {
     console.log("[CreateOrder] AUDIT LOG - Step 7: Inserted Order ID:", orderId, "Order Number:", orderNumber);
 
     // Immediate Verification Step 8
-    const { data: verifiedOrder, error: verifyErr } = await supabase.from('orders').select('*').eq('id', orderId).single();
+    const { data: verifiedOrder, error: verifyErr } = await supabase.from('orders').select('id, order_number').eq('id', orderId).single();
     if (verifiedOrder) {
       console.log("[CreateOrder] AUDIT LOG - Step 8: VERIFIED - Inserted order exists in Supabase DB! ID:", verifiedOrder.id);
     } else {

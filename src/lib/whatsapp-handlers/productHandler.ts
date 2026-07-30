@@ -24,7 +24,7 @@ export async function handleProductIntent(phone: string, text: string, session: 
     // Fetch products based on category. Let's just fetch popular ones as an example.
     const { data: products } = await supabase
       .from('products')
-      .select('*')
+      .select('id, name, prices, stock, weight_per_unit')
       .eq('is_active', true)
       .limit(5);
 

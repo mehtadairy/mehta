@@ -48,7 +48,7 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
     if (isUUID) {
       const { data } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, prices, selling_price, images, weights, stock')
         .eq('id', item.productIdOrName)
         .maybeSingle();
       productData = data;
@@ -57,7 +57,7 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
     if (!productData) {
       const { data } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, prices, selling_price, images, weights, stock')
         .ilike('name', item.productIdOrName)
         .maybeSingle();
       productData = data;
@@ -94,7 +94,7 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
 
     const { data: zones, error: zonesError } = await supabase
       .from('delivery_zones')
-      .select('*');
+      .select('id, name, city, pincodes, pincode, delivery_charge, free_above');
 
     if (zonesError || !zones || zones.length === 0) {
       throw new Error("Delivery not available.");

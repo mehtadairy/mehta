@@ -26,15 +26,26 @@ const SOUTH_INDIA_STATES = [
   'puducherry'
 ];
 
+// ─── In-memory cache for shipping settings (5-minute TTL) ───────────────────
+let _cachedSettings: ShippingSettings | null = null;
+let _cacheExpiry = 0;
+const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
  * Fetches current admin shipping settings from Supabase database.
+ * Results are cached in-memory for 5 minutes to avoid repeated DB reads per checkout.
  * Uses default fallback if database row is missing or unreachable.
  */
 export async function getShippingSettings(): Promise<ShippingSettings> {
+  const now = Date.now();
+  if (_cachedSettings && now < _cacheExpiry) {
+    return _cachedSettings;
+  }
+
   try {
     const { data, error } = await supabase
       .from('shipping_settings')
-      .select('*')
+      .select('id, gujarat_rate_per_500g, outside_gujarat_rate_per_500g, south_india_rate_per_500g, palitana_free_shipping, updated_at')
       .limit(1)
       .maybeSingle();
 
@@ -42,7 +53,7 @@ export async function getShippingSettings(): Promise<ShippingSettings> {
       return DEFAULT_SHIPPING_SETTINGS;
     }
 
-    return {
+    const settings: ShippingSettings = {
       id: data.id,
       gujarat_rate_per_500g: Number(data.gujarat_rate_per_500g) || DEFAULT_SHIPPING_SETTINGS.gujarat_rate_per_500g,
       outside_gujarat_rate_per_500g: Number(data.outside_gujarat_rate_per_500g) || DEFAULT_SHIPPING_SETTINGS.outside_gujarat_rate_per_500g,
@@ -50,6 +61,10 @@ export async function getShippingSettings(): Promise<ShippingSettings> {
       palitana_free_shipping: data.palitana_free_shipping ?? DEFAULT_SHIPPING_SETTINGS.palitana_free_shipping,
       updated_at: data.updated_at
     };
+
+    _cachedSettings = settings;
+    _cacheExpiry = now + SETTINGS_CACHE_TTL_MS;
+    return settings;
   } catch (err) {
     console.warn('[ShippingCalculator] Failed to load shipping_settings from DB, using defaults:', err);
     return DEFAULT_SHIPPING_SETTINGS;
@@ -82,6 +97,10 @@ export async function updateShippingSettings(settings: Partial<ShippingSettings>
     if (result.error) {
       return { success: false, error: result.error.message };
     }
+
+    // Invalidate the in-memory cache so next checkout picks up new rates immediately
+    _cachedSettings = null;
+    _cacheExpiry = 0;
 
     return { success: true, data: result.data as ShippingSettings };
   } catch (err: any) {
