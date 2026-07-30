@@ -335,7 +335,7 @@ export async function POST(req: Request) {
     }
 
     // Verify products exist — lean select (only columns needed for order creation)
-    const { data: allProducts, error: allProductsError } = await supabase.from('products').select('id, name, prices, stock, weight_per_unit, images, retailer_id');
+    const { data: allProducts, error: allProductsError } = await supabase.from('products').select('id, name, prices, stock, images');
     if (allProductsError || !allProducts) {
       console.error("[CreateOrder] SUPABASE ERROR during products fetching:", allProductsError);
       return NextResponse.json({
@@ -345,6 +345,11 @@ export async function POST(req: Request) {
         details: { supabaseError: allProductsError }
       }, { status: 200 });
     }
+
+    // Dynamically derive weights from prices keys since weights column doesn't exist in DB
+    allProducts.forEach((p: any) => {
+      p.weights = p.prices && typeof p.prices === 'object' ? Object.keys(p.prices) : ['Standard'];
+    });
 
     const matchedProducts: { dbProduct: any; quantity: number; price: number }[] = [];
     const missingProductDetails: string[] = [];
@@ -485,7 +490,7 @@ export async function POST(req: Request) {
       total: grandTotal,
       status: 'Pending',
       payment_status: 'Pending',
-      source: 'WHATSAPP',
+      source: 'whatsapp',
       shipping_address: {
         id: resolvedAddress.id,
         name: customer.name || 'WhatsApp Customer',
@@ -494,12 +499,12 @@ export async function POST(req: Request) {
         pincode: resolvedAddress.pincode,
         city: resolvedAddress.city || 'Auto-detected',
         state: resolvedAddress.state || 'Gujarat',
-        source: 'WHATSAPP'
+        source: 'whatsapp'
       }
     };
 
     if (hasSourceColumn) {
-      orderPayload.source = 'WHATSAPP';
+      orderPayload.source = 'whatsapp';
     }
 
     console.log("[CreateOrder] AUDIT LOG - Step 5: Exact Order Payload to insert:");

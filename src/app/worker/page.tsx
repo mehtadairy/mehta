@@ -296,7 +296,7 @@ export default function WorkerPanel() {
             shippingAddress: o.shipping_address,
             printed: o.printed,
             printStatus: o.print_status || 'pending',
-            source: o.source,
+            source: String(o.source || 'website').toLowerCase(),
             deliveryType: o.delivery_type,
             items: []
           };
@@ -448,7 +448,7 @@ export default function WorkerPanel() {
             shippingAddress: o.shipping_address,
             printed: o.printed,
             printStatus: o.print_status || 'pending',
-            source: o.source,
+            source: String(o.source || 'website').toLowerCase(),
             deliveryType: o.delivery_type,
             items: o.order_items ? o.order_items.map((i: any) => ({
               productId: i.product_id,
