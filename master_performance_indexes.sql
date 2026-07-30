@@ -50,11 +50,15 @@ BEGIN
   END IF;
 END $$;
 
--- 6. Update Query Planner Statistics & Compact Storage
-VACUUM ANALYZE public.orders;
-VACUUM ANALYZE public.order_items;
-VACUUM ANALYZE public.invoices;
-VACUUM ANALYZE public.products;
+-- 6. Update Query Planner Statistics
+-- NOTE: VACUUM must be run separately outside a transaction. Use ANALYZE here.
+ANALYZE public.orders;
+ANALYZE public.order_items;
+ANALYZE public.invoices;
+ANALYZE public.products;
 
--- Validation Tip:
--- EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 'your-uuid' ORDER BY created_at DESC LIMIT 20;
+-- 7. Validation Tips:
+-- To check existing indexes: SELECT indexname, tablename, indexdef FROM pg_indexes WHERE schemaname = 'public';
+-- To validate query plans:    EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 'your-uuid' ORDER BY created_at DESC LIMIT 20;
+-- To VACUUM (run separately in pg_admin or maintenance window, NOT inside a transaction):
+--   VACUUM ANALYZE public.orders;
