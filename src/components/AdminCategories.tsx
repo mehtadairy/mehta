@@ -154,17 +154,37 @@ export default function AdminCategories({ categories, setCategories }: { categor
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">Category Image</label>
-              <div className="flex items-center gap-4">
-                {imageUrl && <img src={imageUrl} alt="Category" className="w-16 h-16 object-cover rounded-lg border border-brand-beige" />}
-                <label className="cursor-pointer border border-dashed border-brand-beige rounded-lg px-4 py-3 text-xs text-center hover:bg-brand-cream/50 transition-colors flex-grow">
-                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                  {isUploading ? (
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground"><UploadCloud className="w-4 h-4" /> Click to upload image</div>
+              <label className="block text-xs font-semibold text-brand-charcoal mb-1">Category Image (Upload or Paste Link)</label>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4">
+                  {imageUrl && <img src={imageUrl} alt="Category" className="w-16 h-16 object-cover rounded-lg border border-brand-beige" />}
+                  <label className="cursor-pointer border border-dashed border-brand-beige rounded-lg px-4 py-3 text-xs text-center hover:bg-brand-cream/50 transition-colors flex-grow">
+                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                    {isUploading ? (
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground"><UploadCloud className="w-4 h-4" /> Click to upload image</div>
+                    )}
+                  </label>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <input 
+                    type="text" 
+                    placeholder="Or paste direct image URL link..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full border border-brand-beige rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
+                  />
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="px-3 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
                   )}
-                </label>
+                </div>
               </div>
               {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
             </div>

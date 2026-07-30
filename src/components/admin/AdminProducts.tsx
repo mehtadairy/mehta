@@ -943,23 +943,43 @@ export function AdminProducts({
                   {/* TAB 5: MEDIA */}
                   {activeFormTab === "media" && (
                     <div className="space-y-4">
-                      <span className="text-xs font-bold text-gray-700 uppercase block">Product Cover Image</span>
-                      <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                        <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center shrink-0">
-                          {prodImage ? (
-                            <img src={prodImage} alt="Product Preview" className="w-full h-full object-cover" />
-                          ) : (
-                            <Package className="w-8 h-8 text-gray-300" />
-                          )}
+                      <span className="text-xs font-bold text-gray-700 uppercase block">Product Cover Image (Upload or Paste Link)</span>
+                      <div className="flex flex-col gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center shrink-0">
+                            {prodImage ? (
+                              <img src={prodImage} alt="Product Preview" className="w-full h-full object-cover" />
+                            ) : (
+                              <Package className="w-8 h-8 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="space-y-2 flex-1">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl cursor-pointer">
+                              <UploadCloud className="w-4 h-4" />
+                              {isUploadingImage ? "Uploading to Storage..." : "Upload Image File"}
+                              <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} />
+                            </label>
+                            <p className="text-[10px] text-gray-500">Max size 5MB. Optimized for web catalog.</p>
+                            {uploadError && <span className="text-xs text-rose-600 font-bold block">{uploadError}</span>}
+                          </div>
                         </div>
-                        <div className="space-y-2 flex-1">
-                          <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl cursor-pointer">
-                            <UploadCloud className="w-4 h-4" />
-                            {isUploadingImage ? "Uploading to Storage..." : "Upload Image File"}
-                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} />
-                          </label>
-                          <p className="text-[10px] text-gray-500">Max size 5MB. Optimized for web catalog.</p>
-                          {uploadError && <span className="text-xs text-rose-600 font-bold block">{uploadError}</span>}
+                        <div className="flex gap-2 items-center pt-2 border-t border-gray-200/60">
+                          <input 
+                            type="text" 
+                            placeholder="Or paste direct product image URL link..."
+                            value={prodImage}
+                            onChange={(e) => setProdImage(e.target.value)}
+                            className="flex-1 min-h-[38px] px-3 text-xs border border-gray-200 bg-white rounded-xl focus:border-amber-700 focus:ring-1 focus:ring-amber-700 outline-none"
+                          />
+                          {prodImage && (
+                            <button
+                              type="button"
+                              onClick={() => setProdImage("")}
+                              className="px-3 min-h-[38px] border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
