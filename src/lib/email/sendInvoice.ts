@@ -218,11 +218,14 @@ export async function sendInvoiceEmailWithRetry(
   `;
 
   const attachments = [];
-  if (pdfBuffer) {
+  const MAX_ATTACHMENT_BYTES = 200 * 1024; // 200 KB
+  if (pdfBuffer && pdfBuffer.length <= MAX_ATTACHMENT_BYTES) {
     attachments.push({
       filename: `Invoice-${invoice.invoice_number}.pdf`,
       content: pdfBuffer.toString("base64"),
     });
+  } else if (pdfBuffer) {
+    console.log(`[EmailService] PDF size (${(pdfBuffer.length / 1024).toFixed(2)} KB) exceeds 200 KB attachment limit. Secure download link included instead.`);
   }
 
   // 3. Send via Resend with Exponential Backoff Retries

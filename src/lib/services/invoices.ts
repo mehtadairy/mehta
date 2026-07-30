@@ -30,11 +30,14 @@ export interface InvoiceData {
 // Backend PDF Generation using React-PDF
 
 export async function generateInvoicePDF(order: any): Promise<Buffer> {
-  // --- PRE-FETCH IMAGES ---
+  // --- PRE-FETCH OPTIMIZED LOGO ---
   let logoUrl = undefined;
   
   try {
-    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    const optLogoPath = path.join(process.cwd(), "public", "invoice-logo.png");
+    const origLogoPath = path.join(process.cwd(), "public", "logo.png");
+    const logoPath = fs.existsSync(optLogoPath) ? optLogoPath : origLogoPath;
+
     if (fs.existsSync(logoPath)) {
       const logoBuffer = fs.readFileSync(logoPath);
       logoUrl = "data:image/png;base64," + logoBuffer.toString("base64");

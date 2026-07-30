@@ -1,14 +1,4 @@
-import { StyleSheet, Font } from '@react-pdf/renderer';
-
-Font.register({
-  family: 'Poppins',
-  fonts: [
-    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf', fontWeight: 400 },
-    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Medium.ttf', fontWeight: 500 },
-    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-SemiBold.ttf', fontWeight: 600 },
-    { src: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf', fontWeight: 700 }
-  ]
-});
+import { StyleSheet } from '@react-pdf/renderer';
 
 export const COLORS = {
   background: '#ffffff',
@@ -27,7 +17,7 @@ export const COLORS = {
 export const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.background,
-    fontFamily: 'Poppins',
+    fontFamily: 'Helvetica',
     paddingBottom: 40,
     fontSize: 9,
     color: COLORS.textDark,
