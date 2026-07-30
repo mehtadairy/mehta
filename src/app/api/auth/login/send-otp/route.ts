@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendOTP } from '@/lib/services/whatsapp-auth';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,15 @@ export async function POST(req: Request) {
     const cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length < 10) {
       return NextResponse.json({ success: false, error: 'Invalid phone number' }, { status: 400 });
+    }
+
+    // 🔒 Rate Limit: Max 3 OTP requests per phone number per minute
+    const rateLimit = checkRateLimit(`otp_send_${cleanPhone}`, 3, 60000);
+    if (!rateLimit.success) {
+      return NextResponse.json({
+        success: false,
+        error: `Too many OTP requests. Please wait ${Math.ceil(rateLimit.resetMs / 1000)} seconds.`
+      }, { status: 429 });
     }
 
     // Login Flow Requirement: Check if customer exists BEFORE sending OTP

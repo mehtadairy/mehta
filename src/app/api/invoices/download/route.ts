@@ -58,6 +58,13 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Order / Invoice record not found' }, { status: 404 });
       }
 
+      if (!isStaff) {
+        const isOwner = (authenticatedUserId && invoice.order.customer_id === authenticatedUserId);
+        if (!isOwner) {
+          return NextResponse.json({ error: 'Unauthorized to download this invoice' }, { status: 403 });
+        }
+      }
+
       const orderData = {
         ...invoice.order,
         invoice_number: invoice.invoice_number,

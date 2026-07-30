@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import sharp from 'sharp';
+import { verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
 
 // Maximum allowed upload size (5 MB raw)
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -11,6 +13,13 @@ const WEBP_QUALITY = 82;
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const bucket = (formData.get('bucket') as string) || 'products';

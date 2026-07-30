@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { hashPassword } from '@/lib/password-utils';
 import { getSharedStaffStore, addStaffToStore, updateStaffInStore, deleteStaffFromStore, StaffAccount } from '@/lib/staff-store';
+import { verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
 
 export async function GET() {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { data: dbStaff, error } = await supabaseServer
       .from('staff_accounts')
       .select('*')
@@ -22,6 +31,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { full_name, username, password, phone, email, role, branch, permissions, status, avatar_url } = body;
 
@@ -84,6 +100,13 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, full_name, username, phone, email, role, branch, permissions, status, password, avatar_url, last_login } = body;
 
@@ -136,6 +159,13 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

@@ -51,13 +51,6 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
         ],
       },
-      // Immutable static assets — 1-year cache, never re-validated
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
       // Public images (logo, banners in /public) — 1-year cache
       {
         source: '/images/:path*',

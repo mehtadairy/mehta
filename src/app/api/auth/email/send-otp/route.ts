@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { Resend } from 'resend';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import VerificationTemplate from '@/emails/VerificationTemplate';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 // Initialize Resend
 const resendApiKey = process.env.RESEND_API_KEY;
@@ -34,12 +35,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Invalid email address' }, { status: 400 });
     }
 
+    const emailLower = email.toLowerCase().trim();
+
+    // 🔒 Rate Limit: Max 3 OTP requests per email per minute in-memory
+    const rateLimit = checkRateLimit(`email_otp_send_${emailLower}`, 3, 60000);
+    if (!rateLimit.success) {
+      return NextResponse.json({
+        success: false,
+        error: `Too many OTP requests. Please wait ${Math.ceil(rateLimit.resetMs / 1000)} seconds.`
+      }, { status: 429 });
+    }
+
     if (!resend) {
       console.warn("RESEND_API_KEY is not configured.");
       return NextResponse.json({ success: false, error: 'Email service is not configured' }, { status: 500 });
     }
-
-    const emailLower = email.toLowerCase().trim();
 
     // 1. Rate Limiting Check (60 seconds cooldown)
     const { data: recentOTP, error: fetchError } = await supabase

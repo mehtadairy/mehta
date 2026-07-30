@@ -1,0 +1,176 @@
+﻿
+> mehta1@0.1.0 build
+> next build
+
+node.exe : Warning: Custom Cache-Control headers detected for the following routes:
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: Custom...llowing routes::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+Γû▓ Next.js 16.2.9 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: 
+https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 7.0s
+  Skipping validation of types
+  Finished TypeScript config validation in 7ms ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/132) ...
+  Generating static pages using 11 workers (33/132) 
+  Generating static pages using 11 workers (66/132) 
+  Generating static pages using 11 workers (99/132) 
+Γ£ô Generating static pages using 11 workers (132/132) in 2.3s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ Γùï /account
+Γö£ Γùï /admin
+Γö£ Γùï /admin-login
+Γö£ Γùï /admin/login
+Γö£ Γùï /admin/shipping
+Γö£ ╞Æ /api/admin/data
+Γö£ ╞Æ /api/admin/generate-description
+Γö£ ╞Æ /api/admin/login
+Γö£ ╞Æ /api/admin/mutate
+Γö£ ╞Æ /api/admin/products/reorder
+Γö£ ╞Æ /api/admin/refund
+Γö£ ╞Æ /api/admin/resend-notification
+Γö£ ╞Æ /api/admin/staff
+Γö£ ╞Æ /api/admin/staff/reset-password
+Γö£ ╞Æ /api/admin/update-order
+Γö£ ╞Æ /api/admin/upload
+Γö£ ╞Æ /api/auth/check-account
+Γö£ ╞Æ /api/auth/check-phone
+Γö£ ╞Æ /api/auth/complete-profile
+Γö£ ╞Æ /api/auth/debug-session
+Γö£ ╞Æ /api/auth/email/send-otp
+Γö£ ╞Æ /api/auth/email/verify-otp
+Γö£ ╞Æ /api/auth/login/send-otp
+Γö£ ╞Æ /api/auth/login/verify-otp
+Γö£ ╞Æ /api/auth/logout
+Γö£ ╞Æ /api/auth/me
+Γö£ ╞Æ /api/auth/send-otp
+Γö£ ╞Æ /api/auth/signup/send-otp
+Γö£ ╞Æ /api/auth/signup/verify-otp
+Γö£ ╞Æ /api/auth/sync-customer
+Γö£ ╞Æ /api/auth/truecaller/callback
+Γö£ ╞Æ /api/auth/truecaller/status
+Γö£ ╞Æ /api/auth/verify-otp
+Γö£ ╞Æ /api/auth/whatsapp-otp/send
+Γö£ ╞Æ /api/auth/whatsapp-otp/verify
+Γö£ ╞Æ /api/cron/abandoned-cart
+Γö£ ╞Æ /api/cron/birthday
+Γö£ ╞Æ /api/cron/feedback
+Γö£ ╞Æ /api/cron/payment-recovery
+Γö£ ╞Æ /api/cron/reorder
+Γö£ ╞Æ /api/cron/retry-whatsapp
+Γö£ ╞Æ /api/debug
+Γö£ ╞Æ /api/delivery/check
+Γö£ ╞Æ /api/delivery/check-serviceability
+Γö£ ╞Æ /api/invoices/download
+Γö£ ╞Æ /api/invoices/manual
+Γö£ ╞Æ /api/invoices/resend-whatsapp
+Γö£ ╞Æ /api/invoices/retry
+Γö£ ╞Æ /api/invoices/send
+Γö£ ╞Æ /api/notifications
+Γö£ ╞Æ /api/notifications/send
+Γö£ ╞Æ /api/notifications/subscribe
+Γö£ ╞Æ /api/orders/cancel
+Γö£ ╞Æ /api/payment/cod
+Γö£ ╞Æ /api/payment/create-order
+Γö£ ╞Æ /api/payment/verify
+Γö£ ╞Æ /api/payment/webhook
+Γö£ ╞Æ /api/print/completed
+Γö£ ╞Æ /api/print/error
+Γö£ ╞Æ /api/print/heartbeat
+Γö£ ╞Æ /api/print/pending
+Γö£ ╞Æ /api/print/reprint
+Γö£ ╞Æ /api/print/settings
+Γö£ ╞Æ /api/shiprocket/cancel-shipment
+Γö£ ╞Æ /api/shiprocket/create-shipment
+Γö£ ╞Æ /api/shiprocket/label
+Γö£ ╞Æ /api/shiprocket/manifest
+Γö£ ╞Æ /api/shiprocket/return-shipment
+Γö£ ╞Æ /api/shiprocket/tracking
+Γö£ ╞Æ /api/test-db
+Γö£ ╞Æ /api/test-insert
+Γö£ ╞Æ /api/test-invoice
+Γö£ ╞Æ /api/test-print-hardening
+Γö£ ╞Æ /api/test-razorpay
+Γö£ ╞Æ /api/test-update-order
+Γö£ ╞Æ /api/tracking
+Γö£ ╞Æ /api/user/addresses
+Γö£ ╞Æ /api/user/profile
+Γö£ ╞Æ /api/vapidPublicKey
+Γö£ ╞Æ /api/webhooks/delivery
+Γö£ ╞Æ /api/webhooks/razorpay
+Γö£ ╞Æ /api/webhooks/shiprocket
+Γö£ ╞Æ /api/whatsapp-order
+Γö£ ╞Æ /api/whatsapp/cancel-order
+Γö£ ╞Æ /api/whatsapp/cart
+Γö£ ╞Æ /api/whatsapp/cart/add
+Γö£ ╞Æ /api/whatsapp/cart/clear
+Γö£ ╞Æ /api/whatsapp/cart/get
+Γö£ ╞Æ /api/whatsapp/cart/remove
+Γö£ ╞Æ /api/whatsapp/categories
+Γö£ ╞Æ /api/whatsapp/checkout
+Γö£ ╞Æ /api/whatsapp/create-order
+Γö£ ╞Æ /api/whatsapp/customer
+Γö£ ╞Æ /api/whatsapp/delivery-charge
+Γö£ ╞Æ /api/whatsapp/invoice
+Γö£ ╞Æ /api/whatsapp/order-status
+Γö£ ╞Æ /api/whatsapp/payment
+Γö£ ╞Æ /api/whatsapp/product/[id]
+Γö£ ╞Æ /api/whatsapp/products
+Γö£ ╞Æ /api/whatsapp/search
+Γö£ ╞Æ /api/whatsapp/webhook
+Γö£ ╞Æ /api/worker/data
+Γö£ ╞Æ /api/worker/login
+Γö£ ╞Æ /api/worker/update-order
+Γö£ ╞Æ /api/worker/update-payment
+Γö£ Γùï /auth/callback
+Γö£ Γùï /blogs
+Γö£ ╞Æ /blogs/[id]
+Γö£ Γùï /cart
+Γö£ Γùï /checkout
+Γö£ Γùï /complete-profile
+Γö£ Γùï /contact
+Γö£ Γùï /faq
+Γö£ Γùï /gallery
+Γö£ Γùï /gift-boxes
+Γö£ ╞Æ /invoice/[invoiceNumber]
+Γö£ Γùï /login
+Γö£ ╞Æ /policy/[slug]
+Γö£ Γùï /policy/payment
+Γö£ Γùï /policy/privacy
+Γö£ Γùï /policy/refund
+Γö£ Γùï /policy/terms
+Γö£ Γùï /print-station
+Γö£ ╞Æ /product/[id]
+Γö£ Γùï /reorder
+Γö£ Γùï /robots.txt
+Γö£ Γùï /shop
+Γö£ Γùï /signup
+Γö£ Γùï /sitemap.xml
+Γö£ Γùï /tracking
+Γö£ Γùï /worker
+Γöö Γùï /worker/login
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { WhatsAppService } from '@/lib/services/whatsapp';
 import Razorpay from 'razorpay';
+import { verifySession } from '@/lib/auth-utils';
+import { cookies } from 'next/headers';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || '',
@@ -10,6 +12,13 @@ const razorpay = new Razorpay({
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('mehta_admin_token')?.value;
+    const authPayload = adminToken ? await verifySession(adminToken) : null;
+    if (!authPayload || authPayload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { cancellationId, action } = await request.json();
 
     if (!cancellationId || !['approve', 'reject'].includes(action)) {
