@@ -213,27 +213,24 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
         </button>
 
         {/* Image — square with skeleton */}
-        <div 
-          className="relative overflow-hidden bg-[#FAF6EE] rounded-t-2xl flex items-center justify-center"
+        <Link 
+          href={`/product/${generateSlug(product.name)}`}
+          className="relative overflow-hidden bg-[#FAF6EE] rounded-t-2xl flex items-center justify-center p-3.5 flex-shrink-0"
           style={{ aspectRatio: '1 / 1', width: '100%', height: 'auto', flexGrow: 0, flexShrink: 0 }}
         >
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
  
-          <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
-            <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-              <img
-                src={getOptimizedImageUrl(product.images[0], 300, 75)}
-                alt={product.name}
-                loading="lazy"
-                className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
-                  imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                }`}
-                onLoad={() => setImageLoaded(true)}
-              />
-            </div>
-          </Link>
-        </div>
+          <img
+            src={getOptimizedImageUrl(product.images[0], 300, 75)}
+            alt={product.name}
+            loading="lazy"
+            className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
+              imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            }`}
+            onLoad={() => setImageLoaded(true)}
+          />
+        </Link>
 
         {/* Info body */}
         <div className="flex flex-grow flex-col p-3.5 sm:p-4 relative z-10">
