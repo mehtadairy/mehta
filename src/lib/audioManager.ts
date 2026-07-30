@@ -97,6 +97,37 @@ class AudioManager {
 
   // ─── Public API ─────────────────────────────────────────────────────────────
 
+  /**
+   * Explicitly unlock the audio context.
+   * Call this SYNCHRONOUSLY inside a user-gesture handler (e.g., the login button click)
+   * BEFORE any awaited async call, so the browser counts the gesture as valid.
+   *
+   * After unlock, all queued and future sounds play immediately.
+   */
+  unlock() {
+    if (this.unlocked || !this.audio) return;
+    this.audio.muted = true;
+    this.audio.play()
+      .then(() => {
+        if (!this.audio) return;
+        this.audio.pause();
+        this.audio.currentTime = 0;
+        this.audio.muted = this.getStoredMuted();
+        this.unlocked = true;
+        if (isDev) console.log('[AudioManager] Audio unlocked via explicit unlock()');
+        // Drain any pending queued play
+        if (this.queued) {
+          this.queued = false;
+          this._play();
+        }
+      })
+      .catch((err) => {
+        devWarn('unlock() play() failed:', err);
+        if (this.audio) this.audio.muted = this.getStoredMuted();
+      });
+  }
+
+
   /** Trigger a notification sound. Respects mute, dedup window, and queuing. */
   play() {
     if (!this.audio) return;
@@ -203,6 +234,7 @@ export function getAudioManager(): AudioManager {
   if (typeof window === 'undefined') {
     // Return a no-op stub for SSR
     return {
+      unlock: () => {},
       play: () => {},
       volume: 0.8,
       setVolume: () => {},

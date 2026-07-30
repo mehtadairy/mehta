@@ -14,6 +14,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { getAudioManager } from '@/lib/audioManager';
 
 interface UseAudioReturn {
+  /** Explicitly unlock audio — call SYNCHRONOUSLY inside a login/gesture handler */
+  unlock: () => void;
   /** Play the notification chime (respects mute & dedup window) */
   play: () => void;
   /** Current volume (0–1) */
@@ -38,6 +40,10 @@ export function useAudio(): UseAudioReturn {
     setIsMutedState(manager.isMuted);
   }, []);
 
+  const unlock = useCallback(() => {
+    manager.unlock();
+  }, []);
+
   const play = useCallback(() => {
     manager.play();
   }, []);
@@ -53,5 +59,5 @@ export function useAudio(): UseAudioReturn {
     return nowMuted;
   }, []);
 
-  return { play, volume, setVolume, isMuted, toggleMute };
+  return { unlock, play, volume, setVolume, isMuted, toggleMute };
 }

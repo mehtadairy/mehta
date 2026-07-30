@@ -272,6 +272,8 @@ export default function AdminPanel() {
 
     // Shared audio manager (singleton — preloaded, unlock-on-gesture, dedup)
     const audio = useAudio();
+    // Track whether audio has been unlocked for showing the "Enable Sounds" hint
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
 
     const loadData = async () => {
         setOrdersLoading(true);
@@ -493,6 +495,10 @@ export default function AdminPanel() {
     }, [isAdminAuth]);
 
     const handleAdminLogin = async (e: React.FormEvent) => {
+        // Unlock audio immediately using this login click as the user gesture.
+        // Must be called BEFORE any await so the browser gesture context is still active.
+        audio.unlock();
+        setAudioUnlocked(true);
         e.preventDefault();
         setLoginError("");
         try {
@@ -1394,6 +1400,18 @@ export default function AdminPanel() {
                         >
                             Sign Out
                         </button>
+                        {/* Enable Sounds chip — shown when audio is not yet unlocked (e.g. auto-login from localStorage) */}
+                        {!audioUnlocked && (
+                            <button
+                                id="admin-enable-sounds-btn"
+                                onClick={() => { audio.unlock(); setAudioUnlocked(true); }}
+                                title="Click to enable notification sounds"
+                                className="flex items-center gap-1.5 text-xs font-bold text-amber-700 border border-amber-300 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors animate-pulse cursor-pointer"
+                            >
+                                <Volume2 className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Enable Sounds</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </header>

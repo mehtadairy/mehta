@@ -443,6 +443,9 @@ export default function WorkerPanel() {
 
   // --- ACTIONS & API CALLS ---
   const handleLogin = async (e: React.FormEvent) => {
+    // Unlock audio immediately using this login click as the user gesture.
+    // Must be called BEFORE any await so the browser gesture context is still active.
+    audio.unlock();
     e.preventDefault();
     setLoginError("");
     setIsLoggingIn(true);
