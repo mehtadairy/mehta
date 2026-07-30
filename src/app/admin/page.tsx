@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useAudio } from "@/lib/hooks/useAudio";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -71,7 +72,10 @@ import {
     Printer,
     GripVertical,
     ShieldCheck,
-    Truck
+    Truck,
+    Volume2,
+    VolumeX,
+    Sliders
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -266,38 +270,8 @@ export default function AdminPanel() {
     const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
     const [cancellationAlert, setCancellationAlert] = useState<any>(null);
 
-    // Shared AudioContext — created once, unlocked on first user gesture
-    const audioCtxRef = useRef<AudioContext | null>(null);
-    const audioUnlockedRef = useRef(false);
-
-    // --- AUDIO CONTEXT UNLOCK (Chrome autoplay fix) ---
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContextClass) return;
-
-        audioCtxRef.current = new AudioContextClass();
-
-        const unlock = () => {
-            if (audioUnlockedRef.current) return;
-            audioCtxRef.current?.resume().then(() => {
-                audioUnlockedRef.current = true;
-                console.log('[Audio] AudioContext unlocked');
-            }).catch(err => console.warn('[Audio] resume failed:', err));
-        };
-
-        window.addEventListener('click', unlock, { once: true });
-        window.addEventListener('keydown', unlock, { once: true });
-        window.addEventListener('touchstart', unlock, { once: true });
-
-        return () => {
-            window.removeEventListener('click', unlock);
-            window.removeEventListener('keydown', unlock);
-            window.removeEventListener('touchstart', unlock);
-            audioCtxRef.current?.close().catch(() => {});
-            audioCtxRef.current = null;
-        };
-    }, []);
+    // Shared audio manager (singleton — preloaded, unlock-on-gesture, dedup)
+    const audio = useAudio();
 
     const loadData = async () => {
         setOrdersLoading(true);
@@ -388,36 +362,7 @@ export default function AdminPanel() {
     }, [activeTab, isAdminAuth]);
 
     const playDingDongSound = () => {
-        const ctx = audioCtxRef.current;
-        if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
-
-        const doPlay = () => {
-            try {
-                const playNote = (freq: number, startTime: number, duration: number) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, startTime);
-                    gain.gain.setValueAtTime(0.4, startTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(startTime);
-                    osc.stop(startTime + duration);
-                };
-                const now = ctx.currentTime;
-                playNote(880, now, 0.4);          // A5
-                playNote(1174.66, now + 0.25, 0.6); // D6 (high chime)
-            } catch (e) {
-                console.warn('[Audio] playDingDongSound oscillator error:', e);
-            }
-        };
-
-        if (ctx.state === 'suspended') {
-            ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
-        } else {
-            doPlay();
-        }
+        audio.play();
     };
 
     // Auto-refresh Orders Tracking & WhatsApp Orders every 10 seconds with Sound & Screen Notification
@@ -1901,7 +1846,68 @@ export default function AdminPanel() {
 
                                     {/* ==================== TAB 3.7: THERMAL PRINTERS ==================== */}
                                     {activeTab === "printers" && (
-                                        <AdminPrinters />
+                                        <div className="flex flex-col gap-6">
+                                          <AdminPrinters />
+
+                                          {/* Sound Settings */}
+                                          <div className="bg-white border border-[#EAE0D3] rounded-xl p-5 shadow-2xs flex flex-col gap-5">
+                                            <div className="flex items-center gap-2 border-b border-[#EAE0D3]/50 pb-3">
+                                              <Sliders className="h-4 w-4 text-[#D46D2D]" />
+                                              <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#2A1E17]">Notification Sound Settings</h3>
+                                            </div>
+                                            <p className="text-xs text-gray-500 font-medium -mt-2">Controls the chime played whenever a new order or cancellation notification arrives.</p>
+
+                                            <div className="flex flex-col gap-4 text-xs font-bold text-gray-700">
+                                              {/* Volume Slider */}
+                                              <div className="flex flex-col gap-2 p-3.5 bg-gray-50 border border-gray-150 rounded-xl">
+                                                <div className="flex justify-between items-center">
+                                                  <span>Notification Volume</span>
+                                                  <span className="text-amber-700">{Math.round(audio.volume * 100)}%</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-1">
+                                                  <VolumeX className="h-4 w-4 text-gray-400" />
+                                                  <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="1"
+                                                    step="0.05"
+                                                    value={audio.volume}
+                                                    onChange={(e) => audio.setVolume(parseFloat(e.target.value))}
+                                                    className="flex-1 accent-[#D46D2D] h-1 bg-gray-200 rounded-lg cursor-pointer"
+                                                  />
+                                                  <Volume2 className="h-4 w-4 text-amber-600" />
+                                                </div>
+                                              </div>
+
+                                              {/* Mute Toggle */}
+                                              <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer">
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span>Mute All Sounds</span>
+                                                  <span className="text-[10px] text-gray-400 font-medium">Silence all notification chimes without changing volume.</span>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  id="admin-mute-toggle"
+                                                  onClick={() => audio.toggleMute()}
+                                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${audio.isMuted ? 'bg-red-400' : 'bg-[#D46D2D]'}`}
+                                                >
+                                                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${audio.isMuted ? 'translate-x-1' : 'translate-x-4.5'}`} />
+                                                </button>
+                                              </label>
+
+                                              {/* Test Sound */}
+                                              <button
+                                                type="button"
+                                                id="admin-test-sound-btn"
+                                                onClick={() => audio.play()}
+                                                className="flex items-center justify-center gap-2 w-full p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 font-bold text-xs hover:bg-amber-100 active:scale-95 transition-all cursor-pointer"
+                                              >
+                                                <Volume2 className="h-4 w-4" />
+                                                Test Notification Sound
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
                                     )}
 
                                     {/* ==================== TAB 5: CUSTOMERS ==================== */}

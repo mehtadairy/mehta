@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useAudio } from "@/lib/hooks/useAudio";
 import { supabase } from "@/lib/supabaseClient";
 import { 
   LayoutDashboard, 
@@ -111,9 +112,9 @@ export default function WorkerPanel() {
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [alarmOrders, setAlarmOrders] = useState<any[]>([]);
   const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Shared AudioContext — created once, unlocked on first user gesture
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const audioUnlockedRef = useRef(false);
+
+  // Shared audio manager (singleton — preloaded, unlock-on-gesture, dedup)
+  const audio = useAudio();
 
   // Check login state and settings on mount
   useEffect(() => {
@@ -145,37 +146,6 @@ export default function WorkerPanel() {
     }
   }, [settings.enableDesktop]);
 
-  // --- AUDIO CONTEXT UNLOCK (Chrome autoplay fix) ---
-  // Create the AudioContext immediately so it is ready. Chrome starts it in
-  // 'suspended' state; we resume it on the first user interaction.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-
-    audioCtxRef.current = new AudioContextClass();
-
-    const unlock = () => {
-      if (audioUnlockedRef.current) return;
-      audioCtxRef.current?.resume().then(() => {
-        audioUnlockedRef.current = true;
-        console.log('[Audio] AudioContext unlocked');
-      }).catch(err => console.warn('[Audio] resume failed:', err));
-    };
-
-    window.addEventListener('click', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
-    window.addEventListener('touchstart', unlock, { once: true });
-
-    return () => {
-      window.removeEventListener('click', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('touchstart', unlock);
-      audioCtxRef.current?.close().catch(() => {});
-      audioCtxRef.current = null;
-    };
-  }, []);
-
   // Online/Offline Connection State
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -198,74 +168,22 @@ export default function WorkerPanel() {
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
   const [fullscreenOrderAlert, setFullscreenOrderAlert] = useState<any>(null);
 
+  // Helpers — guards settings.enableSound before delegating to AudioManager
   const playStandardSound = () => {
-    if (!settings.enableSound || isMuted) return;
-    const ctx = audioCtxRef.current;
-    if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
-    // Resume the context if it is still suspended (e.g. before first gesture)
-    const doPlay = () => {
-      try {
-        const playTone = (startTime: number, freq: number, duration: number) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, startTime);
-          gain.gain.setValueAtTime(settings.volume * 0.4, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(startTime);
-          osc.stop(startTime + duration);
-        };
-        // Premium dual-tone chime: E5 (659.25 Hz) then G5 (783.99 Hz)
-        playTone(ctx.currentTime, 659.25, 0.6);
-        playTone(ctx.currentTime + 0.15, 783.99, 0.8);
-      } catch (e) {
-        console.warn('[Audio] playStandardSound oscillator error:', e);
-      }
-    };
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
-    } else {
-      doPlay();
-    }
+    if (!settings.enableSound) return;
+    audio.setVolume(settings.volume);
+    audio.play();
   };
 
   const playErrorSound = () => {
-    if (!settings.enableSound || isMuted) return;
-    const ctx = audioCtxRef.current;
-    if (!ctx) { console.warn('[Audio] No AudioContext available'); return; }
-    const doPlay = () => {
-      try {
-        const playBeep = (startTime: number, freq: number, duration: number) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(freq, startTime);
-          gain.gain.setValueAtTime(settings.volume * 0.25, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(startTime);
-          osc.stop(startTime + duration);
-        };
-        // Warning double-beep
-        playBeep(ctx.currentTime, 180, 0.25);
-        playBeep(ctx.currentTime + 0.12, 180, 0.25);
-      } catch (e) {
-        console.warn('[Audio] playErrorSound oscillator error:', e);
-      }
-    };
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(doPlay).catch(err => console.warn('[Audio] resume failed:', err));
-    } else {
-      doPlay();
-    }
+    if (!settings.enableSound) return;
+    audio.setVolume(settings.volume);
+    audio.play();
   };
 
   // Sound Repeat loop (alarm) until order is acknowledged
   useEffect(() => {
-    if (alarmOrders.length > 0 && settings.repeatSound && !isMuted) {
+    if (alarmOrders.length > 0 && settings.repeatSound && !audio.isMuted) {
       if (!alarmIntervalRef.current) {
         // Play immediately
         playStandardSound();
@@ -285,7 +203,7 @@ export default function WorkerPanel() {
         alarmIntervalRef.current = null;
       }
     };
-  }, [alarmOrders, settings.repeatSound, isMuted, settings.volume, settings.enableSound]);
+  }, [alarmOrders, settings.repeatSound, audio.isMuted, settings.volume, settings.enableSound]);
 
   const showDesktopNotification = (order: any) => {
     if (!settings.enableDesktop || typeof window === 'undefined' || !('Notification' in window)) return;
@@ -1683,8 +1601,10 @@ export default function WorkerPanel() {
                             step="0.05"
                             value={settings.volume}
                             onChange={(e) => {
-                              const updated = { ...settings, volume: parseFloat(e.target.value) };
+                              const v = parseFloat(e.target.value);
+                              const updated = { ...settings, volume: v };
                               setSettings(updated);
+                              audio.setVolume(v);
                               localStorage.setItem("mehta_worker_notif_settings", JSON.stringify(updated));
                             }}
                             className="flex-1 accent-[#D46D2D] h-1 bg-gray-200 rounded-lg cursor-pointer"
@@ -1709,8 +1629,38 @@ export default function WorkerPanel() {
                           className="w-full mt-1 border border-[#EAE0D3] rounded-lg p-2 bg-white text-xs focus:outline-none focus:border-[#D46D2D]"
                         />
                       </div>
+
+                      {/* Mute Toggle */}
+                      <label className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-150 rounded-xl cursor-pointer">
+                        <div className="flex flex-col gap-0.5">
+                          <span>Mute All Sounds</span>
+                          <span className="text-[10px] text-gray-400 font-medium">Silence all notification chimes. Volume and other settings are preserved.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => audio.toggleMute()}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${audio.isMuted ? 'bg-red-400' : 'bg-[#D46D2D]'}`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${audio.isMuted ? 'translate-x-1' : 'translate-x-4.5'}`} />
+                        </button>
+                      </label>
+
+                      {/* Test Sound Button */}
+                      <button
+                        type="button"
+                        id="worker-test-sound-btn"
+                        onClick={() => {
+                          audio.setVolume(settings.volume);
+                          audio.play();
+                        }}
+                        className="flex items-center justify-center gap-2 w-full p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 font-bold text-xs hover:bg-amber-100 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                        Test Notification Sound
+                      </button>
                     </div>
                   </div>
+
                 )}
               </motion.div>
             </AnimatePresence>
