@@ -25,7 +25,8 @@ const FALLBACK_IMAGE = '/assorted_sweets_1781172431124.png';
 export function getOptimizedImageUrl(
   src: string | undefined | null,
   width: number = 400,
-  quality: number = 80
+  quality: number = 80,
+  height?: number
 ): string {
   if (!src) return FALLBACK_IMAGE;
 
@@ -35,6 +36,10 @@ export function getOptimizedImageUrl(
     const renderUrl = cleanSrc.replace(SUPABASE_OBJECT_PATH, SUPABASE_RENDER_PATH);
     const url = new URL(renderUrl);
     url.searchParams.set('width', String(width));
+    if (height) {
+      url.searchParams.set('height', String(height));
+      url.searchParams.set('resize', 'contain');
+    }
     url.searchParams.set('quality', String(quality));
     url.searchParams.set('format', 'webp');
     return url.toString();

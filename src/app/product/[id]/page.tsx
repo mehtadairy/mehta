@@ -433,7 +433,7 @@ export default function ProductDetails() {
                       transition: { duration: 0.2 }
                     }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    src={getOptimizedImageUrl(product.images[activeImageIdx] || product.images[0], 800, 85)} 
+                    src={getOptimizedImageUrl(product.images[activeImageIdx] || product.images[0], 800, 85, 800)} 
                     alt={product.name} 
                     style={zoomStyle}
                     className="max-h-full max-w-full object-contain rounded-full transition-transform duration-100 ease-out origin-center"
@@ -455,7 +455,7 @@ export default function ProductDetails() {
                           : "border-brand-beige hover:border-brand-gold opacity-75 hover:opacity-100"
                       }`}
                     >
-                      <img src={getOptimizedImageUrl(img, 120, 75)} alt="" className="w-full h-full object-contain rounded-full" loading="lazy" />
+                      <img src={getOptimizedImageUrl(img, 120, 75, 120)} alt="" className="w-full h-full object-contain rounded-full" loading="lazy" />
                     </button>
                   ))}
                 </div>

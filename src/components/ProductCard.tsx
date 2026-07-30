@@ -223,7 +223,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
           {!imageLoaded && <ImageSkeleton />}
  
           <img
-            src={getOptimizedImageUrl(product.images[0], 300, 75)}
+            src={getOptimizedImageUrl(product.images[0], 300, 75, 300)}
             alt={product.name}
             loading="lazy"
             className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
@@ -354,7 +354,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
               {/* Image */}
               <div className="w-full sm:w-5/12 aspect-square bg-[#FAF6EE] rounded-2xl flex items-center justify-center p-4 flex-shrink-0">
                 <img
-                  src={getOptimizedImageUrl(product.images[0], 500, 80)}
+                  src={getOptimizedImageUrl(product.images[0], 500, 80, 500)}
                   alt={product.name}
                   loading="lazy"
                   className="w-full h-full object-contain rounded-full"
