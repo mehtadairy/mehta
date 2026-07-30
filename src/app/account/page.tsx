@@ -379,20 +379,63 @@ function AccountContent() {
         const phoneWithPlus91 = clean10DigitPhone ? `+91${clean10DigitPhone}` : '';
         const email = rawEmail.trim().toLowerCase();
 
-        // Build robust Postgres OR query for matching customer orders
+        // 1. Gather all linked profile IDs, phones, and emails to resolve account splits
+        const matchingCustomerIds = [customerId];
+        const matchingPhones = [];
+        const matchingEmails = [];
+
+        if (email) matchingEmails.push(email);
+        if (clean10DigitPhone) matchingPhones.push(clean10DigitPhone);
+
+        try {
+          const searchFilters = [];
+          if (email) searchFilters.push(`email.eq.${email}`);
+          if (clean10DigitPhone) searchFilters.push(`phone.eq.${clean10DigitPhone}`);
+          if (customerId) searchFilters.push(`id.eq.${customerId}`);
+
+          if (searchFilters.length > 0) {
+            const { data: matchedCustomers } = await supabase
+              .from('customers')
+              .select('id, phone, email')
+              .or(searchFilters.join(','));
+
+            if (matchedCustomers) {
+              matchedCustomers.forEach(c => {
+                if (c.id && !matchingCustomerIds.includes(c.id)) {
+                  matchingCustomerIds.push(c.id);
+                }
+                if (c.phone) {
+                  const pClean = c.phone.replace(/\D/g, '').slice(-10);
+                  if (pClean && !matchingPhones.includes(pClean)) {
+                    matchingPhones.push(pClean);
+                  }
+                }
+                if (c.email) {
+                  const eClean = c.email.trim().toLowerCase();
+                  if (eClean && !matchingEmails.includes(eClean)) {
+                    matchingEmails.push(eClean);
+                  }
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to gather legacy linked profiles:", e);
+        }
+
+        // 2. Build robust Postgres OR query for matching customer orders
         const conditions: string[] = [];
-        if (customerId) {
-          conditions.push(`customer_id.eq.${customerId}`);
-        }
-        if (clean10DigitPhone) {
-          conditions.push(`user_phone.ilike.%${clean10DigitPhone}%`);
-        }
-        if (phoneWithPlus91) {
-          conditions.push(`user_phone.eq.${phoneWithPlus91}`);
-        }
-        if (email) {
-          conditions.push(`user_email.ilike.${email}`);
-        }
+        matchingCustomerIds.forEach(id => {
+          conditions.push(`customer_id.eq.${id}`);
+        });
+        matchingPhones.forEach(phone => {
+          conditions.push(`user_phone.ilike.%${phone}%`);
+          conditions.push(`user_phone.eq.+91${phone}`);
+          conditions.push(`user_phone.eq.91${phone}`);
+        });
+        matchingEmails.forEach(e => {
+          conditions.push(`user_email.ilike.${e}`);
+        });
 
         let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)');
         if (conditions.length > 0) {
@@ -425,6 +468,7 @@ function AccountContent() {
             id: o.id,
             orderNumber: o.order_number,
             date: new Date(o.created_at).toLocaleDateString(),
+            createdAtRaw: o.created_at,
             status: o.status,
             total: o.total,
             subtotal: o.subtotal,
@@ -1273,8 +1317,8 @@ function AccountContent() {
                         
                         return matchesSearch && matchesStatus;
                       }).sort((a, b) => {
-                        if (orderSortOrder === "newest") return new Date(b.paidAt || b.date).getTime() - new Date(a.paidAt || a.date).getTime();
-                        if (orderSortOrder === "oldest") return new Date(a.paidAt || a.date).getTime() - new Date(b.paidAt || b.date).getTime();
+                        if (orderSortOrder === "newest") return new Date(b.createdAtRaw || b.paidAt || b.date).getTime() - new Date(a.createdAtRaw || a.paidAt || a.date).getTime();
+                        if (orderSortOrder === "oldest") return new Date(a.createdAtRaw || a.paidAt || a.date).getTime() - new Date(b.createdAtRaw || b.paidAt || b.date).getTime();
                         if (orderSortOrder === "price-desc") return b.total - a.total;
                         if (orderSortOrder === "price-asc") return a.total - b.total;
                         return 0;

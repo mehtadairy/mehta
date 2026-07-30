@@ -75,11 +75,33 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // Fetch profile using customer table
-        const { data: customer } = await supabase
+        let { data: customer } = await supabase
           .from('customers')
           .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
           .or(`id.eq.${user.id},auth_user_id.eq.${user.id}`)
           .maybeSingle();
+
+        // Auto-heal/sync if profile is not found by ID, but they have an email matching a legacy profile
+        if (!customer && user.email) {
+          const { data: legacyCustomer } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('email', user.email)
+            .maybeSingle();
+            
+          if (legacyCustomer) {
+            console.log("[AUTH-DEBUG] Linking legacy customer record by email:", user.email);
+            const { data: updatedCustomer } = await supabase
+              .from('customers')
+              .update({ auth_user_id: user.id, auth_provider: 'google' })
+              .eq('id', legacyCustomer.id)
+              .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
+              .single();
+            if (updatedCustomer) {
+              customer = updatedCustomer;
+            }
+          }
+        }
 
         const resolvedName = customer?.name || customer?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
         const resolvedEmail = customer?.email || user.email || null;
