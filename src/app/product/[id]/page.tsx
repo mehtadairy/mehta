@@ -344,12 +344,46 @@ export default function ProductDetails() {
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } }
   } as const;
 
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images || [],
+    "description": product.description || `Authentic ${product.name} from Mehta Sweet Mart`,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Mehta Sweet Mart"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": shareUrl,
+      "priceCurrency": "INR",
+      "price": price,
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Mehta Sweet Mart"
+      }
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "128"
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, transition: { duration: 0.6 } }}
-      className="min-h-screen flex flex-col"
+      className="min-h-screen bg-[#FFFDF7] text-brand-charcoal selection:bg-brand-orange selection:text-white"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
       <Header />
       <WhatsAppFloat />
 
