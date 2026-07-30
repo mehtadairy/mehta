@@ -126,7 +126,7 @@ export async function fetchCategories(forceRefresh = false): Promise<any[]> {
   pendingCategoriesPromise = (async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, slug, description, image, icon, sort_order, status, is_active')
+      .select('id, name, slug, description, image_url, sort_order, status')
       .order('sort_order', { ascending: true });
 
     if (error || !data) {
@@ -134,8 +134,19 @@ export async function fetchCategories(forceRefresh = false): Promise<any[]> {
       return [];
     }
 
-    const filtered = data.filter((c: any) => c.status !== 'inactive' && c.is_active !== false);
-    const sorted = sortCategories(filtered);
+    const filtered = data.filter((c: any) => c.status !== 'inactive');
+    const mapped = filtered.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      description: c.description || '',
+      image: c.image_url || '',
+      image_url: c.image_url || '',
+      icon: '',
+      sort_order: c.sort_order,
+      status: c.status
+    }));
+    const sorted = sortCategories(mapped);
     
     cachedCategories = sorted;
     cachedCategoriesTime = Date.now();

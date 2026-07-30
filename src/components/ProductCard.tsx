@@ -213,12 +213,12 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
         </button>
 
         {/* Image — square with skeleton */}
-        <div className="relative aspect-square overflow-hidden bg-[#FAF6EE] rounded-t-2xl flex items-center justify-center">
+        <div className="relative aspect-square overflow-hidden bg-[#FAF6EE] rounded-t-2xl">
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
 
           <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
-            <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+            <div className="w-full h-full transition-transform duration-500 group-hover:scale-105">
               <Image
                 src={getOptimizedImageUrl(product.images[0], 300, 75)}
                 alt={product.name}
