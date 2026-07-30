@@ -4,11 +4,7 @@ import { supabaseServer } from '@/lib/supabaseServer';
 import { verifySession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
-// Lean field definitions — never fetch more columns than needed
-const ORDER_FIELDS = 'id, order_number, user_name, user_phone, user_email, total, status, payment_status, shipment_status, created_at, shipping_address';
-const ORDER_ITEMS_FIELDS = 'id, product_id, product_name, quantity, price, weight';
-const INVOICE_FIELDS = 'id, invoice_number, order_id, pdf_url, created_at';
-const CUSTOMER_FIELDS = 'id, name, phone, email, created_at, profile_image';
+
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -40,14 +36,14 @@ export async function GET(request: Request) {
       // 1. Orders with nested order_items and invoices (lean columns)
       supabaseServer
         .from('orders')
-        .select(`${ORDER_FIELDS}, order_items(${ORDER_ITEMS_FIELDS}), invoices(${INVOICE_FIELDS})`, { count: 'exact' })
+        .select('*, order_items(*), invoices(*)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1),
 
-      // 2. Customers — lean fields only
+      // 2. Customers
       supabaseServer
         .from('customers')
-        .select(CUSTOMER_FIELDS, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1),
 
@@ -59,10 +55,10 @@ export async function GET(request: Request) {
         .range(offset, offset + limit - 1)
         .catch(err => ({ data: [], count: 0, error: err })),
 
-      // 4. Invoices — lean fields only
+      // 4. Invoices
       supabaseServer
         .from('invoices')
-        .select(INVOICE_FIELDS, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1),
 

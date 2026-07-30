@@ -9,13 +9,12 @@ const supabaseServer = createClient(
 );
 
 // Constants (UPDATED to match production schema)
-const ORDER_FIELDS = 'id, order_number, user_name, user_phone, user_email, total, status, payment_status, shipment_status, created_at, shipping_address';
 const ORDER_ITEMS_FIELDS = 'id, product_id, product_name, quantity, price, weight';
 const INVOICE_FIELDS = 'id, invoice_number, order_id, pdf_url, created_at';
 const CUSTOMER_FIELDS = 'id, name, phone, email, created_at, profile_image';
 
 async function run() {
-  console.log("Starting parallel queries...");
+  console.log("Starting parallel queries with wildcard orders select...");
   try {
     const [
       ordersResult,
@@ -27,7 +26,7 @@ async function run() {
     ] = await Promise.all([
       supabaseServer
         .from('orders')
-        .select(`${ORDER_FIELDS}, order_items(${ORDER_ITEMS_FIELDS}), invoices(${INVOICE_FIELDS})`, { count: 'exact' })
+        .select(`*, order_items(${ORDER_ITEMS_FIELDS}), invoices(${INVOICE_FIELDS})`, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(0, 49),
 
