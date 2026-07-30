@@ -22,23 +22,31 @@ export async function GET(request: Request) {
     if (ordersError) throw ordersError;
 
     // 2. Fetch Invoices
-    const { data: invoicesData, error: invoicesError } = await supabaseServer
-      .from('invoices')
-      .select('*, orders(*)')
-      .order('created_at', { ascending: false });
+    let invoicesData = [];
+    try {
+      const { data, error } = await supabaseServer
+        .from('invoices')
+        .select('*, orders(*)')
+        .order('created_at', { ascending: false });
+      if (!error && data) invoicesData = data;
+    } catch (e) {}
 
     // 3. Fetch Customers
-    const { data: customersData, error: customersError } = await supabaseServer
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    let customersData = [];
+    try {
+      const { data, error } = await supabaseServer
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) customersData = data;
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,
       data: {
         orders: userOrders || [],
         customers: customersData || [],
-        payments: [], // Payments not typically needed unless specifically requested
+        payments: [], 
         invoices: invoicesData || [],
         notifications: []
       }
