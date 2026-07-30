@@ -217,7 +217,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
 
-          <Link href={`/product/${generateSlug(product.name)}`} className="block w-full h-full relative p-2">
+          <Link href={`/product/${generateSlug(product.name)}`} className="absolute inset-0 p-2">
             <div className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
               <Image
                 src={getOptimizedImageUrl(product.images[0], 300, 75)}
