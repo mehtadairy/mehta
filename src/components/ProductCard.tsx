@@ -213,7 +213,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
         </button>
 
         {/* Image — square with skeleton */}
-        <div className="relative aspect-square overflow-hidden bg-[#FAF6EE] rounded-t-2xl">
+        <div className="relative w-full aspect-square flex-shrink-0 overflow-hidden bg-[#FAF6EE] rounded-t-2xl">
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
 
