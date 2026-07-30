@@ -53,7 +53,7 @@ export async function GET(request: Request) {
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1)
-        .catch(err => ({ data: [], count: 0, error: err })),
+        .then(r => r, err => ({ data: [], count: 0, error: err })),
 
       // 4. Invoices
       supabaseServer
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100)
-        .catch(err => ({ data: [], error: err })),
+        .then(r => r, err => ({ data: [], error: err })),
 
       // 6. Payment Recoveries — lean fields + hard limit 200
       supabaseServer
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200)
-        .catch(err => ({ data: [], error: err })),
+        .then(r => r, err => ({ data: [], error: err })),
     ]);
 
     if (ordersResult.error) throw ordersResult.error;
