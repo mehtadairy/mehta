@@ -26,14 +26,14 @@ CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON public.invoices(invoic
 -- 4. Products Indexes
 CREATE INDEX IF NOT EXISTS idx_products_category_slug ON public.products(category_slug);
 
--- 5. WhatsApp & Cart Indexes (Safe creation if tables exist)
+-- 5. WhatsApp & Cart Indexes (Safe creation with exact column names)
 DO $$ 
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'whatsapp_carts') THEN
-    CREATE INDEX IF NOT EXISTS idx_whatsapp_carts_phone ON public.whatsapp_carts(phone_number);
+    CREATE INDEX IF NOT EXISTS idx_whatsapp_carts_phone ON public.whatsapp_carts(phone);
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'whatsapp_otp') THEN
-    CREATE INDEX IF NOT EXISTS idx_whatsapp_otp_phone ON public.whatsapp_otp(phone_number, created_at DESC);
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'otp_verifications') THEN
+    CREATE INDEX IF NOT EXISTS idx_otp_mobile_verified ON public.otp_verifications(mobile, verified);
   END IF;
   IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'user_addresses') THEN
     CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON public.user_addresses(user_id);
