@@ -71,7 +71,7 @@ export async function GET(req: Request) {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `inline; filename="${fileName}"`,
-          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+          'Cache-Control': 'private, max-age=3600, must-revalidate'
         },
       });
     }
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${fileName}"`,
-        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+        'Cache-Control': 'private, max-age=3600, must-revalidate'
       },
     });
 

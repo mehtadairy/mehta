@@ -27,12 +27,13 @@ export interface InvoiceData {
   created_at: string;
 }
 
-// Backend PDF Generation using React-PDF
+import QRCode from 'qrcode';
 
-export async function generateInvoicePDF(order: any): Promise<Buffer> {
-  // --- PRE-FETCH OPTIMIZED LOGO ---
-  let logoUrl = undefined;
-  
+// --- IN-MEMORY ASSET CACHING ---
+let cachedLogoDataUri: string | undefined = undefined;
+
+function getCachedInvoiceLogo(): string | undefined {
+  if (cachedLogoDataUri) return cachedLogoDataUri;
   try {
     const optLogoPath = path.join(process.cwd(), "public", "invoice-logo.png");
     const origLogoPath = path.join(process.cwd(), "public", "logo.png");
@@ -40,10 +41,31 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
 
     if (fs.existsSync(logoPath)) {
       const logoBuffer = fs.readFileSync(logoPath);
-      logoUrl = "data:image/png;base64," + logoBuffer.toString("base64");
+      cachedLogoDataUri = "data:image/png;base64," + logoBuffer.toString("base64");
     }
   } catch (error) {
     console.error("Failed to load invoice logo:", error);
+  }
+  return cachedLogoDataUri;
+}
+
+// Backend PDF Generation using React-PDF
+
+export async function generateInvoicePDF(order: any): Promise<Buffer> {
+  // --- LOAD CACHED LOGO ---
+  const logoUrl = getCachedInvoiceLogo();
+
+  // --- GENERATE IN-MEMORY QR CODE (NO NETWORK HTTP REQUESTS) ---
+  let qrDataUri: string | undefined = undefined;
+  try {
+    const trackingUrl = `https://mehtadairy.com/track/${order.id || order.order_number || ''}`;
+    qrDataUri = await QRCode.toDataURL(trackingUrl, {
+      width: 100,
+      margin: 1,
+      color: { dark: '#111827', light: '#FFFFFF' }
+    });
+  } catch (e) {
+    console.warn("Failed to generate in-memory QR code:", e);
   }
 
   const items = order.order_items || [];
@@ -83,7 +105,7 @@ export async function generateInvoicePDF(order: any): Promise<Buffer> {
     paymentMethod: order.payment_method || "Cash",
     paymentStatus: (order.payment_status || "COMPLETED").toUpperCase() as "PAID" | "UNPAID" | "PARTIAL",
     logo: logoUrl || undefined,
-    qr: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://mehtadairy.com/track/${order.id}`
+    qr: qrDataUri
   };
 
   // Dynamically import React-PDF to avoid edge runtime issues
