@@ -228,7 +228,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
                 placeholder="blur"
                 blurDataURL={BLUR_PLACEHOLDER}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`product-card-image w-full h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
+                className={`product-card-image max-w-full max-h-full object-contain rounded-full transition-all duration-700 group-hover:animate-[spin_18s_linear_infinite] ${
                   imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
                 }`}
                 onLoad={() => setImageLoaded(true)}
