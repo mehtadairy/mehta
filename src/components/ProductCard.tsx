@@ -217,7 +217,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
         <Link 
           href={`/product/${generateSlug(product.name)}`}
           className="relative overflow-hidden bg-[#FAF6EE] rounded-t-2xl flex items-center justify-center p-3.5 flex-shrink-0"
-          style={{ aspectRatio: '1 / 1', width: '100%', height: 'auto', flexGrow: 0, flexShrink: 0 }}
+          style={{ display: 'flex', aspectRatio: '1 / 1', width: '100%', height: 'auto', flexGrow: 0, flexShrink: 0 }}
         >
           {/* Skeleton shimmer while loading */}
           {!imageLoaded && <ImageSkeleton />}
