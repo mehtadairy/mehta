@@ -160,27 +160,6 @@ export default function ProductDetails() {
   const [zoomStyle, setZoomStyle] = useState({ transformOrigin: "center" });
   const [isZooming, setIsZooming] = useState(false);
 
-
-  const mainButtonsRef = useRef<HTMLDivElement>(null);
-  const [showStickyBar, setShowStickyBar] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowStickyBar(!entry.isIntersecting);
-      },
-      { threshold: 0 }
-    );
-    if (mainButtonsRef.current) {
-      observer.observe(mainButtonsRef.current);
-    }
-    return () => {
-      if (mainButtonsRef.current) {
-        observer.unobserve(mainButtonsRef.current);
-      }
-    };
-  }, [product]);
-
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
@@ -552,7 +531,7 @@ export default function ProductDetails() {
               </div>
 
               {/* Quantity Stepper & Add to Cart & Buy Now Wrapper */}
-              <div ref={mainButtonsRef} className="flex flex-col gap-3.5 py-4 border-t border-brand-beige">
+              <div className="flex flex-col gap-3.5 py-4 border-t border-brand-beige">
                 
                 {/* Qty Row */}
                 <div className="flex items-center">
@@ -793,48 +772,7 @@ export default function ProductDetails() {
         </div>
       </section>
 
-      {/* Sticky Bottom Actions Bar for Mobile/Tablet */}
-      <AnimatePresence>
-        {showStickyBar && (
-          <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 22 }}
-            className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#e8dcc4] px-4 py-3 shadow-lg flex items-center justify-between gap-3 sm:hidden"
-          >
-            <div className="flex flex-col">
-              <span className="text-[0.62rem] font-bold text-muted-foreground uppercase leading-tight text-brand-charcoal">Selected: {selectedWeight}</span>
-              <span className="font-serif text-sm font-extrabold text-brand-orange leading-tight">₹{price.toFixed(2)}</span>
-            </div>
-            
-            <div className="flex gap-2 flex-grow max-w-[240px]">
-              <button
-                onClick={handleAddToCart}
-                className={`flex-grow rounded-lg py-2.5 text-[0.68rem] font-bold text-white shadow-3xs transition-all uppercase tracking-wider ${
-                  addedFeedback ? "bg-emerald-600" : "bg-brand-charcoal"
-                }`}
-              >
-                {addedFeedback ? "Added!" : "Add to Cart"}
-              </button>
-              <button
-                onClick={() => {
-                  handleAddToCart();
-                  const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
-                  if (!isLoggedIn) {
-                    router.push("/account?redirect=/checkout");
-                  } else {
-                    router.push("/checkout");
-                  }
-                }}
-                className="flex-grow rounded-lg bg-brand-orange py-2.5 text-[0.68rem] font-bold text-white shadow-3xs transition-all uppercase tracking-wider text-center"
-              >
-                Buy Now
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       <Footer />
     </motion.div>
