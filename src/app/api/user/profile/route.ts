@@ -37,10 +37,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    let query = supabase.from('customers').select('*').eq('id', customerId);
-    
-    // Also support fallback lookup by auth_user_id just in case for Google Auth records
-    const { data: profile, error } = await supabase.from('customers').select('*').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
+    const { data: profile, error } = await supabase.from('customers').select('id, name, full_name, email, phone, profile_image, avatar_url, role, auth_user_id').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -93,7 +90,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: existingCustomer, error: fetchError } = await supabase.from('customers').select('*').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
+    const { data: existingCustomer, error: fetchError } = await supabase.from('customers').select('id, name, email, phone').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
     
     if (fetchError || !existingCustomer) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });

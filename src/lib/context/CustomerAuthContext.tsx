@@ -85,7 +85,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
         if (!customer && user.email) {
           const { data: legacyCustomer } = await supabase
             .from('customers')
-            .select('*')
+            .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
             .eq('email', user.email)
             .maybeSingle();
             

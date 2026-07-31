@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const { data: customer, error } = await supabase.from('customers').select('*').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
+    const { data: customer, error } = await supabase.from('customers').select('id, name, email, phone, profile_image').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
 
     if (error || !customer) {
       return NextResponse.json({ authenticated: false }, { status: 401 });

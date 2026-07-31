@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     // Fetch timeline events
     const { data: timelineEvents } = await supabase
       .from('order_timeline_events')
-      .select('*')
+      .select('id, order_id, title, description, status, created_at')
       .eq('order_id', order.id)
       .order('created_at', { ascending: true });
 

@@ -33,7 +33,8 @@ let pendingProductsPromise: Promise<Product[]> | null = null;
 let pendingCategoriesPromise: Promise<any[]> | null = null;
 let pendingBannersPromise: Promise<any[]> | null = null;
 
-const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges, active';
+const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges, active, is_active';
+const PRODUCT_LIST_FIELDS = 'id, name, category_slug, images, prices, popular, festival_special, rating, reviews_count, stock, position, badges, active, is_active';
 
 export async function fetchProducts(forceRefresh = false, includeInactive = false): Promise<Product[]> {
   const now = Date.now();
@@ -50,13 +51,13 @@ export async function fetchProducts(forceRefresh = false, includeInactive = fals
     let queryResult: any[] = [];
     const { data, error } = await supabase
       .from('products')
-      .select(`${PRODUCT_FIELDS}, product_ingredients(ingredient:ingredients(id, name))`);
+      .select(PRODUCT_FIELDS);
     
     if (error) {
-      console.warn('Could not fetch products with ingredients relation, falling back...', error.message || error);
+      console.warn('Could not fetch products, falling back...', error.message || error);
       const { data: simpleData, error: simpleError } = await supabase
         .from('products')
-        .select(PRODUCT_FIELDS);
+        .select(PRODUCT_LIST_FIELDS);
       if (simpleError) {
         console.error('Error fetching products:', simpleError.message || simpleError);
         pendingProductsPromise = null;

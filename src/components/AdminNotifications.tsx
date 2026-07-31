@@ -18,14 +18,14 @@ export default function AdminNotifications() {
     // Fetch Email Logs
     const { data: emailData, error: emailError } = await supabase
       .from('notification_logs')
-      .select('*')
+      .select('id, phone, event_name, template_name, status, error_message, created_at')
       .order('created_at', { ascending: false })
       .limit(25);
       
     // Fetch WA Logs
     const { data: waData, error: waError } = await supabase
       .from('whatsapp_notification_logs')
-      .select('*')
+      .select('id, order_id, phone, notification_type, status, error_message, created_at')
       .order('created_at', { ascending: false })
       .limit(25);
       
