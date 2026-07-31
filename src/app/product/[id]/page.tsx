@@ -596,25 +596,7 @@ export default function ProductDetails() {
 
               </div>
 
-              {/* ── TRUST BADGES STRIP ──────────────────────────── */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 py-1">
-                {[
-                  { icon: "🏛️", label: "Since 1972", sub: "Legacy of purity" },
-                  { icon: "🥛", label: "Pure Ghee", sub: "100% authentic" },
-                  { icon: "🌿", label: "Freshly Made", sub: "Daily fresh batches" },
-                  { icon: "🍃", label: "Jain Friendly", sub: "100% vegetarian" },
-                  { icon: "📅", label: `Life: ${productLife}`, sub: "Shelf life duration" },
-                ].map(({ icon, label, sub }) => (
-                  <div
-                    key={label}
-                    className="flex flex-col items-center text-center gap-1 bg-[#FAF6EE] border border-[#EAE0D3] rounded-xl p-2.5 sm:p-3"
-                  >
-                    <span className="text-xl">{icon}</span>
-                    <span className="text-[0.6rem] sm:text-[0.65rem] font-bold text-[#2A1E17] leading-tight">{label}</span>
-                    <span className="text-[0.55rem] sm:text-[0.6rem] text-[#7E6B5A] leading-tight hidden sm:block">{sub}</span>
-                  </div>
-                ))}
-              </div>
+
 
 
 
