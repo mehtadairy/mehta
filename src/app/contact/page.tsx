@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import Link from "next/link";
-import { MapPin, Phone, Mail, Clock, Send, MessageSquare, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, MessageSquare, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BUSINESS } from "@/lib/businessConfig";
 
@@ -136,19 +136,47 @@ export default function Contact() {
   const [inquiryType, setInquiryType] = useState("order");
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !message) return;
+    setError(null);
+    setSuccess(false);
+
+    if (!name || !email || !phone || !message) {
+      setError("All fields are required.");
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, inquiryType, message })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setSuccess(true);
+        setName("");
+        setEmail("");
+        setPhone("");
+        setMessage("");
+        setInquiryType("order");
+        setTimeout(() => setSuccess(false), 8000);
+      } else {
+        setError(data.error || "Unable to send your message. Please try again later or contact us directly.");
+      }
+    } catch (err) {
+      setError("Unable to send your message. Please try again later or contact us directly.");
+    } finally {
       setIsSubmitting(false);
-      setSuccess(true);
-      setName(""); setEmail(""); setPhone(""); setMessage("");
-      setTimeout(() => setSuccess(false), 5000);
-    }, 1200);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -533,7 +561,24 @@ export default function Contact() {
                       className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-4 text-sm font-semibold"
                     >
                       <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      Message sent! We'll reply within 24 hours.
+                      <div>
+                        Your message has been sent successfully. <br/>
+                        <span className="font-normal opacity-90">We will contact you within 24 hours.</span>
+                      </div>
+                    </motion.div>
+                  )}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.4, ease }}
+                      className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 rounded-xl px-5 py-4 text-sm font-semibold"
+                    >
+                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        {error}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
