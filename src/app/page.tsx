@@ -738,90 +738,13 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          {/* Infinite Marquee Section */}
+          <div className="relative w-full overflow-hidden py-4">
+            {/* Left and Right Fade overlays for premium visual depth */}
+            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+
             {bestSellers.length === 0 ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-[#FAF6EE] rounded-2xl p-4 border border-[#4A2F1F]/8 flex flex-col gap-3 animate-pulse">
-                  <div className="aspect-square w-full rounded-xl bg-[#EAE0D3]/40" />
-                  <div className="h-4 w-1/3 bg-[#EAE0D3]/40 rounded mt-2" />
-                  <div className="h-4 w-2/3 bg-[#EAE0D3]/40 rounded" />
-                  <div className="flex gap-2 mt-2">
-                    <div className="h-8 w-12 bg-[#EAE0D3]/30 rounded-lg" />
-                    <div className="h-8 w-12 bg-[#EAE0D3]/30 rounded-lg" />
-                  </div>
-                  <div className="h-9 w-full bg-[#EAE0D3]/40 rounded-lg mt-3" />
-                </div>
-              ))
-            ) : (
-              bestSellers.map((product, i) => {
-                const weights = sortWeights(Object.keys(product.prices));
-                const cw = selectedWeights[product.id] || weights[0];
-                const cp = product.prices[cw];
-                return (
-                  <motion.article
-                  key={product.id}
-                  variants={fadeUp}
-                  custom={i * 0.5}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-60px" }}
-                  whileHover={{ y: -4 }}
-                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                  className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col"
-                >
-                  {/* Image */}
-                  <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
-                    {product.popular && (
-                      <span className="absolute left-2 top-2 z-10 rounded-md bg-[#C9A227] px-2 py-0.5 text-[0.58rem] font-bold text-[#4A2F1F] uppercase tracking-wider shadow">
-                        {t('home.bestseller.best_seller')}
-                      </span>
-                    )}
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 640px) 150px, (max-width: 1024px) 250px, 300px"
-                      loading="lazy"
-                      className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </Link>
-
-                  {/* Body */}
-                  <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                    <span className="font-sans text-[10px] sm:text-[11px] font-bold text-[#C88A1A] uppercase tracking-[1.5px] mb-1.5 block">{product.category}</span>
-                    <Link href={`/product/${generateSlug(product.name)}`}>
-                      <h3 className="font-sans text-sm sm:text-base font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors line-clamp-1 leading-snug mb-1.5">
-                        {product.name}
-                      </h3>
-                    </Link>
-
-                    {/* Weight selector */}
-                    <div className="flex flex-wrap gap-2 mb-3 mt-2">
-                      {weights.map((w) => (
-                        <button
-                          key={w}
-                          onClick={() => setSelectedWeights((prev) => ({ ...prev, [product.id]: w }))}
-                          className={`rounded-[10px] border px-3 py-1.5 text-[13px] font-semibold transition-all cursor-pointer ${cw === w
-                            ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
-                            : "bg-[#FAF6EE] text-[#2A1E17] border-[#EAE0D3]/80 hover:border-[#D4AF37]"
-                            }`}
-                        >
-                          {w}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#EAE0D3]/60 w-full">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-sans text-[9px] font-bold text-[#9A8E84] uppercase tracking-wider leading-none">
-                          Price
-                        </span>
-                        <span className="font-sans tabular-nums text-base sm:text-lg font-bold text-[#2A1E17] leading-none">
-                          ₹{cp}
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Universal CTAs (90% / 10% layout) */}
                     <div className="flex gap-1.5 mt-2.5 w-full">
                       <button
