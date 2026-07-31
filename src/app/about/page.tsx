@@ -505,8 +505,8 @@ export default function About() {
               {...fadeUp(0.1)}
               className="bg-white rounded-[2.5rem] border border-[#EAE0D3] shadow-[0_8px_30px_-12px_rgba(74,47,31,0.1)] flex flex-col relative overflow-hidden group hover:shadow-[0_15px_40px_-15px_rgba(74,47,31,0.15)] transition-all duration-500"
             >
-              <div className="h-48 w-full bg-[#FAF6EE] relative overflow-hidden">
-                <img src="/store_outside.jpeg" alt="Navagadh Main Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="h-64 sm:h-80 w-full bg-[#FAF6EE] relative overflow-hidden">
+                <img src="/store_outside.jpeg" alt="Navagadh Main Branch" className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
               </div>
               <div className="p-8 sm:p-10 flex-1 flex flex-col gap-4">
@@ -531,8 +531,8 @@ export default function About() {
               {...fadeUp(0.2)}
               className="bg-white rounded-[2.5rem] border border-[#EAE0D3] shadow-[0_8px_30px_-12px_rgba(74,47,31,0.1)] flex flex-col relative overflow-hidden group hover:shadow-[0_15px_40px_-15px_rgba(74,47,31,0.15)] transition-all duration-500"
             >
-              <div className="h-48 w-full bg-[#FAF6EE] relative overflow-hidden">
-                <img src="/taleti_branch.jpeg" alt="Taleti Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="h-64 sm:h-80 w-full bg-[#FAF6EE] relative overflow-hidden">
+                <img src="/taleti_branch.jpeg" alt="Taleti Branch" className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
               </div>
               <div className="p-8 sm:p-10 flex-1 flex flex-col gap-4">
