@@ -227,6 +227,7 @@ export default function Home() {
   const [selectedWeights, setSelectedWeights] = useState<{ [id: string]: string }>({});
   const [currentSlide, setCurrentSlide] = useState(0);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { nearestBranch, distanceKm } = useLocation();
@@ -738,14 +739,14 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Infinite Marquee Section */}
+          {/* Auto-sliding Carousel Section */}
           <div className="relative w-full overflow-hidden py-4">
             {/* Left and Right Fade overlays for premium visual depth */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
             {bestSellers.length === 0 ? (
-              <div className="flex gap-6 justify-center">
+              <div className="flex gap-4 justify-center">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="w-[280px] shrink-0 bg-[#FAF6EE] rounded-2xl p-4 border border-[#4A2F1F]/8 flex flex-col gap-3 animate-pulse">
                     <div className="aspect-square w-full rounded-xl bg-[#EAE0D3]/40" />
@@ -756,93 +757,103 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              /* Infinite Marquee Wrapper with Pause-on-Hover CSS animation */
-              <div className="flex gap-3 sm:gap-6 w-max animate-marquee hover:[animation-play-state:paused]">
-                {/* Render the set of products multiple times to ensure a seamless loop */}
-                {[...bestSellers, ...bestSellers, ...bestSellers].map((product, idx) => {
-                  const weights = sortWeights(Object.keys(product.prices));
-                  const cw = selectedWeights[product.id] || weights[0];
-                  const cp = product.prices[cw];
-                  return (
-                    <motion.article
-                      key={`${product.id}-${idx}`}
-                      whileHover={{ y: -4 }}
-                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                      className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[calc(50vw-22px)] sm:w-[280px] shrink-0"
-                    >
-                      {/* Image */}
-                      <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
-                        {product.popular && (
-                          <span className="absolute left-2 top-2 z-10 rounded-md bg-[#C9A227] px-2 py-0.5 text-[0.58rem] font-bold text-[#4A2F1F] uppercase tracking-wider shadow">
-                            {t('home.bestseller.best_seller')}
-                          </span>
-                        )}
-                        <Image
-                          src={product.images[0]}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 640px) 150px, (max-width: 1024px) 250px, 300px"
-                          loading="lazy"
-                          className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </Link>
-
-                      {/* Body */}
-                      <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                        <span className="font-sans text-[10px] sm:text-[11px] font-bold text-[#C88A1A] uppercase tracking-[1.5px] mb-1.5 block">{product.category}</span>
-                        <Link href={`/product/${generateSlug(product.name)}`}>
-                          <h3 className="font-sans text-sm sm:text-base font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors line-clamp-1 leading-snug mb-1.5">
-                            {product.name}
-                          </h3>
+              /* Sliding container driven by React state index */
+              <div className="relative w-full overflow-hidden">
+                <motion.div
+                  className="flex gap-3 sm:gap-6"
+                  animate={{
+                    x: isMobile 
+                      ? `calc(-${currentCarouselIndex * 50}% + ${currentCarouselIndex * 6.5}px)` 
+                      : `calc(-${currentCarouselIndex * 25}% + ${currentCarouselIndex * 4.5}px)`
+                  }}
+                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
+                  style={{ width: '100%' }}
+                >
+                  {bestSellers.map((product) => {
+                    const weights = sortWeights(Object.keys(product.prices));
+                    const cw = selectedWeights[product.id] || weights[0];
+                    const cp = product.prices[cw];
+                    return (
+                      <motion.article
+                        key={product.id}
+                        whileHover={{ y: -4 }}
+                        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                        className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[calc(50vw-22px)] sm:w-[calc(25vw-22px)] lg:w-[275px] shrink-0"
+                      >
+                        {/* Image */}
+                        <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
+                          {product.popular && (
+                            <span className="absolute left-2 top-2 z-10 rounded-md bg-[#C9A227] px-2 py-0.5 text-[0.58rem] font-bold text-[#4A2F1F] uppercase tracking-wider shadow">
+                              {t('home.bestseller.best_seller')}
+                            </span>
+                          )}
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 640px) 150px, (max-width: 1024px) 250px, 300px"
+                            loading="lazy"
+                            className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                          />
                         </Link>
 
-                        {/* Weight selector */}
-                        <div className="flex flex-wrap gap-2 mb-3 mt-2">
-                          {weights.map((w) => (
-                            <button
-                              key={w}
-                              onClick={() => setSelectedWeights((prev) => ({ ...prev, [product.id]: w }))}
-                              className={`rounded-[10px] border px-3 py-1.5 text-[13px] font-semibold transition-all cursor-pointer ${cw === w
-                                ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
-                                : "bg-[#FAF6EE] text-[#2A1E17] border-[#EAE0D3]/80 hover:border-[#D4AF37]"
-                                }`}
-                            >
-                              {w}
-                            </button>
-                          ))}
-                        </div>
+                        {/* Body */}
+                        <div className="p-3 sm:p-4 flex flex-col flex-grow">
+                          <span className="font-sans text-[10px] sm:text-[11px] font-bold text-[#C88A1A] uppercase tracking-[1.5px] mb-1.5 block">{product.category}</span>
+                          <Link href={`/product/${generateSlug(product.name)}`}>
+                            <h3 className="font-sans text-sm sm:text-base font-bold text-[#2A1E17] hover:text-[#D46D2D] transition-colors line-clamp-1 leading-snug mb-1.5">
+                              {product.name}
+                            </h3>
+                          </Link>
 
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#EAE0D3]/60 w-full">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-sans text-[9px] font-bold text-[#9A8E84] uppercase tracking-wider leading-none">
-                              Price
-                            </span>
-                            <span className="font-sans tabular-nums text-base sm:text-lg font-bold text-[#2A1E17] leading-none">
-                              ₹{cp}
-                            </span>
+                          {/* Weight selector */}
+                          <div className="flex flex-nowrap gap-1.5 mb-3 mt-2 overflow-x-auto scrollbar-none">
+                            {weights.map((w) => (
+                              <button
+                                key={w}
+                                onClick={() => setSelectedWeights((prev) => ({ ...prev, [product.id]: w }))}
+                                className={`rounded-[10px] border px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[13px] font-semibold transition-all cursor-pointer min-w-0 text-center flex items-center justify-center shrink-0 ${cw === w
+                                  ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
+                                  : "bg-[#FAF6EE] text-[#2A1E17] border-[#EAE0D3]/80 hover:border-[#D4AF37]"
+                                  }`}
+                              >
+                                {w}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#EAE0D3]/60 w-full">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-sans text-[9px] font-bold text-[#9A8E84] uppercase tracking-wider leading-none">
+                                Price
+                              </span>
+                              <span className="font-sans tabular-nums text-base sm:text-lg font-bold text-[#2A1E17] leading-none">
+                                ₹{cp}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Universal CTAs (90% / 10% layout) */}
+                          <div className="flex gap-1.5 mt-2.5 w-full">
+                            <button
+                              onClick={(e) => handleBuyNow(product, e)}
+                              className="flex-[9] flex items-center justify-center rounded-lg bg-[#4A2F1F] text-white py-2.5 text-[0.68rem] font-extrabold uppercase tracking-widest hover:bg-[#3D2619] transition-all duration-200 active:scale-95 shadow-sm cursor-pointer"
+                            >
+                              BUY NOW
+                            </button>
+                            <button
+                              onClick={(e) => handleAddToCart(product, e)}
+                              className="flex-[1.2] aspect-square flex items-center justify-center rounded-lg border border-[#EAE0D3] bg-white text-[#4A2F1F] py-2.5 transition-all duration-200 active:scale-95 shadow-sm cursor-pointer hover:bg-[#FAF6EE]"
+                              title="Add to Cart"
+                            >
+                              <ShoppingBag className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
-
-                        {/* Universal CTAs (90% / 10% layout) */}
-                        <div className="flex gap-1.5 mt-2.5 w-full">
-                          <button
-                            onClick={(e) => handleBuyNow(product, e)}
-                            className="flex-[9] flex items-center justify-center rounded-lg bg-[#4A2F1F] text-white py-2.5 text-[0.68rem] font-extrabold uppercase tracking-widest hover:bg-[#3D2619] transition-all duration-200 active:scale-95 shadow-sm cursor-pointer"
-                          >
-                            BUY NOW
-                          </button>
-                          <button
-                            onClick={(e) => handleAddToCart(product, e)}
-                            className="flex-[1.2] aspect-square flex items-center justify-center rounded-lg border border-[#EAE0D3] bg-white text-[#4A2F1F] py-2.5 transition-all duration-200 active:scale-95 shadow-sm cursor-pointer hover:bg-[#FAF6EE]"
-                            title="Add to Cart"
-                          >
-                            <ShoppingBag className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.article>
-                  );
-                })}
+                      </motion.article>
+                    );
+                  })}
+                </motion.div>
               </div>
             )}
           </div>
