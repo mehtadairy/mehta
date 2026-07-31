@@ -251,7 +251,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
           )}
 
           {/* Weight selector — compact on mobile */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-nowrap gap-2 mb-3 overflow-x-auto scrollbar-none">
             {weights.map((w) => (
               <button
                 key={w}
