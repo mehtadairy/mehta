@@ -757,7 +757,7 @@ export default function Home() {
               </div>
             ) : (
               /* Infinite Marquee Wrapper with Pause-on-Hover CSS animation */
-              <div className="flex gap-6 w-max animate-marquee hover:[animation-play-state:paused]">
+              <div className="flex gap-3 sm:gap-6 w-max animate-marquee hover:[animation-play-state:paused]">
                 {/* Render the set of products multiple times to ensure a seamless loop */}
                 {[...bestSellers, ...bestSellers, ...bestSellers].map((product, idx) => {
                   const weights = sortWeights(Object.keys(product.prices));
@@ -768,7 +768,7 @@ export default function Home() {
                       key={`${product.id}-${idx}`}
                       whileHover={{ y: -4 }}
                       transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                      className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[260px] sm:w-[280px] shrink-0"
+                      className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[calc(50vw-22px)] sm:w-[280px] shrink-0"
                     >
                       {/* Image */}
                       <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
