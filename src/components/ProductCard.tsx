@@ -251,12 +251,12 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
           )}
 
           {/* Weight selector — compact on mobile */}
-          <div className="flex flex-nowrap gap-2 mb-3 overflow-x-auto scrollbar-none">
+          <div className="flex flex-nowrap gap-1.5 mb-3">
             {weights.map((w) => (
               <button
                 key={w}
                 onClick={() => setSelectedWeight(w)}
-                className={`rounded-[10px] border px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[13px] font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`rounded-[10px] border px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[13px] font-semibold transition-all cursor-pointer min-w-0 ${
                   selectedWeight === w
                     ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
                     : "bg-[#FAF6EE] text-[#2A1E17] border-[#EAE0D3]/80 hover:border-[#D4AF37]"
