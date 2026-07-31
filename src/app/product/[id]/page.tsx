@@ -520,7 +520,7 @@ export default function ProductDetails() {
                         whileHover={{ scale: 1.03, y: -1 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setSelectedWeight(w)}
-                        className={`flex flex-col items-center justify-center px-4 py-2.5 rounded-xl border text-xs relative overflow-hidden transition-all duration-200 min-w-[90px] ${
+                        className={`flex items-center justify-center px-4 py-3 rounded-xl border text-xs relative overflow-hidden transition-all duration-200 min-w-[90px] ${
                           selectedWeight === w
                             ? "border-brand-orange bg-brand-orange/5 text-brand-orange"
                             : "border-brand-beige hover:border-brand-orange bg-white text-brand-charcoal"
@@ -534,7 +534,6 @@ export default function ProductDetails() {
                           />
                         )}
                         <span className="font-semibold relative z-10">{labelWeight} ( ₹{wPrice.toFixed(2)} )</span>
-                        <span className="text-[0.62rem] text-muted-foreground font-normal mt-0.5 tracking-wider relative z-10">{pieces}</span>
                       </motion.button>
                     );
                   })}
