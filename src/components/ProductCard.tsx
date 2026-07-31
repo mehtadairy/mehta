@@ -256,7 +256,7 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
               <button
                 key={w}
                 onClick={() => setSelectedWeight(w)}
-                className={`rounded-[10px] border px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[13px] font-semibold transition-all cursor-pointer min-w-0 ${
+                className={`rounded-[10px] border px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[13px] font-semibold transition-all cursor-pointer min-w-0 text-center flex items-center justify-center ${
                   selectedWeight === w
                     ? "bg-[#D46D2D] text-white border-[#D46D2D] shadow-sm"
                     : "bg-[#FAF6EE] text-[#2A1E17] border-[#EAE0D3]/80 hover:border-[#D4AF37]"
