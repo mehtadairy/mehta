@@ -17,6 +17,19 @@ function SignupContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const googlePicture = searchParams ? searchParams.get('picture') : null;
+  const reason = searchParams ? searchParams.get('reason') : null;
+
+  React.useEffect(() => {
+    if (!searchParams) return;
+    const pName = searchParams.get('name');
+    const pEmail = searchParams.get('email');
+    const pPhone = searchParams.get('phone');
+    if (pName) setName(pName);
+    if (pEmail) setEmail(pEmail);
+    if (pPhone) setPhone(pPhone.replace(/\D/g, '').slice(-10));
+  }, [searchParams]);
+
   const handleContinue = async () => {
     setError('');
     
@@ -155,6 +168,31 @@ function SignupContent() {
         >
           {/* Decorative Top Border */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#D97706] to-[#F59E0B]" />
+
+          {/* Reason Notification Banner */}
+          {reason === 'google_not_found' && (
+            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-900 text-xs font-bold shadow-2xs">
+              {googlePicture ? (
+                <img src={googlePicture} alt="Google Profile" className="w-9 h-9 rounded-full border border-amber-300 shrink-0 object-cover" />
+              ) : (
+                <span className="text-xl">⚠️</span>
+              )}
+              <div>
+                <p className="font-extrabold text-amber-950">Google Account Not Registered</p>
+                <p className="text-[11px] text-amber-800 font-medium mt-0.5">No account was found for this Google account. Please complete your signup.</p>
+              </div>
+            </div>
+          )}
+
+          {reason === 'not_registered' && (
+            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-900 text-xs font-bold shadow-2xs">
+              <span className="text-xl">📱</span>
+              <div>
+                <p className="font-extrabold text-amber-950">Mobile Number Not Registered</p>
+                <p className="text-[11px] text-amber-800 font-medium mt-0.5">This mobile number isn't registered yet. Please create your account.</p>
+              </div>
+            </div>
+          )}
 
           {step === 'PHONE' ? (
             <div className="flex flex-col gap-5">

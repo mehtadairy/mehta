@@ -7,6 +7,8 @@ import { WhatsAppService } from '@/lib/services/whatsapp';
 import { verifyCustomerSession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
+import { getVerifiedCustomerSession } from '@/lib/auth-utils';
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || '',
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
@@ -14,6 +16,11 @@ const razorpay = new Razorpay({
 
 export async function POST(request: Request) {
   try {
+    const session = await getVerifiedCustomerSession(request);
+    if (!session || !session.id) {
+      return NextResponse.json({ success: false, error: 'Authentication Required. Please log in to complete checkout.' }, { status: 401 });
+    }
+
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
@@ -121,7 +128,7 @@ export async function POST(request: Request) {
       user_phone: orderPayload.user_phone || orderPayload.userPhone || '',
       user_email: orderPayload.user_email || orderPayload.userEmail || '',
       coupon_code: orderPayload.coupon_code || null,
-      customer_id: orderPayload.customer_id || null,
+      customer_id: session.id,
       source: orderPayload.source || 'website'
     };
 

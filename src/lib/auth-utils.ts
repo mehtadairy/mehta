@@ -118,3 +118,60 @@ export async function verifyCustomerSession(token: string): Promise<any | null> 
     return null;
   }
 }
+
+export async function getVerifiedCustomerSession(request?: Request): Promise<any | null> {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const token = cookieStore.get('mehta_customer_token')?.value;
+
+    if (token) {
+      const payload = await verifyCustomerSession(token);
+      if (payload?.id) return payload;
+    }
+
+    if (request) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const authToken = authHeader.replace('Bearer ', '');
+        const payload = await verifyCustomerSession(authToken);
+        if (payload?.id) return payload;
+
+        const { supabaseServer: supabase } = await import('@/lib/supabaseServer');
+        const { data } = await supabase.auth.getUser(authToken);
+        if (data?.user) {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('id, name, phone, email')
+            .or(`id.eq.${data.user.id},auth_user_id.eq.${data.user.id}`)
+            .maybeSingle();
+          
+          if (customer) {
+            return { id: customer.id, name: customer.name, phone: customer.phone, email: customer.email };
+          }
+          return { id: data.user.id, email: data.user.email };
+        }
+      }
+    }
+
+    const { supabaseServer: supabase } = await import('@/lib/supabaseServer');
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('id, name, phone, email')
+        .or(`id.eq.${data.user.id},auth_user_id.eq.${data.user.id}`)
+        .maybeSingle();
+      
+      if (customer) {
+        return { id: customer.id, name: customer.name, phone: customer.phone, email: customer.email };
+      }
+      return { id: data.user.id, email: data.user.email };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error in getVerifiedCustomerSession:", error);
+    return null;
+  }
+}

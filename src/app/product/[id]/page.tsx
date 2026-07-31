@@ -581,7 +581,7 @@ export default function ProductDetails() {
                     handleAddToCart();
                     const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
                     if (!isLoggedIn) {
-                      router.push("/account?redirect=/checkout");
+                      router.push("/login?redirect=/checkout");
                     } else {
                       router.push("/checkout");
                     }

@@ -159,6 +159,9 @@ function LoginContent() {
       setIsLoading(false);
       if (data.success) {
         setStep('PHONE_OTP');
+      } else if (res.status === 404 || (data.error && (data.error.includes('No account') || data.error.includes('sign up')))) {
+        const redirectUrl = searchParams.get("redirect");
+        router.push(`/signup?phone=${encodeURIComponent(phone.replace(/\D/g, ''))}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}&reason=not_registered`);
       } else {
         setError(data.error || 'Failed to send OTP. Please try again.');
       }

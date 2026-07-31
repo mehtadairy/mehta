@@ -35,11 +35,18 @@ export async function POST(request: Request) {
       }
       
       if (customerId) {
-         const { data: cust } = await supabase.from('customers').select('id').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
+         const { data: cust } = await supabase.from('customers').select('id').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).maybeSingle();
          if (cust) customerId = cust.id;
       }
     } catch (e) {
       console.warn("COD customer auth resolution warning:", e);
+    }
+
+    if (!customerId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication Required. Please log in or create an account to place an order.'
+      }, { status: 401 });
     }
 
     // 🔒 2. Server-Side Cart Calculation

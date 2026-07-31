@@ -102,9 +102,17 @@ export default function AuthCallback() {
 
       if (!customer) {
         if (intent === 'login') {
-          // Sign them out of the newly created but unauthorized auth session
           await supabase.auth.signOut();
-          setErrorMsg("Account not found. Please sign up to create an account.");
+          const picture = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+          const redirectUrl = params.get("redirect");
+          const signupParams = new URLSearchParams();
+          if (name) signupParams.set("name", name);
+          if (email) signupParams.set("email", email);
+          if (picture) signupParams.set("picture", picture);
+          if (redirectUrl) signupParams.set("redirect", redirectUrl);
+          signupParams.set("reason", "google_not_found");
+
+          router.push(`/signup?${signupParams.toString()}`);
           return;
         }
 

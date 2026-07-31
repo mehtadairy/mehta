@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { getVerifiedCustomerSession } from '@/lib/auth-utils';
 
 export async function POST(request: Request) {
   try {
+    // 🔒 0. Strictly Enforce Customer Authentication
+    const session = await getVerifiedCustomerSession(request);
+    if (!session || !session.id) {
+      return NextResponse.json({
+        error: 'Authentication Required',
+        details: 'Please login or create an account to proceed to checkout.'
+      }, { status: 401 });
+    }
+
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -49,7 +59,7 @@ export async function POST(request: Request) {
         const cleanOrderData: any = {
           id: orderPayload.id,
           order_number: orderPayload.order_number || orderNumber || null,
-          customer_id: orderPayload.customer_id || null,
+          customer_id: session.id, // Strictly bind verified session customer ID
           user_name: orderPayload.user_name || orderPayload.userName || rawAddr.name || 'Customer',
           user_phone: orderPayload.user_phone || orderPayload.userPhone || rawAddr.phone || '',
           user_email: orderPayload.user_email || orderPayload.userEmail || '',

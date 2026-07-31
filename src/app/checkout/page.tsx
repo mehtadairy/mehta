@@ -69,6 +69,7 @@ import { Address, Coupon, Product } from "@/lib/types";
 import { supabase, fetchProducts } from "@/lib/supabaseClient";
 import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, Minus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck } from "lucide-react";
 import { useLocation } from "@/lib/context/LocationContext";
+import { showToast } from "@/components/Toast";
 import { Suspense } from "react";
 
 function CheckoutContent() {
@@ -94,11 +95,6 @@ function CheckoutContent() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<'Home'>('Home');
-  const [isPageLoading, setIsPageLoading] = useState(true);
-
-  const { nearestBranch } = useLocation();
-
-
   // Address creation form
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
@@ -322,6 +318,15 @@ function CheckoutContent() {
     const loadCheckoutData = async () => {
       try {
         setIsPageLoading(true);
+
+        // 0. Enforce Customer Authentication First
+        const meRes = await fetch('/api/auth/me');
+        const meData = await meRes.json();
+        if (!meData.authenticated || !meData.user) {
+          showToast("Please login or create an account to continue with your purchase.", "info");
+          router.push("/login?redirect=/checkout");
+          return;
+        }
 
         // 1. Fetch user session, delivery zones, and products in parallel
         const [authRes, zonesRes, allProds] = await Promise.all([
