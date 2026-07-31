@@ -787,10 +787,10 @@ export default function Home() {
                       return prev - 1;
                     });
                   }}
-                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 z-20 h-8 w-8 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
                   aria-label="Previous Slide"
                 >
-                  <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -805,10 +805,10 @@ export default function Home() {
                       return prev + 1;
                     });
                   }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-20 h-8 w-8 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
                   aria-label="Next Slide"
                 >
-                  <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -832,7 +832,7 @@ export default function Home() {
                         key={product.id}
                         whileHover={{ y: -4 }}
                         transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                        className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[calc(50vw-22px)] sm:w-[calc(25vw-22px)] lg:w-[275px] shrink-0"
+                        className="group bg-[#FAF6EE] rounded-2xl overflow-hidden border border-[#4A2F1F]/8 hover:shadow-xl transition-shadow duration-300 flex flex-col w-[calc(50vw-22px)] md:w-[calc(25vw-24px)] lg:w-[calc(25vw-28px)] xl:w-[268px] shrink-0"
                       >
                         {/* Image */}
                         <Link href={`/product/${generateSlug(product.name)}`} className="block relative aspect-square overflow-hidden bg-white">
