@@ -78,6 +78,7 @@ function CheckoutContent() {
   const waOrderParam = searchParams ? searchParams.get('order') : null;
   const [waOrderData, setWaOrderData] = useState<any>(null);
   const [isWaLoading, setIsWaLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   // Helper to ensure valid UUIDs even in non-secure HTTP contexts
   const generateUUID = () => {
