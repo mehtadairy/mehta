@@ -72,11 +72,7 @@ class AudioManager {
           this.unlocked = true;
           if (isDev) console.log('[AudioManager] Audio unlocked');
 
-          // Drain any pending queued play
-          if (this.queued) {
-            this.queued = false;
-            this._play();
-          }
+
         })
         .catch((err) => {
           devWarn('Unlock play() failed:', err);
@@ -110,11 +106,7 @@ class AudioManager {
         this.audio.muted = this.getStoredMuted();
         this.unlocked = true;
         if (isDev) console.log('[AudioManager] Audio unlocked via explicit unlock()');
-        // Drain any pending queued play
-        if (this.queued) {
-          this.queued = false;
-          this._play();
-        }
+
       })
       .catch((err) => {
         devWarn('unlock() play() failed:', err);
@@ -144,11 +136,10 @@ class AudioManager {
       return;
     }
 
-    if (!this.unlocked) {
-      // Not yet unlocked — queue for after first gesture
-      this.queued = true;
-      return;
-    }
+    // We no longer queue if locked. We just attempt to play immediately.
+    // If the browser blocks it due to lack of user gesture, the promise in _play() will reject 
+    // silently, which is correct behavior for a blocked autoplay. We shouldn't "save" the sound 
+    // for a random later click like 'Acknowledge'.
 
     this._play();
   }
