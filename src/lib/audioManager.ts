@@ -43,15 +43,10 @@ class AudioManager {
     this.audio.preload = 'auto';
 
     const src1 = document.createElement('source');
-    src1.src  = '/sounds/notification.wav';
-    src1.type = 'audio/wav';
-
-    const src2 = document.createElement('source');
-    src2.src  = '/sounds/notification.mp3';
-    src2.type = 'audio/mpeg';
+    src1.src  = '/sounds/doordash.mp3';
+    src1.type = 'audio/mpeg';
 
     this.audio.appendChild(src1);
-    this.audio.appendChild(src2);
     this.audio.load();
 
     // Restore persisted settings
