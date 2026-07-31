@@ -51,11 +51,11 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
         ],
       },
-      // Public images (logo, banners in /public) — 1-year cache
+      // Public images (logo, banners in /public) — 1-day browser cache with stale-while-revalidate
       {
         source: '/images/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
       // Product/category data API — serve from edge cache for 1 min, revalidate in background

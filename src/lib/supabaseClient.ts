@@ -51,19 +51,11 @@ export async function fetchProducts(forceRefresh = false, includeInactive = fals
     let queryResult: any[] = [];
     const { data, error } = await supabase
       .from('products')
-      .select(PRODUCT_FIELDS);
+      .select(PRODUCT_LIST_FIELDS);
     
     if (error) {
       console.warn('Could not fetch products, falling back...', error.message || error);
-      const { data: simpleData, error: simpleError } = await supabase
-        .from('products')
-        .select(PRODUCT_LIST_FIELDS);
-      if (simpleError) {
-        console.error('Error fetching products:', simpleError.message || simpleError);
-        pendingProductsPromise = null;
-        return [];
-      }
-      queryResult = simpleData || [];
+      queryResult = [];
     } else {
       queryResult = data || [];
     }
@@ -120,6 +112,61 @@ export async function fetchProducts(forceRefresh = false, includeInactive = fals
 
   const allProducts = await pendingProductsPromise;
   return includeInactive ? allProducts : allProducts.filter(p => p.isActive !== false);
+}
+
+export async function fetchProductById(idOrSlug: string): Promise<Product | null> {
+  const decoded = decodeURIComponent(idOrSlug);
+  const allList = await fetchProducts();
+  const cachedItem = allList.find(p => p.id === decoded || (p.name && p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === decoded));
+
+  try {
+    const { data: p } = await supabase
+      .from('products')
+      .select(`${PRODUCT_FIELDS}, product_ingredients(ingredient:ingredients(id, name))`)
+      .or(`id.eq.${decoded}`)
+      .maybeSingle();
+
+    if (p) {
+      let productIngredients = p.ingredients || [];
+      let ingredientIds: string[] = [];
+      if (p.product_ingredients && p.product_ingredients.length > 0) {
+        productIngredients = p.product_ingredients.map((pi: any) => pi.ingredient?.name).filter(Boolean);
+        ingredientIds = p.product_ingredients.map((pi: any) => pi.ingredient?.id).filter(Boolean);
+      }
+      const isActiveStatus = (p.is_active !== undefined && p.is_active !== null) 
+        ? Boolean(p.is_active) 
+        : ((p.active !== undefined && p.active !== null) ? Boolean(p.active) : true);
+
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category_slug,
+        description: p.description,
+        images: p.images,
+        prices: p.prices,
+        popular: p.popular,
+        festivalSpecial: p.festival_special,
+        rating: p.rating,
+        reviewsCount: p.reviews_count,
+        stock: p.stock,
+        isActive: isActiveStatus,
+        active: isActiveStatus,
+        ingredients: productIngredients,
+        ingredientIds: ingredientIds,
+        shelfLife: p.shelf_life,
+        storageInstructions: p.storage_instructions,
+        allergens: p.allergens || [],
+        dietaryTags: p.dietary_tags || [],
+        highlights: p.highlights || [],
+        position: p.position || 0,
+        badges: p.badges || []
+      };
+    }
+  } catch (err) {
+    console.warn('fetchProductById fallback to cached catalog item:', err);
+  }
+
+  return cachedItem || null;
 }
 
 export async function updateProductStatus(id: string, activeStatus: boolean): Promise<{ success: boolean; error?: string }> {

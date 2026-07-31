@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { Product, generateSlug, sortWeights } from "@/lib/types";
-import { fetchProducts } from "@/lib/supabaseClient";
+import { fetchProducts, fetchProductById } from "@/lib/supabaseClient";
 import { Heart, Check, Plus, Minus, Star, Leaf, ShieldCheck, ChevronDown, ArrowLeft, Phone, Info, AlertTriangle, Sparkles, Calendar, ShoppingCart, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
@@ -173,9 +173,12 @@ export default function ProductDetails() {
 
   useEffect(() => {
     const loadProduct = async () => {
-      const allProducts = await fetchProducts();
       const decodedId = decodeURIComponent(productId);
-      const found = allProducts.find(p => p.id === decodedId || generateSlug(p.name) === decodedId);
+      const [found, allProducts] = await Promise.all([
+        fetchProductById(decodedId),
+        fetchProducts()
+      ]);
+
       if (found) {
         const sortedWeights = sortWeights(Object.keys(found.prices));
         setProduct(found);
