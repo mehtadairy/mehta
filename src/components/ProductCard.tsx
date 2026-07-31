@@ -244,9 +244,11 @@ export default function ProductCard({ product, searchQuery, activeWeights }: Pro
               <HighlightText text={t(product.name)} query={searchQuery} />
             </h3>
           </Link>
+          {product.description && (
           <p className="font-sans text-[11px] sm:text-xs text-[#7E6B5A] line-clamp-2 leading-relaxed mb-3 flex-grow">
             <HighlightText text={t(product.description)} query={searchQuery} />
           </p>
+          )}
 
           {/* Weight selector — compact on mobile */}
           <div className="flex flex-wrap gap-2 mb-3">

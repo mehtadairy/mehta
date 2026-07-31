@@ -47,6 +47,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   const t = (key: string): string => {
+    if (!key) return '';
     const keys = key.split(".");
     let result: any = translations[language];
     // In this simple flat structure, we can just look up the key directly

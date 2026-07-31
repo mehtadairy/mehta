@@ -34,7 +34,7 @@ let pendingCategoriesPromise: Promise<any[]> | null = null;
 let pendingBannersPromise: Promise<any[]> | null = null;
 
 const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges, active';
-const PRODUCT_LIST_FIELDS = 'id, name, category_slug, images, prices, popular, festival_special, rating, reviews_count, stock, position, badges, active';
+const PRODUCT_LIST_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, position, badges, active';
 
 export async function fetchProducts(forceRefresh = false, includeInactive = false): Promise<Product[]> {
   const now = Date.now();
