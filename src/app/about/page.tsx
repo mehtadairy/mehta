@@ -506,23 +506,23 @@ export default function About() {
               className="bg-white rounded-[2.5rem] border border-[#EAE0D3] shadow-[0_8px_30px_-12px_rgba(74,47,31,0.1)] flex flex-col relative overflow-hidden group hover:shadow-[0_15px_40px_-15px_rgba(74,47,31,0.15)] transition-all duration-500"
             >
               <div className="h-48 w-full bg-[#FAF6EE] relative overflow-hidden">
-                 <img src="/store_outside.jpeg" alt="Navagadh Main Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
+                <img src="/store_outside.jpeg" alt="Navagadh Main Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
               </div>
               <div className="p-8 sm:p-10 flex-1 flex flex-col gap-4">
-                  <div>
-                    <span className="inline-block px-3.5 py-1.5 bg-[#FAF6EE] text-[#D46D2D] text-[0.65rem] font-bold rounded-full uppercase tracking-widest mb-3 border border-[#EAE0D3]">Main Branch</span>
-                    <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">Navagadh Branch</h3>
+                <div>
+                  <span className="inline-block px-3.5 py-1.5 bg-[#FAF6EE] text-[#D46D2D] text-[0.65rem] font-bold rounded-full uppercase tracking-widest mb-3 border border-[#EAE0D3]">Main Branch</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">Navagadh Branch</h3>
+                </div>
+                <p className="text-sm text-[#7E6B5A] leading-relaxed flex-1 mt-2">
+                  Our main store and administrative headquarters, offering our complete signature collection of fresh sweets, namkeens, and daily dairy items.
+                </p>
+                <a href={BUSINESS.branches.navagadh.googleMapsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-4 mt-6 pt-6 border-t border-[#EAE0D3] group/link cursor-pointer">
+                  <div className="w-10 h-10 rounded-full bg-[#FAF5ED] flex items-center justify-center flex-shrink-0 border border-[#D46D2D]/20 group-hover/link:bg-[#D46D2D] transition-colors">
+                    <MapPin className="h-4 w-4 text-[#D46D2D] group-hover/link:text-white transition-colors" />
                   </div>
-                  <p className="text-sm text-[#7E6B5A] leading-relaxed flex-1 mt-2">
-                    Our main store and administrative headquarters, offering our complete signature collection of fresh sweets, namkeens, and daily dairy items.
-                  </p>
-                  <a href={BUSINESS.branches.navagadh.googleMapsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-4 mt-6 pt-6 border-t border-[#EAE0D3] group/link cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-[#FAF5ED] flex items-center justify-center flex-shrink-0 border border-[#D46D2D]/20 group-hover/link:bg-[#D46D2D] transition-colors">
-                      <MapPin className="h-4 w-4 text-[#D46D2D] group-hover/link:text-white transition-colors" />
-                    </div>
-                    <span className="text-sm font-semibold text-[#2A1E17] leading-tight pt-0.5 group-hover/link:text-[#D46D2D] transition-colors">Navagadh, Palitana, <br/>Gujarat 364270</span>
-                  </a>
+                  <span className="text-sm font-semibold text-[#2A1E17] leading-tight pt-0.5 group-hover/link:text-[#D46D2D] transition-colors">Navagadh, Palitana, <br />Gujarat 364270</span>
+                </a>
               </div>
             </motion.div>
 
@@ -532,23 +532,23 @@ export default function About() {
               className="bg-white rounded-[2.5rem] border border-[#EAE0D3] shadow-[0_8px_30px_-12px_rgba(74,47,31,0.1)] flex flex-col relative overflow-hidden group hover:shadow-[0_15px_40px_-15px_rgba(74,47,31,0.15)] transition-all duration-500"
             >
               <div className="h-48 w-full bg-[#FAF6EE] relative overflow-hidden">
-                 <img src="/store_inside_counter.jpeg" alt="Taleti Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
+                <img src="/taleti_branch.jpeg" alt="Taleti Branch" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500"></div>
               </div>
               <div className="p-8 sm:p-10 flex-1 flex flex-col gap-4">
-                  <div>
-                    <span className="inline-block px-3.5 py-1.5 bg-[#FAF6EE] text-[#7E6B5A] text-[0.65rem] font-bold rounded-full uppercase tracking-widest mb-3 border border-[#EAE0D3]">Second Branch</span>
-                    <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">Taleti Branch</h3>
+                <div>
+                  <span className="inline-block px-3.5 py-1.5 bg-[#FAF6EE] text-[#7E6B5A] text-[0.65rem] font-bold rounded-full uppercase tracking-widest mb-3 border border-[#EAE0D3]">Second Branch</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">Taleti Branch</h3>
+                </div>
+                <p className="text-sm text-[#7E6B5A] leading-relaxed flex-1 mt-2">
+                  Located near the sacred hills path, perfect for pilgrims and visitors looking to taste authentic Palitana sweets on their journey.
+                </p>
+                <a href={BUSINESS.branches.taleti.googleMapsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-4 mt-6 pt-6 border-t border-[#EAE0D3] group/link cursor-pointer">
+                  <div className="w-10 h-10 rounded-full bg-[#FAF5ED] flex items-center justify-center flex-shrink-0 border border-[#D46D2D]/20 group-hover/link:bg-[#D46D2D] transition-colors">
+                    <MapPin className="h-4 w-4 text-[#D46D2D] group-hover/link:text-white transition-colors" />
                   </div>
-                  <p className="text-sm text-[#7E6B5A] leading-relaxed flex-1 mt-2">
-                    Located near the sacred hills path, perfect for pilgrims and visitors looking to taste authentic Palitana sweets on their journey.
-                  </p>
-                  <a href={BUSINESS.branches.taleti.googleMapsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-4 mt-6 pt-6 border-t border-[#EAE0D3] group/link cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-[#FAF5ED] flex items-center justify-center flex-shrink-0 border border-[#D46D2D]/20 group-hover/link:bg-[#D46D2D] transition-colors">
-                      <MapPin className="h-4 w-4 text-[#D46D2D] group-hover/link:text-white transition-colors" />
-                    </div>
-                    <span className="text-sm font-semibold text-[#2A1E17] leading-tight pt-0.5 group-hover/link:text-[#D46D2D] transition-colors">Taleti Road, Palitana, <br/>Gujarat 364270</span>
-                  </a>
+                  <span className="text-sm font-semibold text-[#2A1E17] leading-tight pt-0.5 group-hover/link:text-[#D46D2D] transition-colors">Taleti Road, Palitana, <br />Gujarat 364270</span>
+                </a>
               </div>
             </motion.div>
           </div>
