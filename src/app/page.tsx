@@ -297,6 +297,23 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
+  // Auto-scroll Best Sellers by 1 item every 2 seconds
+  useEffect(() => {
+    if (bestSellers.length === 0) return;
+    const interval = setInterval(() => {
+      setCurrentCarouselIndex((prev) => {
+        // Calculate max index: total products minus visible items (2 on mobile, 4 on desktop)
+        const visibleCount = isMobile ? 2 : 4;
+        const maxIndex = Math.max(0, bestSellers.length - visibleCount);
+        if (prev >= maxIndex) {
+          return 0; // Wrap back to the beginning
+        }
+        return prev + 1; // Scroll by 1 item
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [bestSellers.length, isMobile]);
+
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
