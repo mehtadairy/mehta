@@ -278,7 +278,7 @@ export default function AdminPanel() {
     const loadData = async () => {
         setOrdersLoading(true);
         try {
-            const allProducts = await fetchProducts();
+            const allProducts = await fetchProducts(true, true);
             setProducts(allProducts);
             
             const dbIngredients = await fetchIngredients();

@@ -10,6 +10,8 @@ export interface Product {
   rating: number;
   reviewsCount: number;
   stock: number;
+  isActive?: boolean;
+  active?: boolean;
   ingredients?: string[];
   ingredientIds?: string[];
   shelfLife?: number;

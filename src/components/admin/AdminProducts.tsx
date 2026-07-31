@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Product } from "@/lib/types";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, updateProductStatus } from "@/lib/supabaseClient";
 import { 
   Package, 
   Star, 
@@ -134,6 +134,44 @@ export function AdminProducts({
   const [showReorderDrawer, setShowReorderDrawer] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  const [localProducts, setLocalProducts] = useState<Product[]>(products);
+  const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setLocalProducts(products);
+  }, [products]);
+
+  const handleToggleStatus = async (productId: string, currentActiveStatus: boolean) => {
+    if (updatingStatusIds.has(productId)) return;
+    const nextStatus = !currentActiveStatus;
+
+    setUpdatingStatusIds((prev) => new Set(prev).add(productId));
+
+    const res = await updateProductStatus(productId, nextStatus);
+
+    setUpdatingStatusIds((prev) => {
+      const next = new Set(prev);
+      next.delete(productId);
+      return next;
+    });
+
+    if (res.success) {
+      setLocalProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? { ...p, isActive: nextStatus, active: nextStatus }
+            : p
+        )
+      );
+      showToast(
+        nextStatus ? "Product activated successfully." : "Product deactivated successfully.",
+        "success"
+      );
+    } else {
+      showToast("Failed to update product status.", "error");
+    }
+  };
+
   // Variant helper input state
   const [newVarWeight, setNewVarWeight] = useState("500g");
   const [newVarPrice, setNewVarPrice] = useState("250");
@@ -161,16 +199,16 @@ export function AdminProducts({
 
   // Calculate Product KPIs
   const stats = useMemo(() => {
-    const totalCount = products.length;
-    const bestSellersCount = products.filter((p) => p.popular).length;
-    const festiveCount = products.filter((p) => p.festivalSpecial).length;
-    const lowStockCount = products.filter((p) => p.stock <= 10).length;
+    const totalCount = localProducts.length;
+    const activeCount = localProducts.filter((p) => p.isActive !== false).length;
+    const bestSellersCount = localProducts.filter((p) => p.popular).length;
+    const festiveCount = localProducts.filter((p) => p.festivalSpecial).length;
 
     let totalPriceSum = 0;
     let priceCount = 0;
     let totalInvValue = 0;
 
-    products.forEach((p) => {
+    localProducts.forEach((p) => {
       if (p.prices) {
         Object.values(p.prices).forEach((pr) => {
           totalPriceSum += Number(pr) || 0;
@@ -185,19 +223,19 @@ export function AdminProducts({
 
     return {
       totalCount,
+      activeCount,
       bestSellersCount,
       festiveCount,
-      lowStockCount,
       avgPrice,
       totalInvValue,
     };
-  }, [products]);
+  }, [localProducts]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Filtered Products List sorted by Position
   const filteredProducts = useMemo(() => {
-    const list = products.filter((p) => {
+    const list = localProducts.filter((p) => {
       const q = prodSearchQuery.toLowerCase();
       const matchesSearch =
         (p.name && p.name.toLowerCase().includes(q)) ||
@@ -206,9 +244,10 @@ export function AdminProducts({
 
       const matchesCat = (() => {
         if (prodSubTab === "all") return true;
+        if (prodSubTab === "active") return p.isActive !== false;
+        if (prodSubTab === "inactive") return p.isActive === false;
         if (prodSubTab === "popular") return p.popular;
         if (prodSubTab === "festive") return p.festivalSpecial;
-        if (prodSubTab === "lowstock") return p.stock <= 10;
         return p.category === prodSubTab;
       })();
 
@@ -216,7 +255,7 @@ export function AdminProducts({
     });
 
     return list.sort((a, b) => (a.position || 0) - (b.position || 0));
-  }, [products, prodSearchQuery, prodSubTab, refreshTrigger]);
+  }, [localProducts, prodSearchQuery, prodSubTab, refreshTrigger]);
 
   // Drag & Drop Handlers for Table & Drawer
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -359,9 +398,9 @@ export function AdminProducts({
         </div>
 
         <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">LOW STOCK ALERTS</span>
-          <div className="text-xl font-extrabold text-rose-700 mt-1">{stats.lowStockCount}</div>
-          <span className="text-[10px] text-rose-600 font-medium mt-0.5">&le; 10 Units Remaining</span>
+          <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">ACTIVE PRODUCTS</span>
+          <div className="text-xl font-extrabold text-emerald-700 mt-1">🟢 {stats.activeCount}</div>
+          <span className="text-[10px] text-emerald-600 font-medium mt-0.5">Visible on Storefront</span>
         </div>
 
         <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
@@ -405,7 +444,23 @@ export function AdminProducts({
               prodSubTab === "all" ? "bg-amber-700 text-white font-bold shadow-2xs" : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
             }`}
           >
-            All Products ({products.length})
+            All Products ({localProducts.length})
+          </button>
+          <button
+            onClick={() => setProdSubTab("active")}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-md whitespace-nowrap transition-all cursor-pointer ${
+              prodSubTab === "active" ? "bg-emerald-700 text-white font-bold shadow-2xs" : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+            }`}
+          >
+            🟢 Active
+          </button>
+          <button
+            onClick={() => setProdSubTab("inactive")}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-md whitespace-nowrap transition-all cursor-pointer ${
+              prodSubTab === "inactive" ? "bg-rose-700 text-white font-bold shadow-2xs" : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+            }`}
+          >
+            🔴 Inactive
           </button>
           <button
             onClick={() => setProdSubTab("popular")}
@@ -422,14 +477,6 @@ export function AdminProducts({
             }`}
           >
             🎉 Festive Specials
-          </button>
-          <button
-            onClick={() => setProdSubTab("lowstock")}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-md whitespace-nowrap transition-all cursor-pointer ${
-              prodSubTab === "lowstock" ? "bg-amber-700 text-white font-bold shadow-2xs" : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
-            }`}
-          >
-            ⚠ Low Stock (&le;10)
           </button>
 
           {categories.map((cat) => (
@@ -463,15 +510,15 @@ export function AdminProducts({
                   <th className="p-3.5">Item</th>
                   <th className="p-3.5">Category</th>
                   <th className="p-3.5">Price Variants</th>
-                  <th className="p-3.5">Stock Progress</th>
+                  <th className="p-3.5 min-w-[130px]">Status</th>
                   <th className="p-3.5">Badges</th>
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium">
                 {filteredProducts.map((p, idx) => {
-                  const isLowStock = p.stock <= 10;
-                  const isOutOfStock = p.stock === 0;
+                  const isActive = p.isActive !== false;
+                  const isUpdating = updatingStatusIds.has(p.id);
 
                   return (
                     <tr
@@ -482,7 +529,7 @@ export function AdminProducts({
                       onDrop={(e) => handleDrop(e, idx)}
                       className={`hover:bg-amber-50/30 transition-colors ${
                         draggedIndex === idx ? "opacity-40 bg-amber-100/50" : ""
-                      }`}
+                      } ${!isActive ? "bg-gray-50/50" : ""}`}
                     >
                       {/* Drag Handle */}
                       <td className="p-3.5 text-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-amber-700">
@@ -495,10 +542,10 @@ export function AdminProducts({
                           <img
                             src={p.images?.[0] || "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=100"}
                             alt={p.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
+                            className={`w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0 ${!isActive ? "grayscale opacity-75" : ""}`}
                           />
                           <div className="flex flex-col">
-                            <span className="font-extrabold text-gray-900">{p.name}</span>
+                            <span className={`font-extrabold ${!isActive ? "text-gray-500 line-through" : "text-gray-900"}`}>{p.name}</span>
                             <span className="text-[10px] text-gray-400 line-clamp-1 max-w-[200px]">{p.description}</span>
                           </div>
                         </div>
@@ -520,22 +567,41 @@ export function AdminProducts({
                         </div>
                       </td>
 
-                      {/* Stock Progress Indicator */}
+                      {/* Status Toggle Switch */}
                       <td className="p-3.5 min-w-[130px]">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex justify-between items-center text-[10px] font-bold">
-                            <span className={isOutOfStock ? "text-rose-700" : isLowStock ? "text-amber-700" : "text-emerald-700"}>
-                              {p.stock} Units
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className={`h-1.5 rounded-full ${
-                                isOutOfStock ? "bg-rose-600" : isLowStock ? "bg-amber-600" : "bg-emerald-600"
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isActive}
+                            disabled={isUpdating}
+                            onClick={() => handleToggleStatus(p.id, isActive)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              isUpdating ? "opacity-60 cursor-not-allowed" : ""
+                            } ${isActive ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-300 hover:bg-gray-400"}`}
+                            title={isActive ? "Deactivate Product" : "Activate Product"}
+                          >
+                            <span className="sr-only">Toggle product status</span>
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                                isActive ? "translate-x-5" : "translate-x-0"
                               }`}
-                              style={{ width: `${Math.min((p.stock / 100) * 100, 100)}%` }}
-                            />
-                          </div>
+                            >
+                              {isUpdating && (
+                                <Loader2 className="w-3 h-3 text-gray-600 animate-spin" />
+                              )}
+                            </span>
+                          </button>
+                          <span
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1.5 ${
+                              isActive
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                            {isActive ? "Active" : "Inactive"}
+                          </span>
                         </div>
                       </td>
 

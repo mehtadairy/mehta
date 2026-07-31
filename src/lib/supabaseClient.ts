@@ -33,16 +33,17 @@ let pendingProductsPromise: Promise<Product[]> | null = null;
 let pendingCategoriesPromise: Promise<any[]> | null = null;
 let pendingBannersPromise: Promise<any[]> | null = null;
 
-const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges';
+const PRODUCT_FIELDS = 'id, name, category_slug, description, images, prices, popular, festival_special, rating, reviews_count, stock, shelf_life, storage_instructions, allergens, dietary_tags, highlights, position, badges, active, is_active';
 
-export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
+export async function fetchProducts(forceRefresh = false, includeInactive = false): Promise<Product[]> {
   const now = Date.now();
   if (cachedProducts && !forceRefresh && (now - cachedProductsTime < CACHE_TTL)) {
-    return cachedProducts;
+    return includeInactive ? cachedProducts : cachedProducts.filter(p => p.isActive !== false);
   }
 
   if (pendingProductsPromise && !forceRefresh) {
-    return pendingProductsPromise;
+    const products = await pendingProductsPromise;
+    return includeInactive ? products : products.filter(p => p.isActive !== false);
   }
 
   pendingProductsPromise = (async () => {
@@ -66,7 +67,7 @@ export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
       queryResult = data || [];
     }
 
-    const mapped = queryResult.map(p => {
+    const mapped: Product[] = queryResult.map(p => {
       let productIngredients = p.ingredients || [];
       let ingredientIds: string[] = [];
       if (p.product_ingredients && p.product_ingredients.length > 0) {
@@ -78,6 +79,10 @@ export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
           .filter(Boolean);
       }
       
+      const isActiveStatus = (p.is_active !== undefined && p.is_active !== null) 
+        ? Boolean(p.is_active) 
+        : ((p.active !== undefined && p.active !== null) ? Boolean(p.active) : true);
+
       return {
         id: p.id,
         name: p.name,
@@ -90,6 +95,8 @@ export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
         rating: p.rating,
         reviewsCount: p.reviews_count,
         stock: p.stock,
+        isActive: isActiveStatus,
+        active: isActiveStatus,
         ingredients: productIngredients,
         ingredientIds: ingredientIds,
         shelfLife: p.shelf_life,
@@ -110,7 +117,35 @@ export async function fetchProducts(forceRefresh = false): Promise<Product[]> {
     return mapped;
   })();
 
-  return pendingProductsPromise;
+  const allProducts = await pendingProductsPromise;
+  return includeInactive ? allProducts : allProducts.filter(p => p.isActive !== false);
+}
+
+export async function updateProductStatus(id: string, activeStatus: boolean): Promise<{ success: boolean; error?: string }> {
+  // Invalidate cache
+  cachedProducts = null;
+  cachedProductsTime = 0;
+  pendingProductsPromise = null;
+
+  let { error } = await supabase
+    .from('products')
+    .update({ active: activeStatus, is_active: activeStatus })
+    .eq('id', id);
+
+  if (error && (error.message?.includes('is_active') || error.code === '42703')) {
+    const { error: fallbackErr } = await supabase
+      .from('products')
+      .update({ active: activeStatus })
+      .eq('id', id);
+    error = fallbackErr;
+  }
+
+  if (error) {
+    console.error('Error updating product active status:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
 }
 
 export async function fetchCategories(forceRefresh = false): Promise<any[]> {
