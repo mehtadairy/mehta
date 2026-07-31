@@ -329,9 +329,8 @@ function CheckoutContent() {
           return;
         }
 
-        // 1. Fetch user session, delivery zones, and products in parallel
-        const [authRes, zonesRes, allProds] = await Promise.all([
-          supabase.auth.getUser(),
+        // 1. Fetch delivery zones and products in parallel
+        const [zonesRes, allProds] = await Promise.all([
           supabase.from('delivery_zones').select('id, name, city, pincodes, pincode'),
           fetchProducts()
         ]);
@@ -362,32 +361,7 @@ function CheckoutContent() {
         }
 
         // 2. Load addresses based on authenticated session
-        let customerId: string | null = null;
-        const user = authRes.data?.user;
-
-        if (user) {
-          const { data: customer } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('auth_user_id', user.id)
-            .single();
-          if (customer) {
-            customerId = customer.id;
-          }
-        } else {
-          const phone = localStorage.getItem("mehta_user_phone");
-          if (phone && phone !== 'null') {
-            try {
-              const res = await fetch(`/api/user/profile?phone=${phone}`);
-              const data = await res.json();
-              if (data.success && data.profile) {
-                customerId = data.profile.id;
-              }
-            } catch (err) {
-              console.error("Failed to fetch customer by phone:", err);
-            }
-          }
-        }
+        const customerId = meData.user.id;
 
         if (customerId) {
           const { data: userAddrs } = await supabase.from('addresses').select('id, full_name, mobile, address, landmark, city, state, pincode, is_default').eq('customer_id', customerId);
