@@ -491,9 +491,6 @@ export default function ProductDetails() {
                     </span>
                   </>
                 )}
-                <span className="text-[0.68rem] font-bold text-brand-charcoal uppercase bg-[#fdfaf2] px-3 py-1 rounded-full border border-[#e8dcc4] ml-auto">
-                  Product Life: {productLife}
-                </span>
               </div>
 
               {/* Selector */}
@@ -600,12 +597,13 @@ export default function ProductDetails() {
               </div>
 
               {/* ── TRUST BADGES STRIP ──────────────────────────── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 py-1">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 py-1">
                 {[
                   { icon: "🏛️", label: "Since 1972", sub: "Legacy of purity" },
                   { icon: "🥛", label: "Pure Ghee", sub: "100% authentic" },
                   { icon: "🌿", label: "Freshly Made", sub: "Daily fresh batches" },
                   { icon: "🍃", label: "Jain Friendly", sub: "100% vegetarian" },
+                  { icon: "📅", label: `Life: ${productLife}`, sub: "Shelf life duration" },
                 ].map(({ icon, label, sub }) => (
                   <div
                     key={label}
