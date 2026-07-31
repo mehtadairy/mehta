@@ -590,7 +590,14 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           2. TRUST STATS STRIP
       ═══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#4A2F1F] py-8 relative z-10 border-b border-white/5">
+      <section
+        className="py-8 relative z-10"
+        style={{
+          backgroundColor: '#FCF8F2',
+          borderTop: '2px solid #D4AF37',
+          boxShadow: '0 -8px 30px rgba(0,0,0,0.04)',
+        }}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-4 gap-2 sm:gap-6 lg:gap-8 text-center">
             {[
@@ -598,25 +605,32 @@ export default function Home() {
               { icon: Truck, value: "25K+", label: t('home.stats.orders'), sub: t('home.stats.orders_sub') },
               { icon: Leaf, value: "100%", label: t('home.stats.pure'), sub: t('home.stats.pure_sub') },
               { icon: Clock, value: "100%", label: t('home.stats.fresh'), sub: t('home.stats.fresh_sub') }
-            ].map((item, idx) => (
+            ].map((item, idx, arr) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.08, duration: 0.5 }}
-                className="flex flex-col items-center justify-center gap-1 group"
+                className="flex flex-col items-center justify-center gap-1 group cursor-default"
+                style={{
+                  borderRight: idx < arr.length - 1 ? '1px solid rgba(212,175,55,0.15)' : 'none',
+                  transition: 'transform 0.3s ease',
+                }}
+                whileHover={{ y: -4 }}
               >
-                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/10 border border-white/5 flex items-center justify-center mb-1 group-hover:bg-white/15 transition-colors shrink-0">
-                  <item.icon className="h-4 w-4 sm:h-5 sm:w-5 text-[#C9A227]" strokeWidth={1.5} />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center mb-1 shrink-0 border transition-colors"
+                  style={{ backgroundColor: 'rgba(212,175,55,0.08)', borderColor: 'rgba(212,175,55,0.2)' }}
+                >
+                  <item.icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} style={{ color: '#D4AF37' }} />
                 </div>
-                <span className="font-serif text-lg sm:text-2xl font-bold text-white leading-tight">
+                <span className="font-serif text-lg sm:text-2xl font-bold leading-tight" style={{ color: '#3D2B1F' }}>
                   {item.value}
                 </span>
-                <span className="text-[0.5rem] sm:text-[0.65rem] font-bold text-[#C9A227] uppercase tracking-wider leading-tight">
+                <span className="text-[0.5rem] sm:text-[0.65rem] font-bold uppercase tracking-wider leading-tight" style={{ color: '#D4AF37' }}>
                   {item.label}
                 </span>
-                <span className="text-[0.45rem] sm:text-[0.55rem] text-white/60 leading-tight">
+                <span className="text-[0.45rem] sm:text-[0.55rem] leading-tight" style={{ color: '#6B5A4A' }}>
                   {item.sub}
                 </span>
               </motion.div>
