@@ -775,7 +775,44 @@ export default function Home() {
               </div>
             ) : (
               /* Sliding container driven by React state index */
-              <div className="relative w-full overflow-hidden">
+              <div className="relative w-full overflow-hidden px-1">
+                {/* Manual Navigation Controls */}
+                <button
+                  onClick={() => {
+                    setCurrentCarouselIndex((prev) => {
+                      if (prev === 0) {
+                        const visibleCount = isMobile ? 2 : 4;
+                        return Math.max(0, bestSellers.length - visibleCount);
+                      }
+                      return prev - 1;
+                    });
+                  }}
+                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
+                  aria-label="Previous Slide"
+                >
+                  <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentCarouselIndex((prev) => {
+                      const visibleCount = isMobile ? 2 : 4;
+                      const maxIndex = Math.max(0, bestSellers.length - visibleCount);
+                      if (prev >= maxIndex) {
+                        return 0;
+                      }
+                      return prev + 1;
+                    });
+                  }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white border border-[#EAE0D3] shadow-md flex items-center justify-center text-[#4A2F1F] hover:bg-[#FAF6EE] transition-colors cursor-pointer"
+                  aria-label="Next Slide"
+                >
+                  <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
                 <motion.div
                   className="flex gap-3 sm:gap-6"
                   animate={{
