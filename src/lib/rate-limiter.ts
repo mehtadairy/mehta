@@ -20,6 +20,19 @@ setInterval(() => {
   }
 }, 600000);
 
+/**
+ * Extracts client IP from standard proxy & CDN headers
+ */
+export function getClientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  const realIp = req.headers.get('x-real-ip') || req.headers.get('cf-connecting-ip');
+  if (realIp) return realIp.trim();
+  return '127.0.0.1';
+}
+
 export function checkRateLimit(
   identifier: string,
   maxRequests: number = 5,

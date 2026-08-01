@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendOTP } from '@/lib/services/whatsapp-auth';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import { checkRateLimit } from '@/lib/rate-limiter';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 import { phoneSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { z } from 'zod';
 
@@ -25,11 +25,12 @@ export async function POST(req: Request) {
     }
 
     const cleanPhone = validation.data.phone;
+    const clientIp = getClientIp(req);
 
-    // 🔒 Rate Limit: Max 3 OTP requests per phone number per minute
-    const rateLimit = checkRateLimit(`otp_send_${cleanPhone}`, 3, 60000);
+    // 🔒 Rate Limit: Max 3 OTP requests per IP + phone number per minute
+    const rateLimit = checkRateLimit(`otp_login_send_${clientIp}_${cleanPhone}`, 3, 60000);
     if (!rateLimit.success) {
-      logRejectedSubmission('/api/auth/login/send-otp', 'Rate limit exceeded', { phone: cleanPhone });
+      logRejectedSubmission('/api/auth/login/send-otp', 'Rate limit exceeded', { phone: cleanPhone, ip: clientIp });
       return NextResponse.json({
         success: false,
         error: `Too many requests. Please try again later.`

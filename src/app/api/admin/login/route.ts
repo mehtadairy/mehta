@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { signSession } from '@/lib/auth-utils';
 import { emailSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 import { z } from 'zod';
 
 const adminLoginSchema = z.object({
@@ -25,6 +26,14 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = validation.data;
+    const clientIp = getClientIp(request);
+
+    // 🔒 Rate Limit: Max 5 attempts per IP + email per minute
+    const rateLimit = checkRateLimit(`admin_login_${clientIp}_${email}`, 5, 60000);
+    if (!rateLimit.success) {
+      logRejectedSubmission('/api/admin/login', 'Rate limit exceeded', { email, ip: clientIp });
+      return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 });
+    }
 
     let userPayload = null;
 

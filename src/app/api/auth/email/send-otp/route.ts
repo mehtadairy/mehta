@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { Resend } from 'resend';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import VerificationTemplate from '@/emails/VerificationTemplate';
-import { checkRateLimit } from '@/lib/rate-limiter';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 import { emailSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { z } from 'zod';
 
@@ -49,13 +49,15 @@ export async function POST(request: Request) {
     }
 
     const emailLower = validation.data.email;
+    const clientIp = getClientIp(request);
 
-    // 🔒 Rate Limit: Max 3 OTP requests per email per minute in-memory
-    const rateLimit = checkRateLimit(`email_otp_send_${emailLower}`, 3, 60000);
+    // 🔒 Rate Limit: Max 3 OTP requests per IP + email per minute in-memory
+    const rateLimit = checkRateLimit(`email_otp_send_${clientIp}_${emailLower}`, 3, 60000);
     if (!rateLimit.success) {
+      logRejectedSubmission('/api/auth/email/send-otp', 'Rate limit exceeded', { email: emailLower, ip: clientIp });
       return NextResponse.json({
         success: false,
-        error: `Too many OTP requests. Please wait ${Math.ceil(rateLimit.resetMs / 1000)} seconds.`
+        error: `Too many OTP requests. Please try again later.`
       }, { status: 429 });
     }
 

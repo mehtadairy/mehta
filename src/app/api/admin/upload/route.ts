@@ -29,6 +29,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File and filePath are required' }, { status: 400 });
     }
 
+    // 🔒 Security: Validate File Extension & Allowed MIME Types
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
+
+    const fileExt = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
+    if (!allowedMimeTypes.includes(file.type) || !allowedExtensions.includes(fileExt)) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Only standard web image formats (JPEG, PNG, WebP, GIF, AVIF) are allowed.' },
+        { status: 400 }
+      );
+    }
+
     // Reject oversized raw uploads before processing
     if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
