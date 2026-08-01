@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { signSession } from '@/lib/auth-utils';
-import { verifyPassword } from '@/lib/password-utils';
+import { verifyPassword, needsRehash, hashPassword } from '@/lib/password-utils';
 import { getSharedStaffStore, updateStaffInStore } from '@/lib/staff-store';
 import { usernameSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
@@ -76,10 +76,17 @@ export async function POST(request: Request) {
             permissions: staff.permissions || []
           };
 
-          // Update last_login timestamp
+          // Automatic Migration: Upgrade legacy password hashes to bcrypt cost 12
+          const updatedPayload: any = { last_login: new Date().toISOString() };
+          if (needsRehash(staff.password_hash)) {
+            const newHash = hashPassword(password);
+            updatedPayload.password_hash = newHash;
+            updateStaffInStore(staff.id, { password_hash: newHash });
+          }
+
           await supabaseServer
             .from('staff_accounts')
-            .update({ last_login: new Date().toISOString() })
+            .update(updatedPayload)
             .eq('id', staff.id);
         }
       } catch (e) {
@@ -107,7 +114,12 @@ export async function POST(request: Request) {
           permissions: matchedStaff.permissions || []
         };
 
-        updateStaffInStore(matchedStaff.id, { last_login: new Date().toISOString() });
+        const updates: any = { last_login: new Date().toISOString() };
+        if (needsRehash(matchedStaff.password_hash)) {
+          updates.password_hash = hashPassword(password);
+        }
+
+        updateStaffInStore(matchedStaff.id, updates);
       }
     }
 
@@ -118,22 +130,32 @@ export async function POST(request: Request) {
           .from('workers')
           .select('*')
           .eq('employee_id', loginUser)
-          .eq('password', password)
           .eq('status', 'active')
           .maybeSingle();
 
         if (legacyWorker) {
-          workerPayload = {
-            id: legacyWorker.id,
-            username: legacyWorker.employee_id,
-            employeeId: legacyWorker.employee_id,
-            name: legacyWorker.name,
-            role: legacyWorker.role,
-            branch: legacyWorker.branch,
-            phone: legacyWorker.phone_number,
-            status: legacyWorker.status,
-            permissions: ['dashboard', 'orders']
-          };
+          const storedHash = legacyWorker.password_hash || legacyWorker.password;
+          if (verifyPassword(password, storedHash)) {
+            workerPayload = {
+              id: legacyWorker.id,
+              username: legacyWorker.employee_id,
+              employeeId: legacyWorker.employee_id,
+              name: legacyWorker.name,
+              role: legacyWorker.role,
+              branch: legacyWorker.branch,
+              phone: legacyWorker.phone_number,
+              status: legacyWorker.status,
+              permissions: ['dashboard', 'orders']
+            };
+
+            // Upgrade legacy worker plaintext/scrypt password to bcrypt cost 12
+            if (needsRehash(storedHash)) {
+              await supabaseServer
+                .from('workers')
+                .update({ password_hash: hashPassword(password) })
+                .eq('id', legacyWorker.id);
+            }
+          }
         }
       } catch (e) {
         console.warn("Legacy worker table lookup error");

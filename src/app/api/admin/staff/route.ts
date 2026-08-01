@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { hashPassword } from '@/lib/password-utils';
-import { getSharedStaffStore, addStaffToStore, updateStaffInStore, deleteStaffFromStore, StaffAccount } from '@/lib/staff-store';
+import { getSharedStaffStore, getSanitizedStaffStore, addStaffToStore, updateStaffInStore, deleteStaffFromStore, StaffAccount } from '@/lib/staff-store';
 import { verifySession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
@@ -16,16 +16,16 @@ export async function GET() {
 
     const { data: dbStaff, error } = await supabaseServer
       .from('staff_accounts')
-      .select('*')
+      .select('id, full_name, username, phone, email, role, branch, status, last_login, permissions, avatar_url, created_at')
       .order('created_at', { ascending: false });
 
     if (!error && dbStaff && dbStaff.length > 0) {
       return NextResponse.json({ success: true, data: dbStaff });
     }
 
-    return NextResponse.json({ success: true, data: getSharedStaffStore() });
+    return NextResponse.json({ success: true, data: getSanitizedStaffStore() });
   } catch (error: any) {
-    return NextResponse.json({ success: true, data: getSharedStaffStore() });
+    return NextResponse.json({ success: true, data: getSanitizedStaffStore() });
   }
 }
 

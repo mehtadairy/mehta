@@ -625,25 +625,28 @@ export default function WorkerPanel() {
     setIsChangingPass(true);
 
     if (newPassword.length < 6) {
-      setPasswordError("Password pin must be at least 6 characters.");
+      setPasswordError("Password PIN must be at least 6 characters.");
       setIsChangingPass(false);
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("workers")
-        .update({ password: newPassword })
-        .eq("employee_id", workerInfo.employeeId)
-        .eq("password", oldPassword);
+      const res = await fetch("/api/worker/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update password.");
+      }
 
       setPasswordSuccess("Password updated successfully!");
       setOldPassword("");
       setNewPassword("");
     } catch (err: any) {
-      setPasswordError("Failed to update password. Please check your old password.");
+      setPasswordError(err.message || "Failed to update password. Please check your old password.");
     } finally {
       setIsChangingPass(false);
     }

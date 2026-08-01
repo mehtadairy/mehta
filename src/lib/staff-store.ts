@@ -87,6 +87,14 @@ export const getSharedStaffStore = (): StaffAccount[] => {
   return globalForStaff.staffAccountsStore || defaultStaffAccounts;
 };
 
+/**
+ * Returns staff list without sensitive password_hash fields for API responses
+ */
+export const getSanitizedStaffStore = () => {
+  const store = getSharedStaffStore();
+  return store.map(({ password_hash, ...staff }) => staff);
+};
+
 export const addStaffToStore = (staff: StaffAccount) => {
   const store = getSharedStaffStore();
   const index = store.findIndex(s => s.id === staff.id || s.username === staff.username);

@@ -4,6 +4,7 @@ import { signSession } from '@/lib/auth-utils';
 import { emailSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 import { getAccountLockStatus, recordFailedAttempt, resetAccountLock } from '@/lib/account-lockout';
+import { verifyPassword, needsRehash, hashPassword } from '@/lib/password-utils';
 import { z } from 'zod';
 
 const adminLoginSchema = z.object({
@@ -47,29 +48,42 @@ export async function POST(request: Request) {
 
     let userPayload = null;
 
-    // Hardcoded override for admin credentials
-    if (email === 'mehtadairyplt@gmail.com' && password === 'mehtadairyplt@gmail.com') {
-      userPayload = { id: 'admin-bypass', email, name: 'Mehta Admin', role: 'super_admin' };
-    } else {
-      const { data: adminUser, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email)
-        .single();
+    // 🔒 Secure Bcrypt Verification for Admin Accounts
+    const { data: adminUser, error } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
 
-      if (error || !adminUser) {
-        logRejectedSubmission('/api/admin/login', 'Admin email not found', { email });
+    const superAdminEmail = process.env.ADMIN_EMAIL || 'mehtadairyplt@gmail.com';
+    const superAdminPassHash = process.env.ADMIN_PASSWORD_HASH || hashPassword(process.env.ADMIN_PASSWORD || 'mehtadairyplt@gmail.com');
+
+    if (adminUser) {
+      const storedHash = adminUser.password_hash || adminUser.password;
+      const isValid = verifyPassword(password, storedHash);
+
+      if (!isValid) {
+        logRejectedSubmission('/api/admin/login', 'Incorrect password for admin account', { email });
         await recordFailedAttempt(email, email);
         return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
       }
 
-      if (password !== 'admin123') {
-         logRejectedSubmission('/api/admin/login', 'Incorrect password for admin user', { email });
-         await recordFailedAttempt(email, email);
-         return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
+      // Automatic Migration: Rehash legacy hashes to Bcrypt Cost 12 automatically
+      if (needsRehash(storedHash)) {
+        const newHash = hashPassword(password);
+        await supabase
+          .from('admin_users')
+          .update({ password_hash: newHash, updated_at: new Date().toISOString() })
+          .eq('id', adminUser.id);
       }
-      
-      userPayload = { id: adminUser.id, email: adminUser.email, name: adminUser.name, role: 'super_admin' };
+
+      userPayload = { id: adminUser.id, email: adminUser.email, name: adminUser.name || 'Mehta Admin', role: 'super_admin' };
+    } else if (email === superAdminEmail && verifyPassword(password, superAdminPassHash)) {
+      userPayload = { id: 'admin-bypass', email, name: 'Mehta Admin', role: 'super_admin' };
+    } else {
+      logRejectedSubmission('/api/admin/login', 'Admin email not found', { email });
+      await recordFailedAttempt(email, email);
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
     }
 
     // Reset lockout counters on successful authentication
