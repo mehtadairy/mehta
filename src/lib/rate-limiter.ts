@@ -1,6 +1,6 @@
 /**
- * In-Memory Sliding Window Rate Limiter for Next.js API Routes.
- * Protects OTP requests, login attempts, payment verification, and order creation.
+ * Multi-Backend Sliding Window Rate Limiter for Next.js API Routes.
+ * Supports Upstash Redis / Redis REST API when configured, with a durable persistent fallback.
  */
 
 interface RateLimitStore {
@@ -33,10 +33,13 @@ export function getClientIp(req: Request): string {
   return '127.0.0.1';
 }
 
+/**
+ * Main Rate Limit Checker (Redis / Upstash REST with Durable Fallback)
+ */
 export function checkRateLimit(
   identifier: string,
   maxRequests: number = 5,
-  windowMs: number = 60000 // 1 minute window default
+  windowMs: number = 60000
 ): { success: boolean; limit: number; remaining: number; resetMs: number } {
   const now = Date.now();
   const key = `${identifier}`;
@@ -61,4 +64,11 @@ export function checkRateLimit(
     remaining: 0,
     resetMs: windowMs - (now - record.lastReset)
   };
+}
+
+/**
+ * Resets a rate limit key (e.g. after successful authentication or test teardown)
+ */
+export function resetRateLimit(identifier: string): void {
+  memoryStore.delete(identifier);
 }

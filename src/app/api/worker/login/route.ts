@@ -5,6 +5,7 @@ import { verifyPassword } from '@/lib/password-utils';
 import { getSharedStaffStore, updateStaffInStore } from '@/lib/staff-store';
 import { usernameSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
+import { getAccountLockStatus, recordFailedAttempt, resetAccountLock } from '@/lib/account-lockout';
 import { z } from 'zod';
 
 const workerLoginSchema = z.object({
@@ -15,30 +16,39 @@ const workerLoginSchema = z.object({
   message: 'Username or Employee ID is required'
 });
 
+const UNIFIED_AUTH_ERROR = 'Invalid Username or Password';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
 
     if (!body) {
       logRejectedSubmission('/api/worker/login', 'Invalid JSON body');
-      return NextResponse.json({ error: 'Invalid Username or Password' }, { status: 400 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 400 });
     }
 
     const validation = workerLoginSchema.safeParse(body);
     if (!validation.success) {
       logRejectedSubmission('/api/worker/login', 'Input validation failed', validation.error.format());
-      return NextResponse.json({ error: 'Invalid Username or Password' }, { status: 401 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
     }
 
     const { username, employeeId, password } = validation.data;
     const loginUser = (username || employeeId || '').trim().toLowerCase();
     const clientIp = getClientIp(request);
 
-    // 🔒 Rate Limit: Max 5 attempts per IP + username per minute
+    // 🔒 1. Per-Account Lockout Check
+    const lockStatus = getAccountLockStatus(loginUser);
+    if (lockStatus.isLocked) {
+      logRejectedSubmission('/api/worker/login', 'Locked account login attempt', { loginUser, ip: clientIp });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
+    }
+
+    // 🔒 2. IP Rate Limit: Max 5 attempts per IP + username per minute
     const rateLimit = checkRateLimit(`worker_login_${clientIp}_${loginUser}`, 5, 60000);
     if (!rateLimit.success) {
       logRejectedSubmission('/api/worker/login', 'Rate limit exceeded', { loginUser, ip: clientIp });
-      return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 429 });
     }
 
     let workerPayload: any = null;
@@ -131,8 +141,11 @@ export async function POST(request: Request) {
     }
 
     if (!workerPayload) {
-      return NextResponse.json({ error: 'Invalid Username or Password' }, { status: 401 });
+      await recordFailedAttempt(loginUser, loginUser);
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
     }
+
+    resetAccountLock(loginUser);
 
     const token = await signSession(workerPayload);
     

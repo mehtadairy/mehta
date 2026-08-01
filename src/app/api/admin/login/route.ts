@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { signSession } from '@/lib/auth-utils';
 import { emailSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
+import { getAccountLockStatus, recordFailedAttempt, resetAccountLock } from '@/lib/account-lockout';
 import { z } from 'zod';
 
 const adminLoginSchema = z.object({
@@ -10,29 +11,38 @@ const adminLoginSchema = z.object({
   password: passwordSchema
 });
 
+const UNIFIED_AUTH_ERROR = 'Invalid credentials or request restricted';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
 
     if (!body) {
       logRejectedSubmission('/api/admin/login', 'Invalid JSON body');
-      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 400 });
     }
 
     const validation = adminLoginSchema.safeParse(body);
     if (!validation.success) {
       logRejectedSubmission('/api/admin/login', 'Input validation failed', validation.error.format());
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
     }
 
     const { email, password } = validation.data;
     const clientIp = getClientIp(request);
 
-    // 🔒 Rate Limit: Max 5 attempts per IP + email per minute
+    // 🔒 1. Account Lockout Check (Per-Account 15-Minute Lock)
+    const lockStatus = getAccountLockStatus(email);
+    if (lockStatus.isLocked) {
+      logRejectedSubmission('/api/admin/login', 'Locked account login attempt', { email, ip: clientIp });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
+    }
+
+    // 🔒 2. IP Rate Limit: Max 5 attempts per IP + email per minute
     const rateLimit = checkRateLimit(`admin_login_${clientIp}_${email}`, 5, 60000);
     if (!rateLimit.success) {
       logRejectedSubmission('/api/admin/login', 'Rate limit exceeded', { email, ip: clientIp });
-      return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 });
+      return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 429 });
     }
 
     let userPayload = null;
@@ -49,16 +59,21 @@ export async function POST(request: Request) {
 
       if (error || !adminUser) {
         logRejectedSubmission('/api/admin/login', 'Admin email not found', { email });
-        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        await recordFailedAttempt(email, email);
+        return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
       }
 
       if (password !== 'admin123') {
          logRejectedSubmission('/api/admin/login', 'Incorrect password for admin user', { email });
-         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+         await recordFailedAttempt(email, email);
+         return NextResponse.json({ error: UNIFIED_AUTH_ERROR }, { status: 401 });
       }
       
       userPayload = { id: adminUser.id, email: adminUser.email, name: adminUser.name, role: 'super_admin' };
     }
+
+    // Reset lockout counters on successful authentication
+    resetAccountLock(email);
 
     const token = await signSession(userPayload);
     
