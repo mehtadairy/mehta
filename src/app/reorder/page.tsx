@@ -119,7 +119,7 @@ function OrderDetailsDrawer({
                       <div className="flex-grow">
                         <h4 className="font-bold text-brand-charcoal text-sm leading-tight">{item.productName}</h4>
                         <p className="text-xs text-muted-foreground mt-0.5">{item.weight} &times; {item.quantity}</p>
-                        <p className="font-bold text-brand-orange text-sm mt-1">₹{item.price}</p>
+                        <p className="font-bold text-brand-orange text-sm mt-1">₹{item.price * item.quantity}</p>
                       </div>
                       <button 
                         onClick={() => onAddToCart(item)}
@@ -475,7 +475,7 @@ function ReorderContent() {
                       <p className="font-bold text-brand-charcoal">{item.product_name || item.productName}</p>
                       <p className="text-xs text-muted-foreground">{item.weight} &times; {item.quantity}</p>
                     </div>
-                    <p className="font-bold text-brand-orange">₹{item.price}</p>
+                    <p className="font-bold text-brand-orange">₹{item.price * item.quantity}</p>
                   </div>
                 ))}
               </div>

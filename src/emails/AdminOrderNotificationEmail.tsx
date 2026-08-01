@@ -88,7 +88,7 @@ export const AdminOrderNotificationEmail = ({
                     <Text style={itemQuantity}>Qty: {item.quantity}</Text>
                   </Column>
                   <Column style={itemPriceContainer}>
-                    <Text style={itemPrice}>₹{item.price}</Text>
+                    <Text style={itemPrice}>₹{(Number(item.price) || 0) * (Number(item.quantity) || 1)}</Text>
                   </Column>
                 </Row>
               ))}

@@ -50,9 +50,10 @@ export class PrintingService {
       const items = order.items || order.order_items || [];
       const formattedItems = items.map((i: any) => ({
         name: i.productName || i.product_name,
-        qty: i.quantity,
+        qty: Number(i.quantity || i.qty) || 1,
         weight: i.weight,
-        price: i.price
+        price: Number(i.price) || 0,
+        line_total: (Number(i.price) || 0) * (Number(i.quantity || i.qty) || 1)
       }));
 
       // Cleanly format shipping address for printing
@@ -150,9 +151,10 @@ export class PrintingService {
       const items = order.items || order.order_items || [];
       const formattedItems = items.map((i: any) => ({
         name: i.productName || i.product_name,
-        qty: i.quantity,
+        qty: Number(i.quantity || i.qty) || 1,
         weight: i.weight,
-        price: i.price
+        price: Number(i.price) || 0,
+        line_total: (Number(i.price) || 0) * (Number(i.quantity || i.qty) || 1)
       }));
 
       const cancellationPayload = {

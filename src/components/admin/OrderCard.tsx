@@ -281,7 +281,7 @@ export function OrderCard({
                     <span className="font-bold text-gray-900">{item.productName}</span>
                     <span className="text-[10px] text-gray-500">{item.weight}</span>
                   </div>
-                  <span className="font-bold text-amber-700">₹{item.price} × {item.quantity}</span>
+                  <span className="font-bold text-amber-700">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</span>
                 </div>
               ))}
             </div>
