@@ -102,12 +102,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error("Error fetching secure admin data:", error);
-    try {
-      const fs = require('fs');
-      const logMsg = `[${new Date().toISOString()}] Error: ${error.message}\nStack: ${error.stack}\n\n`;
-      fs.appendFileSync('scratch/api_errors.log', logMsg);
-    } catch (e) {}
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("Error fetching secure admin data:", error?.message || error);
+    return NextResponse.json({ success: false, error: error?.message || 'Server error' }, { status: 500 });
   }
 }

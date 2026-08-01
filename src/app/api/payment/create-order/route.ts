@@ -74,21 +74,14 @@ export async function POST(request: Request) {
           source: 'website'
         };
 
-        let { error: orderError } = await supabase.from('orders').upsert([cleanOrderData], { onConflict: 'id' });
-        
-        if (orderError) {
-          console.warn("Draft order upsert failed, retrying with customer_id=null...", orderError.message);
-          const cleanPayload = {
-            ...cleanOrderData,
-            customer_id: null
-          };
-          const { error: retryError } = await supabase.from('orders').upsert([cleanPayload], { onConflict: 'id' });
-          orderError = retryError;
-        }
+        const { error: orderError } = await supabase.from('orders').upsert([cleanOrderData], { onConflict: 'id' });
 
         if (orderError) {
-          console.warn("Draft order upsert notice (non-fatal):", orderError.message);
-        } else if (orderItems && orderItems.length > 0) {
+          console.error("Draft order upsert failed for authenticated session:", orderError.message);
+          return NextResponse.json({ error: 'Failed to initialize draft order', details: orderError.message }, { status: 500 });
+        }
+        
+        if (orderItems && orderItems.length > 0) {
           const finalOrderItems = orderItems.map((item: any) => ({
             order_id: orderPayload.id,
             product_id: item.product_id || item.productId,
@@ -100,7 +93,8 @@ export async function POST(request: Request) {
           }));
           const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
           if (itemsError) {
-            console.warn("Draft order items upsert notice (non-fatal):", itemsError.message);
+            console.error("Draft order items upsert error:", itemsError.message);
+            return NextResponse.json({ error: 'Failed to initialize draft order items', details: itemsError.message }, { status: 500 });
           }
         }
       } catch (dbErr: any) {
