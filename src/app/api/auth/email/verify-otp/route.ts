@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { getCustomerJWTSecret, getCustomerCookieOptions } from '@/lib/auth-utils';
+import { emailSchema, otpSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const emailVerifySchema = z.object({
+  email: emailSchema,
+  otp: otpSchema
+});
 
 const MAX_ATTEMPTS = 5;
 
@@ -15,12 +22,20 @@ const hashOTP = (otp: string, email: string) => {
 
 export async function POST(request: Request) {
   try {
-    const { email, otp } = await request.json();
+    const body = await request.json().catch(() => null);
 
-    if (!email || !otp || otp.length !== 6) {
-      return NextResponse.json({ success: false, error: 'Invalid email or OTP' }, { status: 400 });
+    if (!body) {
+      logRejectedSubmission('/api/auth/email/verify-otp', 'Invalid JSON payload');
+      return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
     }
 
+    const validation = emailVerifySchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/auth/email/verify-otp', 'Validation failed', validation.error.format());
+      return NextResponse.json({ success: false, error: 'Invalid email or OTP format' }, { status: 400 });
+    }
+
+    const { email, otp } = validation.data;
     const emailLower = email.toLowerCase().trim();
     const otpHash = hashOTP(otp, emailLower);
 

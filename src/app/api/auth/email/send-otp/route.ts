@@ -4,6 +4,12 @@ import { Resend } from 'resend';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import VerificationTemplate from '@/emails/VerificationTemplate';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { emailSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const emailSendOtpSchema = z.object({
+  email: emailSchema
+});
 
 // Initialize Resend
 const resendApiKey = process.env.RESEND_API_KEY;
@@ -29,13 +35,20 @@ const hashOTP = (otp: string, email: string) => {
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const body = await request.json().catch(() => null);
 
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ success: false, error: 'Invalid email address' }, { status: 400 });
+    if (!body) {
+      logRejectedSubmission('/api/auth/email/send-otp', 'Invalid JSON payload');
+      return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
     }
 
-    const emailLower = email.toLowerCase().trim();
+    const validation = emailSendOtpSchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/auth/email/send-otp', 'Email validation failed', validation.error.format());
+      return NextResponse.json({ success: false, error: 'Invalid email address format' }, { status: 400 });
+    }
+
+    const emailLower = validation.data.email;
 
     // 🔒 Rate Limit: Max 3 OTP requests per email per minute in-memory
     const rateLimit = checkRateLimit(`email_otp_send_${emailLower}`, 3, 60000);

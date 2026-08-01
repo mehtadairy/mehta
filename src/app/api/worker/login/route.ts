@@ -3,15 +3,34 @@ import { supabaseServer } from '@/lib/supabaseServer';
 import { signSession } from '@/lib/auth-utils';
 import { verifyPassword } from '@/lib/password-utils';
 import { getSharedStaffStore, updateStaffInStore } from '@/lib/staff-store';
+import { usernameSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const workerLoginSchema = z.object({
+  username: usernameSchema.optional().or(z.literal('')),
+  employeeId: usernameSchema.optional().or(z.literal('')),
+  password: passwordSchema
+}).refine((data) => (data.username && data.username.length >= 3) || (data.employeeId && data.employeeId.length >= 3), {
+  message: 'Username or Employee ID is required'
+});
 
 export async function POST(request: Request) {
   try {
-    const { username, employeeId, password } = await request.json();
-    const loginUser = (username || employeeId || '').trim().toLowerCase();
-    
-    if (!loginUser || !password) {
-      return NextResponse.json({ error: 'Username/Employee ID and password are required' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+
+    if (!body) {
+      logRejectedSubmission('/api/worker/login', 'Invalid JSON body');
+      return NextResponse.json({ error: 'Invalid Username or Password' }, { status: 400 });
     }
+
+    const validation = workerLoginSchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/worker/login', 'Input validation failed', validation.error.format());
+      return NextResponse.json({ error: 'Invalid Username or Password' }, { status: 401 });
+    }
+
+    const { username, employeeId, password } = validation.data;
+    const loginUser = (username || employeeId || '').trim().toLowerCase();
 
     let workerPayload: any = null;
 

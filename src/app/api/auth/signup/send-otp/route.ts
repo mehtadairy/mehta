@@ -1,40 +1,52 @@
 import { NextResponse } from 'next/server';
 import { sendOTP } from '@/lib/services/whatsapp-auth';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { phoneSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const requestSchema = z.object({
+  phone: phoneSchema
+});
 
 export async function POST(req: Request) {
   try {
-    const { phone } = await req.json();
+    const body = await req.json().catch(() => null);
 
-    if (!phone) {
-      return NextResponse.json({ success: false, error: 'Phone number is required' }, { status: 400 });
+    if (!body) {
+      logRejectedSubmission('/api/auth/signup/send-otp', 'Invalid JSON body');
+      return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
     }
 
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
-      return NextResponse.json({ success: false, error: 'Invalid phone number' }, { status: 400 });
+    const validation = requestSchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/auth/signup/send-otp', 'Phone validation failed', validation.error.format());
+      return NextResponse.json({ success: false, error: 'Invalid phone number format' }, { status: 400 });
     }
+
+    const cleanPhone = validation.data.phone;
 
     // 🔒 Rate Limit: Max 3 OTP requests per phone number per minute
     const rateLimit = checkRateLimit(`otp_send_${cleanPhone}`, 3, 60000);
     if (!rateLimit.success) {
+      logRejectedSubmission('/api/auth/signup/send-otp', 'Rate limit exceeded', { phone: cleanPhone });
       return NextResponse.json({
         success: false,
-        error: `Too many OTP requests. Please wait ${Math.ceil(rateLimit.resetMs / 1000)} seconds.`
+        error: `Too many requests. Please try again later.`
       }, { status: 429 });
     }
 
-    // Signup Flow: We just send the OTP here. Account existence check happens on verification.
+    // Signup Flow: We send the OTP here.
     const result = await sendOTP(cleanPhone);
 
     if (result.success) {
       return NextResponse.json({ success: true, message: 'OTP sent successfully' });
     } else {
-      return NextResponse.json({ success: false, error: result.error || 'Failed to send OTP' }, { status: 400 });
+      logRejectedSubmission('/api/auth/signup/send-otp', 'OTP dispatch failed', { error: result.error });
+      return NextResponse.json({ success: false, error: 'Failed to send verification code' }, { status: 400 });
     }
 
   } catch (error: any) {
     console.error('Send OTP API Error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to process OTP request' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

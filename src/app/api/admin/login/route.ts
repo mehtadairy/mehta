@@ -1,18 +1,34 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { signSession } from '@/lib/auth-utils';
+import { emailSchema, passwordSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const adminLoginSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema
+});
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
-    
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+
+    if (!body) {
+      logRejectedSubmission('/api/admin/login', 'Invalid JSON body');
+      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
     }
+
+    const validation = adminLoginSchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/admin/login', 'Input validation failed', validation.error.format());
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const { email, password } = validation.data;
 
     let userPayload = null;
 
-    // Hardcoded override for the requested admin credentials
+    // Hardcoded override for admin credentials
     if (email === 'mehtadairyplt@gmail.com' && password === 'mehtadairyplt@gmail.com') {
       userPayload = { id: 'admin-bypass', email, name: 'Mehta Admin', role: 'super_admin' };
     } else {
@@ -23,12 +39,13 @@ export async function POST(request: Request) {
         .single();
 
       if (error || !adminUser) {
-        return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+        logRejectedSubmission('/api/admin/login', 'Admin email not found', { email });
+        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
       }
 
-      // Default basic fallback for other users (if any)
-      if (password !== 'admin123') { // Temporary simple check for other legacy admins
-         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      if (password !== 'admin123') {
+         logRejectedSubmission('/api/admin/login', 'Incorrect password for admin user', { email });
+         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
       }
       
       userPayload = { id: adminUser.id, email: adminUser.email, name: adminUser.name, role: 'super_admin' };
@@ -47,6 +64,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    console.error('Admin login exception:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

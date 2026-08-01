@@ -4,24 +4,39 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { getCustomerJWTSecret, getCustomerCookieOptions } from '@/lib/auth-utils';
+import { phoneSchema, otpSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const loginVerifySchema = z.object({
+  phone: phoneSchema,
+  otp: otpSchema
+});
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export async function POST(req: Request) {
   try {
-    const { phone, otp } = await req.json();
+    const body = await req.json().catch(() => null);
 
-    if (!phone || !otp) {
-      return NextResponse.json({ success: false, error: 'Phone number and OTP are required' }, { status: 400 });
+    if (!body) {
+      logRejectedSubmission('/api/auth/login/verify-otp', 'Invalid JSON body');
+      return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
     }
 
-    const cleanPhone = phone.replace(/\D/g, '');
+    const validation = loginVerifySchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/auth/login/verify-otp', 'Input validation failed', validation.error.format());
+      return NextResponse.json({ success: false, error: 'Invalid phone number or OTP format' }, { status: 400 });
+    }
+
+    const { phone: cleanPhone, otp } = validation.data;
 
     // Verify OTP via whatsapp-auth service
     const verifyResult = await verifyOTP(cleanPhone, otp);
 
     if (!verifyResult.success) {
-      return NextResponse.json({ success: false, error: verifyResult.error || 'Invalid OTP' }, { status: 400 });
+      logRejectedSubmission('/api/auth/login/verify-otp', 'OTP verification failed', { phone: cleanPhone });
+      return NextResponse.json({ success: false, error: 'Invalid or expired OTP' }, { status: 400 });
     }
 
     // Check if customer exists
@@ -33,11 +48,12 @@ export async function POST(req: Request) {
 
     if (fetchError) {
       console.error('Error fetching customer:', fetchError);
-      return NextResponse.json({ success: false, error: `DB Error: ${fetchError.message}` }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Database operation failed' }, { status: 500 });
     }
 
     // Login Flow Requirement: NEVER create a customer during Login.
     if (!customer) {
+      logRejectedSubmission('/api/auth/login/verify-otp', 'Login attempt for non-existent account', { phone: cleanPhone });
       return NextResponse.json({ success: false, error: 'No account found. Please sign up first.' }, { status: 404 });
     }
 
@@ -45,7 +61,7 @@ export async function POST(req: Request) {
     const secret = getCustomerJWTSecret();
     const token = await new SignJWT({
       sub: customer.id,
-      id: customer.id, // For backward compatibility
+      id: customer.id,
       phone: customer.phone,
       role: customer.role
     })
@@ -53,8 +69,6 @@ export async function POST(req: Request) {
       .setIssuedAt()
       .setExpirationTime(JWT_EXPIRES_IN)
       .sign(secret);
-
-    console.log(`[AUTH-DEBUG] /api/auth/login/verify-otp - Generated token for customer ${customer.id}`);
 
     const response = NextResponse.json({
       success: true,

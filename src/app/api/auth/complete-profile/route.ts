@@ -3,10 +3,31 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { cookies } from 'next/headers';
 import { verifyCustomerSession } from '@/lib/auth-utils';
 
+import { phoneSchema, emailSchema, nameSchema, logRejectedSubmission } from '@/lib/security-validation';
+import { z } from 'zod';
+
+const completeProfileSchema = z.object({
+  name: nameSchema.optional().nullable().or(z.literal('')),
+  email: emailSchema.optional().nullable().or(z.literal('')),
+  phone: phoneSchema.optional().nullable().or(z.literal(''))
+});
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, email, phone, authData } = body;
+    const body = await req.json().catch(() => null);
+
+    if (!body) {
+      logRejectedSubmission('/api/auth/complete-profile', 'Invalid JSON body');
+      return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
+    }
+
+    const validation = completeProfileSchema.safeParse(body);
+    if (!validation.success) {
+      logRejectedSubmission('/api/auth/complete-profile', 'Validation failed', validation.error.format());
+      return NextResponse.json({ success: false, error: 'Invalid profile information format' }, { status: 400 });
+    }
+
+    const { email, phone } = body;
 
     // Both phone and email are optional depending on flow
     if (!phone && !email) {
