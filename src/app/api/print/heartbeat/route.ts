@@ -17,11 +17,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing branch_id' }, { status: 400 });
     }
 
+    // Normalize branch_id (e.g. "Main Shop" -> "Main") to ensure single-branch synchronization
+    const targetBranch = branch_id.toLowerCase().includes('main') ? 'Main' : branch_id;
+
     // Upsert the printer settings to update last_seen and status
     const { error } = await supabase
       .from('printer_settings')
       .upsert({
-        branch: branch_id,
+        branch: targetBranch,
         status: 'online',
         last_seen: new Date().toISOString(),
         updated_at: new Date().toISOString()

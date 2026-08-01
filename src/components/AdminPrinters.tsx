@@ -69,11 +69,21 @@ export default function AdminPrinters() {
 
   const refreshDataOnly = async () => {
     try {
-      const { data: settingsData } = await supabase
+      let { data: settingsData } = await supabase
         .from("printer_settings")
         .select("*")
         .eq("branch", "Main")
         .maybeSingle();
+
+      if (!settingsData || !settingsData.last_seen) {
+        const { data: fallbackData } = await supabase
+          .from("printer_settings")
+          .select("*")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (fallbackData) settingsData = fallbackData;
+      }
 
       if (settingsData) {
         setSettings(settingsData);
