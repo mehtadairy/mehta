@@ -146,6 +146,7 @@ const SLIDES = [
     cta: { label: "Shop Kachori", href: "/shop?category=farsan" },
     image: "/hero_kachori_bowl_1781172813990.png",
     accent: "#D46D2D",
+    isGraphicOnly: false,
   },
   {
     id: 1,
@@ -156,6 +157,7 @@ const SLIDES = [
     cta: { label: "Order Now", href: "/product/kaju-katri" },
     image: "/prod_kaju_katli_1781172877393.png",
     accent: "#C9A227",
+    isGraphicOnly: false,
   },
   {
     id: 2,
@@ -166,6 +168,7 @@ const SLIDES = [
     cta: { label: "Shop Penda", href: "/product/kesar-penda" },
     image: "/mix_sweet_rolls_1781172915749.png",
     accent: "#C9A227",
+    isGraphicOnly: false,
   },
 ];
 
