@@ -679,7 +679,7 @@ function ReorderContent() {
                           <p className="font-bold text-sm text-brand-charcoal truncate">{p.name}</p>
                           <p className="text-xs text-brand-orange font-bold">₹{Object.values(p.prices)[0]}</p>
                         </div>
-                        <Link href={`/product/${p.slug || p.id}`} className="p-2 bg-brand-cream rounded-full text-brand-orange hover:bg-brand-orange hover:text-white transition-colors">
+                        <Link href={`/product/${(p as any).slug || p.id}`} className="p-2 bg-brand-cream rounded-full text-brand-orange hover:bg-brand-orange hover:text-white transition-colors">
                           <ArrowRight className="w-4 h-4" />
                         </Link>
                       </div>

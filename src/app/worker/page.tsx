@@ -58,7 +58,7 @@ export default function WorkerPanel() {
   const [workerInfo, setWorkerInfo] = useState<any>(null);
 
   // --- UI NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<"orders">("orders");
+  const [activeTab, setActiveTab] = useState<string>("orders");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // --- DATA STATES ---
@@ -1197,7 +1197,7 @@ export default function WorkerPanel() {
                 {/* ── TAB: INVOICES ── */}
                 {activeTab === "invoices" && (
                   <div className="bg-white border border-[#EAE0D3] rounded-xl shadow-2xs overflow-hidden p-4">
-                    <AdminInvoices invoices={invoices} customers={customers} refreshData={loadPanelData} />
+                    <AdminInvoices />
                   </div>
                 )}
 

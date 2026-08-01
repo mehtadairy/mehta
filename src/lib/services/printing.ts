@@ -34,7 +34,7 @@ export class PrintingService {
       // Load print toggles from database configuration
       const { data: printerSettings } = await supabase
         .from('printer_settings')
-        .select('branch, print_billing, print_kitchen_receipt, print_packing_slip')
+        .select('branch, print_billing, print_kitchen_receipt, print_packing_slip, paper_width')
         .eq('branch', branchId)
         .maybeSingle();
 
