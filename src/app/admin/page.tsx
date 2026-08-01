@@ -1128,7 +1128,11 @@ export default function AdminPanel() {
             alert("Error resending notification.");
         }
     };
+    const [reprintingOrderId, setReprintingOrderId] = useState<string | null>(null);
+
     const handleReprintOrder = async (orderId: string) => {
+        if (reprintingOrderId === orderId) return;
+        setReprintingOrderId(orderId);
         try {
             const res = await fetch('/api/print/reprint', {
                 method: 'POST',
@@ -1142,6 +1146,8 @@ export default function AdminPanel() {
         } catch (e: any) {
             console.error("Error setting reprint status:", e);
             alert("Error setting reprint status: " + e.message);
+        } finally {
+            setReprintingOrderId(null);
         }
     };
 

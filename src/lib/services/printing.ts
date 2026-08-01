@@ -8,42 +8,46 @@ export class PrintingService {
     try {
       console.log(`[PrintingService] Queueing print jobs for order ${order.order_number || order.id} (Reprint: ${isReprint})`);
       
-      // If it is a reprint, delete any existing print jobs for this order first
-      if (isReprint) {
+      // Always clean up existing pending print jobs for this order to prevent concurrent race conditions (e.g. verify + webhook)
+      if (order.id) {
         await supabase
           .from('print_jobs')
           .delete()
-          .eq('order_id', order.id);
+          .eq('order_id', order.id)
+          .eq('status', 'pending');
       }
-      
-      // Prevent duplicate printing queue entries for the same order across multiple webhooks
-      const { data: existingJobs } = await supabase
-        .from('print_jobs')
-        .select('target_printer, status')
-        .eq('order_id', order.id);
-        
-      if (existingJobs && existingJobs.length > 0 && !isReprint) {
-        console.log(`[PrintingService] Print jobs already exist for order ${order.id}. Skipping duplicate trigger.`);
-        return;
+
+      // Check if order has already been successfully printed (and this is not an explicit reprint request)
+      if (!isReprint) {
+        const { data: printedJobs } = await supabase
+          .from('print_jobs')
+          .select('id, status')
+          .eq('order_id', order.id)
+          .eq('status', 'printed');
+
+        if (printedJobs && printedJobs.length > 0) {
+          console.log(`[PrintingService] Print job already executed for order ${order.id}. Skipping duplicate trigger.`);
+          return;
+        }
       }
-      
+
       // Load print toggles from database configuration
       const { data: printerSettings } = await supabase
         .from('printer_settings')
-        .select('branch, print_billing, print_kitchen_receipt, print_kitchen, print_packing_slip, print_packing')
+        .select('branch, print_billing, print_kitchen_receipt, print_packing_slip')
         .eq('branch', branchId)
         .maybeSingle();
 
       const queues = [];
       const printBilling = printerSettings?.print_billing !== false;
-      const printKitchen = printerSettings?.print_kitchen_receipt === true || printerSettings?.print_kitchen === true;
-      const printPacking = printerSettings?.print_packing_slip === true || printerSettings?.print_packing === true;
+      const printKitchen = printerSettings?.print_kitchen_receipt === true;
+      const printPacking = printerSettings?.print_packing_slip === true;
 
       if (printBilling) queues.push('billing');
       if (printKitchen) queues.push('kitchen');
       if (printPacking) queues.push('packing');
 
-      // Default to billing if no queue selected
+      // Default to single billing receipt if no specific queue is configured
       if (queues.length === 0) queues.push('billing');
       
       // Determine items list

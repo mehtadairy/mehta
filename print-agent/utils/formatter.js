@@ -65,18 +65,19 @@ const Formatter = {
   drawAddress: (address, is58mm) => {
     if (!address) return ['Address: N/A'];
 
-    const width = Formatter.getLineLength(is58mm) - 2;
-    const words = address.replace(/\s+/g, ' ').trim().split(' ');
-    const lines = ['Address:'];
+    const width = Formatter.getLineLength(is58mm);
+    const cleanAddr = address.replace(/\s+/g, ' ').trim();
+    const words = cleanAddr.split(' ');
 
-    let current = '';
+    const lines = [];
+    let current = 'Address: ';
 
     for (const word of words) {
-      if ((current + ' ' + word).trim().length > width) {
-        lines.push(current.trim());
-        current = word;
+      if ((current + word).length > width) {
+        if (current.trim()) lines.push(current.trim());
+        current = word + ' ';
       } else {
-        current += ' ' + word;
+        current += word + ' ';
       }
     }
 

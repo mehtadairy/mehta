@@ -511,7 +511,11 @@ export default function WorkerPanel() {
     } catch(e) {}
   };
 
+  const [reprintingOrderId, setReprintingOrderId] = useState<string | null>(null);
+
   const handleReprintOrder = async (orderId: string) => {
+    if (reprintingOrderId === orderId) return;
+    setReprintingOrderId(orderId);
     try {
       const res = await fetch("/api/print/reprint", {
         method: "POST",
@@ -527,6 +531,8 @@ export default function WorkerPanel() {
       }
     } catch (err: any) {
       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: err.message || "Failed to reprint", type: "error" } }));
+    } finally {
+      setReprintingOrderId(null);
     }
   };
 
