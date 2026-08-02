@@ -9,6 +9,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['sharp'],
   typescript: {
     ignoreBuildErrors: true,
   },
