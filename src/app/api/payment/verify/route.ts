@@ -98,6 +98,9 @@ export async function POST(request: Request) {
       generatedOrderNumber = await generateOrderNumber(supabase);
     }
 
+    const cleanAddress = { ...(orderPayload.shipping_address || {}) };
+    delete cleanAddress._draft_items;
+
     const updatedPayload: any = {
       id: orderPayload.id,
       order_number: generatedOrderNumber,
@@ -109,7 +112,7 @@ export async function POST(request: Request) {
       discount: Number(orderPayload.discount) || 0,
       total: Number(orderPayload.total),
       delivery_charge: Number(orderPayload.delivery_charge) || 0,
-      shipping_address: orderPayload.shipping_address || {},
+      shipping_address: cleanAddress,
       user_name: orderPayload.user_name || orderPayload.userName || '',
       user_phone: orderPayload.user_phone || orderPayload.userPhone || '',
       user_email: orderPayload.user_email || orderPayload.userEmail || '',

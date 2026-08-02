@@ -437,7 +437,7 @@ function AccountContent() {
           conditions.push(`user_email.ilike.${e}`);
         });
 
-        let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)');
+        let orderQuery = supabase.from('orders').select('*, order_items(*), invoices(*)').neq('status', 'Draft');
         if (conditions.length > 0) {
           orderQuery = orderQuery.or(conditions.join(','));
         }

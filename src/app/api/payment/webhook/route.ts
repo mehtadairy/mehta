@@ -162,11 +162,25 @@ export async function POST(request: Request) {
 
         console.log(`[RazorpayWebhook] STEP 4: Updating order status to Paid & Processing...`);
 
+        const draftItems = order.shipping_address?._draft_items;
+        let cleanAddress = order.shipping_address;
+        
+        if (draftItems && Array.isArray(draftItems) && draftItems.length > 0) {
+           console.log(`[RazorpayWebhook] STEP 4a: Found draft items in shipping_address, inserting ${draftItems.length} items...`);
+           const { error: itemsErr } = await supabase.from('order_items').insert(draftItems);
+           if (itemsErr) {
+             console.error(`[RazorpayWebhook] Draft items insert failed:`, itemsErr.message);
+           }
+           cleanAddress = { ...order.shipping_address };
+           delete cleanAddress._draft_items;
+        }
+
         // First attempt with full metadata fields
         const primaryPayload: any = {
           order_number: generatedOrderNumber,
           payment_status: 'Paid',
           status: 'Processing',
+          shipping_address: cleanAddress,
           paid_at: new Date().toISOString(),
           payment_completed_at: new Date().toISOString(),
           payment_id: rzpPaymentId,

@@ -63,6 +63,16 @@ export async function POST(request: Request) {
           finalOrderNumber = await generateOrderNumber(supabase);
         }
 
+        const draftItems = orderItems && orderItems.length > 0 ? orderItems.map((item: any) => ({
+          order_id: orderPayload.id,
+          product_id: item.product_id || item.productId,
+          product_name: item.product_name || item.productName,
+          weight: item.weight,
+          quantity: Number(item.quantity) || 1,
+          price: Number(item.price) || 0,
+          image: item.image || ''
+        })) : [];
+
         const cleanOrderData: any = {
           id: orderPayload.id,
           order_number: finalOrderNumber,
@@ -74,10 +84,10 @@ export async function POST(request: Request) {
           discount: Number(orderPayload.discount) || 0,
           total: totalPayable,
           delivery_charge: Number(orderPayload.delivery_charge) || 0,
-          shipping_address: rawAddr,
+          shipping_address: { ...rawAddr, _draft_items: draftItems },
           payment_method: 'Razorpay',
           payment_status: 'Pending',
-          status: 'Pending',
+          status: 'Draft',
           source: 'website'
         };
 
@@ -86,23 +96,6 @@ export async function POST(request: Request) {
         if (orderError) {
           console.error("Draft order upsert failed for authenticated session:", orderError.message);
           return NextResponse.json({ error: 'Failed to initialize draft order', details: orderError.message }, { status: 500 });
-        }
-        
-        if (orderItems && orderItems.length > 0) {
-          const finalOrderItems = orderItems.map((item: any) => ({
-            order_id: orderPayload.id,
-            product_id: item.product_id || item.productId,
-            product_name: item.product_name || item.productName,
-            weight: item.weight,
-            quantity: Number(item.quantity) || 1,
-            price: Number(item.price) || 0,
-            image: item.image || ''
-          }));
-          const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
-          if (itemsError) {
-            console.error("Draft order items upsert error:", itemsError.message);
-            return NextResponse.json({ error: 'Failed to initialize draft order items', details: itemsError.message }, { status: 500 });
-          }
         }
       } catch (dbErr: any) {
         console.warn("Non-fatal draft order creation exception:", dbErr?.message || dbErr);

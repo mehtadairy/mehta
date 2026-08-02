@@ -290,7 +290,7 @@ function ReorderContent() {
   const fetchDashboardData = async (customerId: string | null, phone: string | null) => {
     try {
       // Fetch Orders
-      let query = supabase.from('orders').select('*, invoices(*), order_items(*)').order('created_at', { ascending: false });
+      let query = supabase.from('orders').select('*, invoices(*), order_items(*)').neq('status', 'Draft').order('created_at', { ascending: false });
       
       if (phone) {
         query = query.eq('user_phone', phone);
