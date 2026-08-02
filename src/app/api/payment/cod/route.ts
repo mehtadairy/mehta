@@ -191,7 +191,7 @@ export async function POST(request: Request) {
       image: item.image || ''
     }));
 
-    const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
+    const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
     if (itemsError) {
       console.error("Failed to insert COD order items notice:", itemsError.message);
     }

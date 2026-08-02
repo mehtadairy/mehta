@@ -91,7 +91,7 @@ export async function POST(request: Request) {
             price: Number(item.price) || 0,
             image: item.image || ''
           }));
-          const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
+          const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
           if (itemsError) {
             console.error("Draft order items upsert error:", itemsError.message);
             return NextResponse.json({ error: 'Failed to initialize draft order items', details: itemsError.message }, { status: 500 });

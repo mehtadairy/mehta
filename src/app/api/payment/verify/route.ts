@@ -175,7 +175,8 @@ export async function POST(request: Request) {
         price: item.price,
         image: item.image
       }));
-      await supabase.from('order_items').upsert(itemsToSave, { onConflict: 'order_id,product_id,weight' });
+      const { error: itemsError } = await supabase.from('order_items').insert(itemsToSave);
+      if (itemsError) console.error("Verify route order items insert error:", itemsError);
     }
 
     // Asynchronously create invoice, dispatch WhatsApp, queue POS print & create Shiprocket shipment
