@@ -11,36 +11,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { orderId, printerName, printedBy, errorMessage, retries } = await request.json();
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    const { jobId, orderId, printerName, printedBy, errorMessage, retries } = await request.json();
+    if (!orderId && !jobId) {
+      return NextResponse.json({ error: 'Order ID or Job ID is required' }, { status: 400 });
     }
 
-    const { data: order } = await supabaseServer
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .maybeSingle();
+    let targetOrderId = orderId;
+    let order = null;
 
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    if (targetOrderId) {
+      const { data: fetchedOrder } = await supabaseServer
+        .from('orders')
+        .select('*')
+        .eq('id', targetOrderId)
+        .maybeSingle();
+      order = fetchedOrder;
     }
 
-    console.error(`[PrintErrorAPI] Print failed for order ${order.order_number} on printer ${printerName}. Error: ${errorMessage}`);
+    console.error(`[PrintErrorAPI] Print failed for order ${order?.order_number || targetOrderId} on printer ${printerName}. Error: ${errorMessage}`);
 
     // 1. Update orders print status
-    await supabaseServer
-      .from('orders')
-      .update({
-        print_status: 'failed'
-      })
-      .eq('id', orderId);
+    if (targetOrderId) {
+      await supabaseServer
+        .from('orders')
+        .update({
+          print_status: 'failed'
+        })
+        .eq('id', targetOrderId);
+    }
 
     // 2. Insert failure entry in print_logs
     await supabaseServer
       .from('print_logs')
       .insert([{
-        order_id: orderId,
+        order_id: targetOrderId,
         printer_name: printerName || 'Default Thermal',
         printed_by: printedBy || 'Agent',
         status: 'failed',
@@ -48,14 +52,30 @@ export async function POST(request: Request) {
         error_message: errorMessage || 'Unknown printer hardware error'
       }]);
 
-    // 3. Log alert notifications for shop admins
+    // 3. Update print_jobs table status to failed
+    if (jobId) {
+      await supabaseServer
+        .from('print_jobs')
+        .update({ status: 'failed', updated_at: new Date().toISOString() })
+        .eq('id', jobId);
+    } else if (targetOrderId) {
+      await supabaseServer
+        .from('print_jobs')
+        .update({ status: 'failed', updated_at: new Date().toISOString() })
+        .eq('order_id', targetOrderId)
+        .eq('status', 'pending');
+    }
+
+    // 4. Log alert notifications for shop admins
     try {
-      await supabaseServer.from('notifications').insert([{
-        title: '⚠️ Print Failed',
-        message: `Receipt print failed for order ${order.order_number} on ${printerName || 'printer'}: ${errorMessage || 'Hardware offline'}`,
-        type: 'admin',
-        order_id: orderId
-      }]);
+      if (order) {
+        await supabaseServer.from('notifications').insert([{
+          title: '⚠️ Print Failed',
+          message: `Receipt print failed for order ${order.order_number} on ${printerName || 'printer'}: ${errorMessage || 'Hardware offline'}`,
+          type: 'admin',
+          order_id: targetOrderId
+        }]);
+      }
     } catch (notifErr) {
       console.error('[PrintErrorAPI] Alert dispatch failed:', notifErr);
     }

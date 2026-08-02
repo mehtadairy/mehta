@@ -31,17 +31,23 @@ export class PrintingService {
         }
       }
 
-      // Load print toggles from database configuration
-      const { data: printerSettings } = await supabase
+      // Load print toggles from database configuration (omitted print_billing as it does not exist)
+      const { data: printerSettings, error: printSettingsErr } = await supabase
         .from('printer_settings')
-        .select('branch, print_billing, print_kitchen_receipt, print_packing_slip, paper_width')
+        .select('branch, print_kitchen_receipt, print_packing_slip, paper_width')
         .eq('branch', branchId)
         .maybeSingle();
 
+      if (printSettingsErr) {
+        console.error(`[PrintingService] Error fetching printer settings:`, printSettingsErr.message);
+      }
+
       const queues = [];
-      const printBilling = printerSettings?.print_billing !== false;
+      const printBilling = true; // Always default true for billing since column doesn't exist
       const printKitchen = printerSettings?.print_kitchen_receipt === true;
       const printPacking = printerSettings?.print_packing_slip === true;
+
+      console.log(`[PrintingService] Print Config loaded for Branch '${branchId}': Billing=${printBilling}, Kitchen=${printKitchen}, Packing=${printPacking}`);
 
       if (printBilling) queues.push('billing');
       if (printKitchen) queues.push('kitchen');
