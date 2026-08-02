@@ -12,7 +12,7 @@ const adminLoginSchema = z.object({
   password: passwordSchema
 });
 
-const UNIFIED_AUTH_ERROR = 'Invalid credentials or request restricted';
+const UNIFIED_AUTH_ERROR = 'Incorrect email or password.';
 
 export async function POST(request: Request) {
   try {

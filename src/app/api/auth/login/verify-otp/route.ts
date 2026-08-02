@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     // Login Flow Requirement: NEVER create a customer during Login.
     if (!customer) {
       logRejectedSubmission('/api/auth/login/verify-otp', 'Login attempt for non-existent account', { phone: cleanPhone });
-      return NextResponse.json({ success: false, error: 'No account found. Please sign up first.' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Incorrect email or password.' }, { status: 401 });
     }
 
     // Generate JWT using jose

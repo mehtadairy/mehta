@@ -57,14 +57,14 @@ export async function POST(request: Request) {
 
     if (intent === 'login') {
       if (!customer) {
-        return NextResponse.json({ success: false, error: 'Account not found. Please sign up.' }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'Incorrect email or password.' }, { status: 401 });
       } else if (!customer.phone_verified) {
         await supabase.from('customers').update({ phone_verified: true }).eq('id', customer.id);
         customer.phone_verified = true;
       }
     } else if (intent === 'signup') {
       if (customer) {
-        return NextResponse.json({ success: false, error: 'Account already exists. Please log in.' }, { status: 409 });
+        return NextResponse.json({ success: false, error: 'Registration failed. Please try again.' }, { status: 400 });
       }
       
       const { data: newCustomer, error: insertError } = await supabase

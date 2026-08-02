@@ -16,7 +16,7 @@ const workerLoginSchema = z.object({
   message: 'Username or Employee ID is required'
 });
 
-const UNIFIED_AUTH_ERROR = 'Invalid Username or Password';
+const UNIFIED_AUTH_ERROR = 'Incorrect email or password.';
 
 export async function POST(request: Request) {
   try {

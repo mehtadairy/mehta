@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+        return NextResponse.json({ success: false, message: 'Account not found' }, { status: 404 });
       }
       console.error('Supabase fetch error:', error);
       return NextResponse.json({ success: false, message: 'Failed to fetch profile' }, { status: 500 });
@@ -93,7 +93,7 @@ export async function PUT(request: Request) {
     const { data: existingCustomer, error: fetchError } = await supabase.from('customers').select('id, name, email, phone').or(`id.eq.${customerId},auth_user_id.eq.${customerId}`).single();
     
     if (fetchError || !existingCustomer) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Account not found' }, { status: 404 });
     }
 
     const updatePayload: any = { name };
@@ -106,7 +106,7 @@ export async function PUT(request: Request) {
     if (error) {
       console.error('Supabase update error:', error);
       if (error.code === '23505') {
-        return NextResponse.json({ success: false, message: 'This phone number or email is already registered to another account.' }, { status: 409 });
+        return NextResponse.json({ success: false, message: 'Failed to update profile. The provided details may be invalid or in use.' }, { status: 409 });
       }
       return NextResponse.json({ success: false, message: 'Failed to update profile' }, { status: 500 });
     }

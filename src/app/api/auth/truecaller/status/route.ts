@@ -61,7 +61,7 @@ export async function GET(request: Request) {
         if (intent === 'login') {
            // Clean up tracking record
            await supabase.from('truecaller_auth_requests').delete().eq('request_nonce', nonce);
-           return NextResponse.json({ success: false, error: 'Account not found. Please sign up first.' }, { status: 404 });
+           return NextResponse.json({ success: false, error: 'Incorrect email or password.' }, { status: 401 });
         }
 
         // Create new customer

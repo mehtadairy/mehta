@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Signup Flow Requirement: Mobile number must be unique. Prevent duplicate accounts.
     if (existingCustomer) {
       logRejectedSubmission('/api/auth/signup/verify-otp', 'Duplicate account attempt', { phone: cleanPhone });
-      return NextResponse.json({ success: false, error: 'An account already exists with this mobile number. Please login.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Registration failed. Please try again.' }, { status: 400 });
     }
 
     // Create the new customer

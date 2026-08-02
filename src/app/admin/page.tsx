@@ -1036,12 +1036,23 @@ export default function AdminPanel() {
 
             const res = await fetch('/api/admin/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Upload failed');
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Upload failed');
+                } else {
+                    const text = await res.text();
+                    console.error("HTML Error Response:", res.status, res.statusText, text);
+                    throw new Error(`Upload failed with status ${res.status}: ` + text.substring(0, 100));
+                }
             }
 
             const data = await res.json();
