@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { getVerifiedCustomerSession } from '@/lib/auth-utils';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 export async function POST(request: Request) {
   try {
@@ -56,9 +57,15 @@ export async function POST(request: Request) {
     if (orderPayload && orderItems) {
       try {
         const rawAddr = orderPayload.shipping_address || orderPayload.shippingAddress || {};
+        
+        let finalOrderNumber = orderPayload.order_number || orderNumber;
+        if (!finalOrderNumber) {
+          finalOrderNumber = await generateOrderNumber(supabase);
+        }
+
         const cleanOrderData: any = {
           id: orderPayload.id,
-          order_number: orderPayload.order_number || orderNumber || null,
+          order_number: finalOrderNumber,
           customer_id: session.id, // Strictly bind verified session customer ID
           user_name: orderPayload.user_name || orderPayload.userName || rawAddr.name || 'Customer',
           user_phone: orderPayload.user_phone || orderPayload.userPhone || rawAddr.phone || '',

@@ -3,6 +3,7 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { createInvoice } from '@/lib/services/invoices';
 import { WhatsAppService } from '@/lib/services/whatsapp';
 import { verifyCustomerSession } from '@/lib/auth-utils';
+import { generateOrderNumber } from '@/lib/order-utils';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
@@ -109,21 +110,7 @@ export async function POST(request: Request) {
 
     let generatedOrderNumber = orderPayload?.order_number;
     if (!generatedOrderNumber) {
-      try {
-        const { data: newOrd, error: rpcError } = await supabase.rpc('get_next_order_number');
-        if (!rpcError && newOrd) {
-          generatedOrderNumber = newOrd;
-        }
-      } catch (e) {
-        console.warn("RPC get_next_order_number unavailable, using fallback order number");
-      }
-
-      if (!generatedOrderNumber) {
-        const now = new Date();
-        const dateStr = now.toISOString().slice(2,10).replace(/-/g, '');
-        const randDigits = Math.floor(1000 + Math.random() * 9000);
-        generatedOrderNumber = `MD-${dateStr}-${randDigits}`;
-      }
+      generatedOrderNumber = await generateOrderNumber(supabase);
     }
 
     const finalOrderData: any = {

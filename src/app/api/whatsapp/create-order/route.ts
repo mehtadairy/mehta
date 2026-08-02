@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { calculateDeliveryCharge } from '@/lib/services/delivery-service';
 import { validateCustomerId, isTestModeRequest, isValidUUID } from '@/lib/services/whatsapp-validation';
+import { generateOrderNumber } from '@/lib/order-utils';
 import crypto from 'crypto';
 
 interface ExtractedItem {
@@ -476,9 +477,11 @@ export async function POST(req: Request) {
       hasSourceColumn = false;
     }
 
+    const newOrderNumber = await generateOrderNumber(supabase);
+
     const orderPayload: any = {
       id: orderId,
-      order_number: orderNumber,
+      order_number: newOrderNumber,
       customer_id: customer.id,
       user_name: customer.name || 'WhatsApp Customer',
       user_phone: cleanPhone,

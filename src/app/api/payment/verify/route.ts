@@ -6,8 +6,8 @@ import { createInvoice } from '@/lib/services/invoices';
 import { WhatsAppService } from '@/lib/services/whatsapp';
 import { verifyCustomerSession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
-
 import { getVerifiedCustomerSession } from '@/lib/auth-utils';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || '',
@@ -95,21 +95,7 @@ export async function POST(request: Request) {
     console.log("Webhook delay detected. Finalizing paid order directly in verify endpoint...");
     let generatedOrderNumber = orderPayload.order_number;
     if (!generatedOrderNumber) {
-      try {
-        const { data: newOrd, error: rpcError } = await supabase.rpc('get_next_order_number');
-        if (!rpcError && newOrd) {
-          generatedOrderNumber = newOrd;
-        }
-      } catch (e) {
-        console.warn("RPC get_next_order_number unavailable in verify endpoint");
-      }
-
-      if (!generatedOrderNumber) {
-        const now = new Date();
-        const dateStr = now.toISOString().slice(2,10).replace(/-/g, '');
-        const randDigits = Math.floor(1000 + Math.random() * 9000);
-        generatedOrderNumber = `MD-${dateStr}-${randDigits}`;
-      }
+      generatedOrderNumber = await generateOrderNumber(supabase);
     }
 
     const updatedPayload: any = {
