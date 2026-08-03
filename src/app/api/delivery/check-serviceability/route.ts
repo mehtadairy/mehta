@@ -1,54 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getShippingSettings, calculateSlabShipping } from '@/lib/services/shipping-calculator';
+import { calculateDeliveryCharge } from '@/lib/services/delivery-service';
+import { calculateCartTotalWeight } from '@/lib/order-utils';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { pincode, state, cart = [] } = body || {};
+    const { state, cart } = await req.json();
 
-    if (!pincode && !state) {
-      return NextResponse.json({ success: false, error: 'Pincode or state is required' }, { status: 400 });
+    if (!state || !cart || cart.length === 0) {
+      return NextResponse.json({ success: false, error: 'State and cart items are required' });
     }
 
-    const settings = await getShippingSettings();
-    const calculation = calculateSlabShipping(cart, { pincode, state }, settings);
+    const totalWeightKg = calculateCartTotalWeight(cart);
+    
+    // Calculate delivery charge using our new DB-driven engine
+    const result = await calculateDeliveryCharge(state, totalWeightKg);
 
-    return NextResponse.json({
-      success: true,
-      serviceable: true,
-      deliveryCharge: calculation.totalShippingCharge,
-      estimatedDeliveryTime: calculation.estimatedDeliveryTime,
-      zone: calculation.zone,
-      slabsCount: calculation.slabsCount,
-      ratePerSlab: calculation.ratePerSlab,
-      totalWeightKg: calculation.totalWeightKg,
-      settings
-    });
-  } catch (error: any) {
-    console.error('Delivery calculation API error:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const pincode = searchParams.get('pincode') || undefined;
-    const state = searchParams.get('state') || undefined;
-
-    const settings = await getShippingSettings();
-    const calculation = calculateSlabShipping([], { pincode, state }, settings);
-
-    return NextResponse.json({
-      success: true,
-      serviceable: true,
-      deliveryCharge: calculation.totalShippingCharge,
-      estimatedDeliveryTime: calculation.estimatedDeliveryTime,
-      zone: calculation.zone,
-      settings
-    });
-  } catch (error: any) {
-    console.error('Delivery calculation API error:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(result);
+  } catch (err: any) {
+    console.error('[Delivery Check API Error]', err);
+    return NextResponse.json({ success: false, error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

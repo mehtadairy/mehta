@@ -3,7 +3,8 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { createInvoice } from '@/lib/services/invoices';
 import { WhatsAppService } from '@/lib/services/whatsapp';
 import { verifyCustomerSession } from '@/lib/auth-utils';
-import { generateOrderNumber } from '@/lib/order-utils';
+import { generateOrderNumber, calculateCartTotalWeight } from '@/lib/order-utils';
+import { calculateDeliveryCharge } from '@/lib/services/delivery-service';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
@@ -79,27 +80,22 @@ export async function POST(request: Request) {
 
     const shippingAddress = orderPayload.shipping_address;
     let deliveryCharge = 0;
+    let ratePerKg = 0;
+    let totalWeight = 0;
+    let chargeableWeight = 0;
+    let destinationState = '';
+    let deliveryZone = '';
 
     if (shippingAddress && shippingAddress.id !== 'pickup') {
-      const userPincode = (shippingAddress.pincode || '').trim();
-      const { data: zones, error: zonesError } = await supabase
-        .from('delivery_zones')
-        .select('*');
-
-      if (!zonesError && zones) {
-        const matchedZone = zones.find((zone: any) => {
-          const pincodesStr = zone.pincodes || zone.pincode || '';
-          const pincodesArr = pincodesStr.split(',').map((p: string) => p.trim());
-          return pincodesArr.includes(userPincode);
-        });
-
-        if (matchedZone) {
-          if (matchedZone.free_delivery_above && serverSubtotal >= Number(matchedZone.free_delivery_above)) {
-            deliveryCharge = 0;
-          } else {
-            deliveryCharge = Number(matchedZone.delivery_charge) || 0;
-          }
-        }
+      destinationState = shippingAddress.state || '';
+      totalWeight = calculateCartTotalWeight(verifiedOrderItems);
+      chargeableWeight = Math.ceil(Math.max(0.1, totalWeight));
+      
+      const calcResult = await calculateDeliveryCharge(destinationState, totalWeight);
+      if (calcResult.success) {
+         deliveryCharge = calcResult.deliveryCharge;
+         ratePerKg = calcResult.ratePerKg || 0;
+         deliveryZone = calcResult.zoneName || calcResult.city || '';
       }
     }
 
@@ -124,6 +120,11 @@ export async function POST(request: Request) {
       discount: Number(orderPayload?.discount) || 0,
       total: expectedTotal,
       delivery_charge: deliveryCharge,
+      delivery_rate_per_kg: ratePerKg,
+      total_weight: totalWeight,
+      chargeable_weight: chargeableWeight,
+      destination_state: destinationState,
+      delivery_zone: deliveryZone,
       shipping_address: rawAddr || {},
       payment_id: 'COD-' + Date.now(),
       payment_method: 'COD',
@@ -148,6 +149,11 @@ export async function POST(request: Request) {
         discount: finalOrderData.discount,
         total: finalOrderData.total,
         delivery_charge: finalOrderData.delivery_charge,
+        delivery_rate_per_kg: finalOrderData.delivery_rate_per_kg,
+        total_weight: finalOrderData.total_weight,
+        chargeable_weight: finalOrderData.chargeable_weight,
+        destination_state: finalOrderData.destination_state,
+        delivery_zone: finalOrderData.delivery_zone,
         shipping_address: finalOrderData.shipping_address,
         payment_id: finalOrderData.payment_id,
         payment_method: finalOrderData.payment_method,
@@ -216,14 +222,6 @@ export async function POST(request: Request) {
     await createInvoice(newOrder.id).catch((invoiceErr) => {
       console.log("Invoice background generation warning/failure for COD:", invoiceErr);
     });
-
-    // Automatically create Shiprocket shipment for COD order
-    try {
-      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
-      createShiprocketOrder(newOrder.id).catch((srErr) => console.error("Shiprocket COD creation error:", srErr));
-    } catch (srErr) {
-      console.warn("Non-fatal Shiprocket COD creation exception:", srErr);
-    }
 
     // 6. WhatsApp Notification
     try {

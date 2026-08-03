@@ -1,5 +1,4 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import { checkShiprocketServiceability } from '@/lib/services/shiprocket/serviceability';
 
 export interface DeliveryCalculationResult {
   success: boolean;
@@ -11,87 +10,115 @@ export interface DeliveryCalculationResult {
   estimatedDeliveryTime?: string;
   freeDeliveryEligible: boolean;
   courierName?: string;
+  zoneName?: string;
 }
 
 /**
- * Calculates delivery charges strictly based on Shiprocket API real-time serviceability & rate APIs:
- * - Free Local Delivery (₹0): Pincode 364270
- * - Real-Time Shiprocket Courier Rate API for all other India pincodes
+ * Calculates delivery charges dynamically based on delivery_rules in Supabase.
  */
 export async function calculateDeliveryCharge(
-  pincode: string,
-  subtotal: number = 0,
+  stateName: string,
   weightInKg: number = 1
 ): Promise<DeliveryCalculationResult> {
-  const cleanPincode = (pincode || '').trim();
-  if (!cleanPincode || cleanPincode.length < 6) {
-    return { success: false, error: 'Valid 6-digit Pincode is required', deliveryCharge: 0, freeDeliveryEligible: false };
+  const cleanState = (stateName || '').trim().toLowerCase();
+  if (!cleanState) {
+    return { success: false, error: 'Valid State is required', deliveryCharge: 0, freeDeliveryEligible: false };
   }
 
   const actualWeight = Math.max(0.1, Number(weightInKg) || 1);
+  const chargeableWeight = Math.ceil(actualWeight);
 
-  // SPECIAL EXEMPTION: Free delivery for local store pincode 364270
-  if (cleanPincode === '364270') {
-    return {
-      success: true,
-      city: 'Local Store Area (Free Delivery)',
-      deliveryCharge: 0,
-      ratePerKg: 0,
-      weightInKg: actualWeight,
-      estimatedDeliveryTime: 'Same Day / 1 Day',
-      freeDeliveryEligible: true
-    };
-  }
-
-  // 1. Fetch Real-Time Shipping Rate directly from Shiprocket API
   try {
-    const srResult = await checkShiprocketServiceability(cleanPincode, actualWeight, false, subtotal);
+    // Fetch all rules
+    const { data: rules, error } = await supabase.from('delivery_rules').select('*');
+    if (error || !rules) throw error || new Error("No rules found");
 
-    if (srResult.success && srResult.serviceable) {
-      let finalCharge = srResult.deliveryCharge;
+    let matchedRule = null;
+    let defaultRule = null;
+
+    // Find the matching rule based on state
+    for (const rule of rules) {
+      if (rule.states === '*') {
+        defaultRule = rule;
+        continue;
+      }
+      const allowedStates = rule.states.toLowerCase().split(',').map((s: string) => s.trim());
+      if (allowedStates.includes(cleanState)) {
+        matchedRule = rule;
+        break;
+      }
+    }
+
+    // Use default if no explicit match
+    if (!matchedRule) {
+      matchedRule = defaultRule;
+    }
+
+    if (!matchedRule) {
+      // Fallback if table is empty
+      const isGujarat = cleanState === 'gujarat';
+      const southIndiaStates = ['kerala', 'tamil nadu', 'karnataka', 'andhra pradesh', 'telangana'];
+      const isSouthIndia = southIndiaStates.includes(cleanState);
       
-      // Check if DB custom free delivery threshold applies
-      const { data: zones } = await supabase.from('delivery_zones').select('id, name, city, pincodes, pincode, state');
-      const matchedZone = (zones || []).find((zone: any) => {
-        const pincodesStr = zone.pincodes || zone.pincode || '';
-        return pincodesStr.split(',').map((p: string) => p.trim()).includes(cleanPincode);
-      });
-
-      const freeThreshold = matchedZone?.free_delivery_above ? Number(matchedZone.free_delivery_above) : null;
-      const freeDeliveryEligible = freeThreshold !== null && subtotal >= freeThreshold;
-
-      if (freeDeliveryEligible) {
-        finalCharge = 0;
+      let fallbackZone = 'Rest of India (Fallback)';
+      let fallbackRate = 70;
+      if (isGujarat) {
+         fallbackZone = 'Gujarat (Fallback)';
+         fallbackRate = 40;
+      } else if (isSouthIndia) {
+         fallbackZone = 'South India (Fallback)';
+         fallbackRate = 80;
       }
 
-      return {
-        success: true,
-        city: srResult.recommendedCourier?.courierName ? `Shiprocket (${srResult.recommendedCourier.courierName})` : 'Serviceable via Shiprocket',
-        deliveryCharge: Math.round(finalCharge),
-        weightInKg: actualWeight,
-        estimatedDeliveryTime: srResult.estimatedDeliveryTime || '2-4 Days',
-        freeDeliveryEligible,
-        courierName: srResult.recommendedCourier?.courierName || 'Courier Partner'
+      matchedRule = {
+        zone_name: fallbackZone,
+        rate_per_kg: fallbackRate
       };
     }
+
+    const ratePerKg = Number(matchedRule.rate_per_kg);
+    const deliveryCharge = chargeableWeight * ratePerKg;
+
+    return {
+      success: true,
+      city: matchedRule.zone_name,
+      zoneName: matchedRule.zone_name,
+      deliveryCharge,
+      ratePerKg,
+      weightInKg: actualWeight,
+      estimatedDeliveryTime: '2-4 Days',
+      freeDeliveryEligible: false,
+      courierName: 'Standard Courier'
+    };
   } catch (err) {
-    console.warn('[DeliveryService] Shiprocket API lookup failed, evaluating fallback calculation:', err);
+    console.warn('[DeliveryService] Failed to load rules, evaluating fallback calculation:', err);
+    
+    // Hard fallback
+    const isGujarat = cleanState === 'gujarat';
+    const southIndiaStates = ['kerala', 'tamil nadu', 'karnataka', 'andhra pradesh', 'telangana'];
+    const isSouthIndia = southIndiaStates.includes(cleanState);
+    
+    let fallbackZone = 'Rest of India';
+    let ratePerKg = 70;
+    if (isGujarat) {
+       fallbackZone = 'Gujarat';
+       ratePerKg = 40;
+    } else if (isSouthIndia) {
+       fallbackZone = 'South India';
+       ratePerKg = 80;
+    }
+
+    const deliveryCharge = chargeableWeight * ratePerKg;
+
+    return {
+      success: true,
+      city: fallbackZone,
+      zoneName: fallbackZone,
+      deliveryCharge,
+      ratePerKg,
+      weightInKg: actualWeight,
+      estimatedDeliveryTime: '2-4 Days',
+      freeDeliveryEligible: false
+    };
   }
-
-  // Fallback calculation if Shiprocket API is unconfigured/down
-  const isGujarat = cleanPincode.startsWith('36') || cleanPincode.startsWith('37') ||
-    cleanPincode.startsWith('38') || cleanPincode.startsWith('39');
-
-  const ratePerKg = isGujarat ? 40 : 70;
-  const deliveryCharge = Math.ceil(actualWeight) * ratePerKg;
-
-  return {
-    success: true,
-    city: isGujarat ? 'Gujarat Delivery' : 'Rest of India Delivery',
-    deliveryCharge,
-    ratePerKg,
-    weightInKg: actualWeight,
-    estimatedDeliveryTime: isGujarat ? '1-2 Days' : '2-4 Days',
-    freeDeliveryEligible: false
-  };
 }

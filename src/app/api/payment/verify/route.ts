@@ -112,6 +112,11 @@ export async function POST(request: Request) {
       discount: Number(orderPayload.discount) || 0,
       total: Number(orderPayload.total),
       delivery_charge: Number(orderPayload.delivery_charge) || 0,
+      delivery_rate_per_kg: Number(orderPayload.delivery_rate_per_kg) || 0,
+      total_weight: Number(orderPayload.total_weight) || 0,
+      chargeable_weight: Number(orderPayload.chargeable_weight) || 0,
+      destination_state: orderPayload.destination_state || '',
+      delivery_zone: orderPayload.delivery_zone || '',
       shipping_address: cleanAddress,
       user_name: orderPayload.user_name || orderPayload.userName || '',
       user_phone: orderPayload.user_phone || orderPayload.userPhone || '',
@@ -168,11 +173,9 @@ export async function POST(request: Request) {
       if (itemsError) console.error("Verify route order items insert error:", itemsError);
     }
 
-    // Asynchronously create invoice, dispatch WhatsApp, queue POS print & create Shiprocket shipment
+    // Asynchronously create invoice, dispatch WhatsApp, queue POS print
     try {
       createInvoice(orderPayload.id).catch(e => console.error("Invoice creation warning:", e));
-      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
-      createShiprocketOrder(savedOrder.id || orderPayload.id).catch(e => console.error("Shiprocket creation warning:", e));
 
       const { PrintingService } = await import('@/lib/services/printing');
       const branchId = (orderPayload.shipping_address as any)?.branch_id || 'Main';

@@ -110,6 +110,9 @@ function CheckoutContent() {
   const [pincodeError, setPincodeError] = useState("");
 
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [deliveryRatePerKg, setDeliveryRatePerKg] = useState(0);
+  const [deliveryTotalWeight, setDeliveryTotalWeight] = useState(0);
+  const [deliveryZoneName, setDeliveryZoneName] = useState("");
   const [deliveryDays, setDeliveryDays] = useState("");
   const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
   const [customCities, setCustomCities] = useState<string[]>([]);
@@ -488,10 +491,16 @@ function CheckoutContent() {
 
         if (result.success) {
           setPincodeError("");
-          setDeliveryDays(result.estimatedDeliveryTime || "1-3 Days");
+          setDeliveryDays(result.estimatedDeliveryTime || "2-4 Days");
           setDeliveryCharge(result.deliveryCharge || 0);
+          setDeliveryRatePerKg(result.ratePerKg || 0);
+          setDeliveryTotalWeight(result.weightInKg || 0);
+          setDeliveryZoneName(result.zoneName || "Default Zone");
         } else {
           setDeliveryCharge(0);
+          setDeliveryRatePerKg(0);
+          setDeliveryTotalWeight(0);
+          setDeliveryZoneName("");
           setDeliveryDays("");
           setPincodeError("Unable to calculate shipping charge for this location.");
         }
@@ -743,6 +752,11 @@ function CheckoutContent() {
         discount: discountAmount,
         coupon_code: null,
         delivery_charge: deliveryCharge,
+        delivery_rate_per_kg: deliveryRatePerKg,
+        total_weight: deliveryTotalWeight,
+        chargeable_weight: Math.ceil(Math.max(0.1, deliveryTotalWeight)),
+        destination_state: orderAddress.state,
+        delivery_zone: deliveryZoneName,
         total: totalPayable,
         shipping_address: orderAddress,
         payment_method: paymentOption === 'COD' ? 'COD' : 'Razorpay',
