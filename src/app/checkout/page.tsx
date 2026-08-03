@@ -9,7 +9,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import { BUSINESS } from "@/lib/businessConfig";
-import { calculateCartTotalWeight } from "@/lib/services/shiprocket/weight-calculator";
+import { calculateCartTotalWeight } from "@/lib/order-utils";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
