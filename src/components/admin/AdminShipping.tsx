@@ -43,7 +43,7 @@ interface ShippingOrder {
   payment_status: string;
   status: string;
   shipment_status: string;
-  shiprocket_order_id?: number | string;
+  shipping_provider_order_id?: number | string;
   shipment_id?: number | string;
   awb_number?: string;
   courier_name?: string;
@@ -249,7 +249,7 @@ export default function AdminShipping() {
   const handleRetryShipment = async (orderId: string) => {
     setActionLoadingId(orderId);
     try {
-      const res = await fetch("/api/shiprocket/create-shipment", {
+      const res = await fetch("/api/shipping/create-shipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId })
@@ -269,10 +269,10 @@ export default function AdminShipping() {
   };
 
   const handleCancelShipment = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel this shipment in Shiprocket?")) return;
+    if (!confirm("Are you sure you want to cancel this shipment?")) return;
     setActionLoadingId(orderId);
     try {
-      const res = await fetch("/api/shiprocket/cancel-shipment", {
+      const res = await fetch("/api/shipping/cancel-shipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, reason: "Cancelled by Admin" })
@@ -341,7 +341,7 @@ export default function AdminShipping() {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Shipping");
-    XLSX.writeFile(workbook, `Shiprocket_Orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(workbook, `Shipping_Orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (
@@ -351,7 +351,7 @@ export default function AdminShipping() {
         <div>
           <div className="flex items-center gap-2">
             <Truck className="w-6 h-6 text-brand-orange" />
-            <h1 className="text-2xl font-serif font-bold text-brand-charcoal">Automated Shiprocket Logistics</h1>
+            <h1 className="text-2xl font-serif font-bold text-brand-charcoal">Automated Logistics</h1>
           </div>
           <p className="text-xs text-muted-foreground mt-1">Real-time shipment creation, AWB generation, manifest printing & live tracking.</p>
         </div>
@@ -497,7 +497,7 @@ export default function AdminShipping() {
                           ) : (
                             <>
                               <a
-                                href={`/api/shiprocket/label?orderId=${order.id}`}
+                                href={`/api/shipping/label?orderId=${order.id}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 bg-gray-100 hover:bg-gray-200 text-brand-charcoal rounded-lg transition-colors"
@@ -506,7 +506,7 @@ export default function AdminShipping() {
                                 <Printer className="w-3.5 h-3.5" />
                               </a>
                               <a
-                                href={`/api/shiprocket/manifest?orderId=${order.id}`}
+                                href={`/api/shipping/manifest?orderId=${order.id}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 bg-gray-100 hover:bg-gray-200 text-brand-charcoal rounded-lg transition-colors"
@@ -576,7 +576,7 @@ export default function AdminShipping() {
 
             <div className="pt-2 flex justify-end gap-3">
               <a
-                href={trackingModalOrder.tracking_url || `https://shiprocket.co/tracking/${trackingModalOrder.awb_number}`}
+                href={trackingModalOrder.tracking_url || `https://tracking.com/${trackingModalOrder.awb_number}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full bg-brand-orange hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-center flex items-center justify-center gap-2 text-xs"

@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { calculateCartTotalWeight } from './shiprocket/weight-calculator';
+import { calculateCartTotalWeight } from '../order-utils';
 
 export interface ShippingSettings {
   id?: string;

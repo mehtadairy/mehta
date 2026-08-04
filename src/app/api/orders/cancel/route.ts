@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Shiprocket cancellation removed.
+    // Third-party cancellation removed.
 
     // 7. Audit Log (Non-blocking fallback)
     try {

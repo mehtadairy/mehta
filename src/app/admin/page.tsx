@@ -90,7 +90,7 @@ export default function AdminPanel() {
         { id: "dashboard", label: "Overview", fullLabel: "Administrative Overview", icon: LayoutDashboard },
         { id: "products", label: "Inventory", fullLabel: "Sweet Inventory", icon: Dessert, badgeKey: "products" },
         { id: "orders", label: "Orders", fullLabel: "Orders Tracking", icon: ShoppingBag, badgeKey: "orders" },
-        { id: "shipping", label: "Shipping", fullLabel: "🚚 Shiprocket Logistics", icon: Truck },
+        { id: "shipping", label: "Shipping", fullLabel: "🚚 Automated Logistics", icon: Truck },
         { id: "whatsapp_orders", label: "WhatsApp Orders", fullLabel: "🟢 WhatsApp Orders", icon: ShoppingBag, badgeKey: "whatsapp_orders" },
         { id: "invoices", label: "Invoices", fullLabel: "Invoice Management", icon: FileText },
         { id: "blogs", label: "Blogs CMS", fullLabel: "Blog Articles CMS", icon: PenTool },
@@ -1864,7 +1864,7 @@ export default function AdminPanel() {
                                         </div>
                                     )}
 
-                                    {/* ==================== TAB: SHIPROCKET LOGISTICS ==================== */}
+                                    {/* ==================== TAB: AUTOMATED LOGISTICS ==================== */}
                                     {activeTab === "shipping" && (
                                         <AdminShipping />
                                     )}

@@ -461,8 +461,7 @@ function CheckoutContent() {
   
   const discountAmount = 0;
 
-  const [shiprocketCouriers, setShiprocketCouriers] = useState<any[]>([]);
-  const [selectedCourierId, setSelectedCourierId] = useState<number | null>(null);
+  // Removed legacy courier state
 
   // Dynamic Delivery Calculation via Admin 500g Slab Rules
   useEffect(() => {
@@ -1308,7 +1307,7 @@ function CheckoutContent() {
                               setPincodeStatus({ type: '', message: '' });
 
                               try {
-                                // 1. Verify Shiprocket Serviceability first
+                                // 1. Verify Serviceability first
                                 const checkRes = await fetch('/api/delivery/check-serviceability', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
