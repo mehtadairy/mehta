@@ -89,6 +89,11 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!isValidCustomer) {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser?.id) isValidCustomer = true;
+    }
+
+    if (!isValidCustomer) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
@@ -96,9 +101,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // 🔒 5. Logged-in Customer Auth Page Redirect (/login, /signup -> /account)
-  if (isAuthPage && customerToken) {
-    const customerPayload = await verifyCustomerSession(customerToken);
-    if (customerPayload?.id) {
+  if (isAuthPage) {
+    let isLoggedIn = false;
+    if (customerToken) {
+      const customerPayload = await verifyCustomerSession(customerToken);
+      if (customerPayload?.id) isLoggedIn = true;
+    }
+    if (!isLoggedIn) {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser?.id) isLoggedIn = true;
+    }
+
+    if (isLoggedIn) {
       return NextResponse.redirect(new URL('/account', request.url));
     }
   }
