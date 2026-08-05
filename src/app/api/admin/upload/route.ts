@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import sharp from 'sharp';
 import { verifySession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
@@ -30,11 +29,23 @@ export async function POST(request: Request) {
     }
 
     // 🔒 Security: Validate File Extension & Allowed MIME Types
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/avif',
+      'application/octet-stream',
+      '',
+    ];
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
 
     const fileExt = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
-    if (!allowedMimeTypes.includes(file.type) || !allowedExtensions.includes(fileExt)) {
+    const isValidType = allowedMimeTypes.includes(file.type?.toLowerCase() || '') || file.type?.startsWith('image/');
+    const isValidExt = allowedExtensions.includes(fileExt);
+
+    if (!isValidType || !isValidExt) {
       return NextResponse.json(
         { error: 'Invalid file type. Only standard web image formats (JPEG, PNG, WebP, GIF, AVIF) are allowed.' },
         { status: 400 }
@@ -53,22 +64,21 @@ export async function POST(request: Request) {
     const inputBuffer = Buffer.from(arrayBuffer);
 
     // ─── Server-side compression with sharp ────────────────────────────────
-    // 1. Resize to max 1200px wide (preserving aspect ratio)
-    // 2. Convert to WebP format
-    // 3. Strip EXIF metadata (reduces privacy risk + file size)
-    // 4. Compress at quality 82 (excellent quality, ~70% smaller than JPEG original)
-    let compressedBuffer: Buffer;
-    let contentType = 'image/webp';
+    let compressedBuffer: Buffer = inputBuffer;
+    let contentType = file.type || 'image/webp';
 
     try {
+      const sharpModule = await import('sharp');
+      const sharp = sharpModule.default || sharpModule;
+
       compressedBuffer = await sharp(inputBuffer)
         .resize({ width: MAX_WIDTH_PX, withoutEnlargement: true })
         .webp({ quality: WEBP_QUALITY, effort: 4 })
-        .withMetadata({}) // strips EXIF but preserves ICC colour profile
+        .withMetadata()
         .toBuffer();
+      contentType = 'image/webp';
     } catch (sharpErr: any) {
-      console.warn('[Upload] Sharp compression failed, uploading original:', sharpErr.message);
-      // Fallback: upload original without compression
+      console.warn('[Upload] Sharp compression failed, uploading original:', sharpErr?.message || sharpErr);
       compressedBuffer = inputBuffer;
       contentType = file.type || 'application/octet-stream';
     }
@@ -103,6 +113,6 @@ export async function POST(request: Request) {
     });
   } catch (err: any) {
     console.error('Upload route error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: err?.message || 'Internal server error' }, { status: 500 });
   }
 }

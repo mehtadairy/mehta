@@ -10,6 +10,20 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 0. Delete Draft Orders older than 30 minutes
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { error: draftDelErr } = await supabase
+      .from('orders')
+      .delete()
+      .eq('status', 'Draft')
+      .lt('created_at', thirtyMinsAgo);
+    
+    if (draftDelErr) {
+      console.error("[PaymentRecoveryWorker] Failed to delete expired drafts:", draftDelErr.message);
+    } else {
+      console.log("[PaymentRecoveryWorker] Successfully cleaned up expired drafts.");
+    }
+
     const { data: pendingRecoveries, error: fetchError } = await supabase
       .from('payment_recovery')
       .select('*')

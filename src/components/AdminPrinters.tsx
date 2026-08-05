@@ -180,6 +180,30 @@ export default function AdminPrinters() {
     }
   };
 
+  const handleReprintJob = async (orderId: string | null) => {
+    if (!orderId) {
+      setStatusMessage({ type: 'error', text: 'Order ID is missing for reprint.' });
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/print/reprint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reprint');
+      
+      setStatusMessage({ type: 'success', text: `Reprint queued successfully.` });
+      await refreshDataOnly();
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err.message || 'Reprint failed' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isAgentOnline = () => {
     if (!settings || !settings.last_seen) return false;
     const lastSeen = new Date(settings.last_seen).getTime();
@@ -506,13 +530,22 @@ export default function AdminPrinters() {
                       <td className="p-2.5 text-gray-500">
                         {new Date(log.created_at).toLocaleTimeString()}
                       </td>
-                      <td className="p-2.5 text-right">
+                      <td className="p-2.5 text-right flex justify-end items-center gap-2">
                         <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
                           log.status === 'printed' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-rose-50 text-rose-800 border-rose-300'
                         }`}>
                           {log.status === 'printed' ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <XCircle className="w-3 h-3 text-rose-600" />}
                           {log.status === 'printed' ? 'Printed' : 'Failed'}
                         </span>
+                        {log.status === 'failed' && (
+                          <button 
+                            onClick={() => handleReprintJob(log.order_id || log.orders?.id)} 
+                            disabled={isLoading}
+                            className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold rounded transition-colors disabled:opacity-50"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Retry
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

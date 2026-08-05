@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       supabaseServer
         .from('orders')
         .select('*, order_items(*), invoices(*)', { count: 'exact' })
+        .neq('status', 'Draft')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1),
 

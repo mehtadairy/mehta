@@ -53,8 +53,14 @@ export default function AdminCategories({ categories, setCategories }: { categor
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Upload failed');
+        let errMsg = 'Upload failed';
+        try {
+          const errorData = await res.json();
+          errMsg = errorData.error || errMsg;
+        } catch {
+          errMsg = `Upload failed with status ${res.status}`;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
