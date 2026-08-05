@@ -19,11 +19,10 @@ export async function syncGoogleUserOnServer(userId: string, email: string, name
       .maybeSingle();
 
     if (selectError && selectError.code !== 'PGRST116') {
-      console.error("Error looking up customer profile:", selectError);
-      return { success: false, error: selectError.message };
+      console.error("Error looking up customer profile by auth_user_id:", selectError);
     }
 
-    // Legacy fallback: if not found by auth_user_id, check if they exist by email
+    // 2. Legacy fallback: if not found by auth_user_id, check if they exist by email
     if (!customer && email) {
       const { data: legacyCustomer } = await supabase
         .from("customers")
@@ -31,15 +30,13 @@ export async function syncGoogleUserOnServer(userId: string, email: string, name
         .eq("email", email)
         .maybeSingle();
       
-      // If legacy customer found but hasn't linked a Google account yet
-      if (legacyCustomer && !legacyCustomer.auth_user_id) {
-        // Claim this legacy account securely using service role key (bypasses RLS)
+      // If legacy customer found, update auth_user_id & auth_provider to link account
+      if (legacyCustomer) {
         const { data: updatedCustomer, error: updateError } = await supabase
           .from("customers")
           .update({ 
             auth_user_id: userId, 
             auth_provider: 'google',
-            // Keep existing name if it exists, otherwise use Google name
             name: legacyCustomer.name || name
           })
           .eq("id", legacyCustomer.id)
@@ -47,15 +44,35 @@ export async function syncGoogleUserOnServer(userId: string, email: string, name
           .single();
           
         if (updateError) {
-          console.error("Error claiming legacy account:", updateError);
+          console.error("Error linking legacy account by email:", updateError);
         } else if (updatedCustomer) {
           customer = updatedCustomer;
         }
       }
     }
 
+    // 3. Auto-create customer record if not found in database at all
     if (!customer) {
-      return { success: true, customer: null }; // Not found, needs signup handling
+      const { data: newCustomer, error: insertError } = await supabase
+        .from("customers")
+        .insert([
+          {
+            auth_user_id: userId,
+            email: email,
+            name: name || "Google User",
+            phone: null,
+            auth_provider: 'google',
+            role: 'customer'
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Error auto-creating customer profile:", insertError);
+        return { success: false, error: insertError.message };
+      }
+      customer = newCustomer;
     }
 
     return { success: true, customer };

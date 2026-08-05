@@ -62,59 +62,23 @@ export default function AuthCallback() {
         throw new Error("Email address not returned by auth provider.");
       }
 
-      // Use Server Action to bypass RLS when claiming legacy accounts
-      const { success, customer: syncedCustomer, error: syncError } = await syncGoogleUserOnServer(user.id, email, name);
+      // 1. Sync or auto-create customer profile via Server Action (bypassing RLS)
+      const { success, customer, error: syncError } = await syncGoogleUserOnServer(user.id, email, name);
 
-      let customer = syncedCustomer;
-      let userPhone = "";
-      let userName = name;
-
-      if (!success && syncError) {
-        console.error("Error looking up customer profile via Server Action:", syncError);
+      if (!success || !customer) {
+        console.error("Error syncing customer profile via Server Action:", syncError);
+        setErrorMsg(syncError || "Failed to sync customer profile.");
+        return;
       }
 
-      const params = new URLSearchParams(window.location.search);
-      const intent = params.get("intent") || "login";
+      const userName = customer.name || name;
+      const userPhone = customer.phone || "";
 
-      if (!customer) {
-        if (intent === 'login') {
-          await supabase.auth.signOut();
-          const picture = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
-          const redirectUrl = params.get("redirect");
-          const signupParams = new URLSearchParams();
-          if (name) signupParams.set("name", name);
-          if (email) signupParams.set("email", email);
-          if (picture) signupParams.set("picture", picture);
-          if (redirectUrl) signupParams.set("redirect", redirectUrl);
-          signupParams.set("reason", "google_not_found");
-
-          router.push(`/signup?${signupParams.toString()}`);
-          return;
-        }
-
-        // Insert new profile if not found (Signup intent) via Server Action
-        const { success: createSuccess, customer: newCustomer, error: createError } = await createGoogleUserOnServer(user.id, email, name);
-
-        if (!createSuccess || createError) {
-          console.error("Error creating customer profile via Server Action:", createError);
-          // Fallback to locally saving name from Google metadata
-        } else if (newCustomer) {
-          customer = newCustomer;
-          userName = newCustomer.name || name;
-          localStorage.setItem("mehta_user_id", newCustomer.id);
-        }
-      } else {
-        userName = customer.name || name;
-        userPhone = customer.phone || "";
-        localStorage.setItem("mehta_user_id", customer.id);
-      }
-
-      // Issue HTTP session cookie for middleware route protection
-      if (customer) {
-        await setCustomerSessionCookie(customer);
-      }
+      // 2. Issue HTTP session cookie for middleware route protection
+      await setCustomerSessionCookie(customer);
 
       // 3. Save session indicators in localStorage
+      localStorage.setItem("mehta_user_id", customer.id);
       localStorage.setItem("mehta_logged_in", "true");
       localStorage.setItem("mehta_user_name", userName);
       localStorage.setItem("mehta_user_email", email);
@@ -132,14 +96,15 @@ export default function AuthCallback() {
       window.dispatchEvent(new Event("authUpdated"));
 
       // 5. Redirect to destination or account dashboard
+      const params = new URLSearchParams(window.location.search);
       const redirectUrl = params.get("redirect");
       
-      if (needsPhoneVerification) {
-        router.push(`/complete-profile${redirectUrl ? `?redirect=${redirectUrl}` : ''}`);
-      } else if (redirectUrl) {
+      if (redirectUrl) {
         router.push(redirectUrl);
+      } else if (needsPhoneVerification) {
+        router.push("/complete-profile");
       } else {
-        router.push("/");
+        router.push("/account");
       }
     };
 
