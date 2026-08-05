@@ -66,13 +66,28 @@ function LoginContent() {
     return () => clearInterval(pollInterval);
   }, [isTruecallerPolling, truecallerNonce, router, searchParams]);
 
+  useEffect(() => {
+    // Check for Supabase OAuth errors in the URL hash
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const errorDesc = hashParams.get('error_description');
+      const err = hashParams.get('error');
+      if (errorDesc || err) {
+        setError((errorDesc || err || 'Authentication failed').replace(/\+/g, ' '));
+        // Clear the hash so it doesn't persist on refresh
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, []);
+
   // ----------------------------------------------------
   // WhatsApp OTP Authentication
   // ----------------------------------------------------
   // Replaced MSG91 Widget initialization with backend WhatsApp OTP service.
 
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
@@ -292,6 +307,7 @@ function LoginContent() {
               </div>
 
               <button
+                type="button"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
                 className="w-full bg-white border border-[#EAE0D3] hover:bg-[#FAF6EE] text-[#4A2F1F] rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-3 shadow-sm hover:shadow-md transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
