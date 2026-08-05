@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
-import { syncGoogleUserOnServer, createGoogleUserOnServer } from "./actions";
+import { syncGoogleUserOnServer, createGoogleUserOnServer, setCustomerSessionCookie } from "./actions";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -99,6 +99,7 @@ export default function AuthCallback() {
           console.error("Error creating customer profile via Server Action:", createError);
           // Fallback to locally saving name from Google metadata
         } else if (newCustomer) {
+          customer = newCustomer;
           userName = newCustomer.name || name;
           localStorage.setItem("mehta_user_id", newCustomer.id);
         }
@@ -106,6 +107,11 @@ export default function AuthCallback() {
         userName = customer.name || name;
         userPhone = customer.phone || "";
         localStorage.setItem("mehta_user_id", customer.id);
+      }
+
+      // Issue HTTP session cookie for middleware route protection
+      if (customer) {
+        await setCustomerSessionCookie(customer);
       }
 
       // 3. Save session indicators in localStorage

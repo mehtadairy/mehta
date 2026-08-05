@@ -1,6 +1,9 @@
 "use server";
 
 import { supabaseServer as supabase } from "@/lib/supabaseServer";
+import { cookies, headers } from "next/headers";
+import { SignJWT } from "jose";
+import { getCustomerJWTSecret, getCustomerCookieOptions } from "@/lib/auth-utils";
 
 export async function syncGoogleUserOnServer(userId: string, email: string, name: string) {
   try {
@@ -88,5 +91,32 @@ export async function createGoogleUserOnServer(userId: string, email: string, na
   } catch (error: any) {
     console.error("Server Action Error (createGoogleUser):", error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function setCustomerSessionCookie(customer: any) {
+  try {
+    if (!customer || !customer.id) return { success: false, error: "Invalid customer payload" };
+    const secret = getCustomerJWTSecret();
+    const token = await new SignJWT({
+      id: customer.id,
+      email: customer.email,
+      name: customer.name,
+      phone: customer.phone,
+      role: customer.role || 'customer'
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('30d')
+      .sign(secret);
+
+    const headerStore = await headers();
+    const cookieStore = await cookies();
+    const cookieOptions = getCustomerCookieOptions(headerStore.get('host'));
+    cookieStore.set('mehta_customer_token', token, cookieOptions);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to set customer session cookie:", err);
+    return { success: false, error: err.message };
   }
 }
