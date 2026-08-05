@@ -61,40 +61,16 @@ export default function AuthCallback() {
         throw new Error("Email address not returned by auth provider.");
       }
 
-      // 1. Look up user by auth_user_id in 'customers' table
-      let { data: customer, error: selectError } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
+      // Use Server Action to bypass RLS when claiming legacy accounts
+      const { syncGoogleUserOnServer, createGoogleUserOnServer } = await import('./actions');
+      const { success, customer: syncedCustomer, error: syncError } = await syncGoogleUserOnServer(user.id, email, name);
 
-      // Legacy fallback: if not found by auth_user_id, check if they exist by email
-      if (!customer && email) {
-         const { data: legacyCustomer } = await supabase
-           .from("customers")
-           .select("*")
-           .eq("email", email)
-           .maybeSingle();
-         
-         if (legacyCustomer && !legacyCustomer.auth_user_id) {
-           // Claim this legacy account
-           const { data: updatedCustomer } = await supabase
-             .from("customers")
-             .update({ auth_user_id: user.id })
-             .eq("id", legacyCustomer.id)
-             .select()
-             .single();
-           if (updatedCustomer) {
-             customer = updatedCustomer;
-           }
-         }
-      }
-
+      let customer = syncedCustomer;
       let userPhone = "";
       let userName = name;
 
-      if (selectError && selectError.code !== 'PGRST116') {
-        console.error("Error looking up customer profile:", selectError);
+      if (!success && syncError) {
+        console.error("Error looking up customer profile via Server Action:", syncError);
       }
 
       const params = new URLSearchParams(window.location.search);
@@ -116,23 +92,11 @@ export default function AuthCallback() {
           return;
         }
 
-        // 2. Insert new profile if not found (Signup intent)
-        const { data: newCustomer, error: insertError } = await supabase
-          .from("customers")
-          .insert([
-            {
-              auth_user_id: user.id,
-              email: email,
-              name: name,
-              phone: null, // Phone is optional initially
-              auth_provider: 'google'
-            }
-          ])
-          .select()
-          .single();
+        // Insert new profile if not found (Signup intent) via Server Action
+        const { success: createSuccess, customer: newCustomer, error: createError } = await createGoogleUserOnServer(user.id, email, name);
 
-        if (insertError) {
-          console.error("Error creating customer profile:", insertError);
+        if (!createSuccess || createError) {
+          console.error("Error creating customer profile via Server Action:", createError);
           // Fallback to locally saving name from Google metadata
         } else if (newCustomer) {
           userName = newCustomer.name || name;
