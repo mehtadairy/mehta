@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
+import { syncGoogleUserOnServer, createGoogleUserOnServer } from "./actions";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -62,7 +63,6 @@ export default function AuthCallback() {
       }
 
       // Use Server Action to bypass RLS when claiming legacy accounts
-      const { syncGoogleUserOnServer, createGoogleUserOnServer } = await import('./actions');
       const { success, customer: syncedCustomer, error: syncError } = await syncGoogleUserOnServer(user.id, email, name);
 
       let customer = syncedCustomer;

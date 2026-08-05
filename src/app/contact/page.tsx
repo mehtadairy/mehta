@@ -389,7 +389,7 @@ export default function Contact() {
             >
               <iframe
                 title="Mehta Dairy Taleti Road Map"
-                src="https://maps.google.com/maps?q=Mehta%20Dairy%2C%20Taleti%20Road%2C%20Palitana%2C%20Gujarat&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                src={BUSINESS.googleMapsEmbedUrl}
                 className="absolute inset-0 w-full h-full border-0"
                 allowFullScreen
                 loading="lazy"
