@@ -6,10 +6,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { pincode, state, cart = [] } = body || {};
 
-    if (!pincode && !state) {
-      return NextResponse.json({ success: false, error: 'Pincode or state is required' }, { status: 400 });
-    }
-
     const settings = await getShippingSettings();
     const calculation = calculateSlabShipping(cart, { pincode, state }, settings);
 
@@ -19,8 +15,8 @@ export async function POST(request: Request) {
       deliveryCharge: calculation.totalShippingCharge,
       estimatedDeliveryTime: calculation.estimatedDeliveryTime,
       zone: calculation.zone,
-      slabsCount: calculation.slabsCount,
-      ratePerSlab: calculation.ratePerSlab,
+      chargeableWeightKg: calculation.chargeableWeightKg,
+      ratePerKg: calculation.ratePerKg,
       totalWeightKg: calculation.totalWeightKg,
       settings
     });
@@ -45,6 +41,7 @@ export async function GET(request: Request) {
       deliveryCharge: calculation.totalShippingCharge,
       estimatedDeliveryTime: calculation.estimatedDeliveryTime,
       zone: calculation.zone,
+      ratePerKg: calculation.ratePerKg,
       settings
     });
   } catch (error: any) {

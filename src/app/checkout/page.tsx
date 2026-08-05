@@ -9,7 +9,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import { BUSINESS } from "@/lib/businessConfig";
-import { calculateCartTotalWeight } from "@/lib/services/shiprocket/weight-calculator";
+import { calculateCartTotalWeight } from "@/lib/services/weight-calculator";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -458,8 +458,6 @@ function CheckoutContent() {
   
   const discountAmount = 0;
 
-  const [shiprocketCouriers, setShiprocketCouriers] = useState<any[]>([]);
-  const [selectedCourierId, setSelectedCourierId] = useState<number | null>(null);
 
   // Dynamic Delivery Calculation via Admin 500g Slab Rules
   useEffect(() => {
@@ -1294,7 +1292,7 @@ function CheckoutContent() {
                               setPincodeStatus({ type: '', message: '' });
 
                               try {
-                                // 1. Verify Shiprocket Serviceability first
+                                // 1. Verify Delivery Serviceability & Calculate Rates
                                 const checkRes = await fetch('/api/delivery/check-serviceability', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },

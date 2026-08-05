@@ -273,15 +273,6 @@ export async function POST(request: Request) {
         console.error("[RazorpayWebhook] STEP 5/6 WARNING: Invoice generation/upload failed:", invErr?.message || invErr);
       }
 
-      // Automatically create Shiprocket shipment in background
-      try {
-        console.log(`[RazorpayWebhook] Triggering automatic Shiprocket shipment creation for order ${order.id}...`);
-        const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
-        createShiprocketOrder(order.id).catch(srErr => console.error("[RazorpayWebhook] Shiprocket background error:", srErr));
-      } catch (srErr) {
-        console.error("[RazorpayWebhook] Non-blocking Shiprocket trigger exception:", srErr);
-      }
-
       // STEP 7: Log WhatsApp send attempt with complete details
       console.log(`[RazorpayWebhook] STEP 7: Dispatching WhatsApp PDF invoice to ${cleanPhone}...`);
       let waResponseData: any = null;

@@ -191,7 +191,9 @@ export async function POST(request: Request) {
       image: item.image || ''
     }));
 
-    const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
+    // Delete any existing items for this ID just in case (idempotency)
+    await supabase.from('order_items').delete().eq('order_id', newOrder.id);
+    const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
     if (itemsError) {
       console.error("Failed to insert COD order items notice:", itemsError.message);
     }
@@ -229,14 +231,6 @@ export async function POST(request: Request) {
     await createInvoice(newOrder.id).catch((invoiceErr) => {
       console.log("Invoice background generation warning/failure for COD:", invoiceErr);
     });
-
-    // Automatically create Shiprocket shipment for COD order
-    try {
-      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
-      createShiprocketOrder(newOrder.id).catch((srErr) => console.error("Shiprocket COD creation error:", srErr));
-    } catch (srErr) {
-      console.warn("Non-fatal Shiprocket COD creation exception:", srErr);
-    }
 
     // 6. WhatsApp Notification
     try {

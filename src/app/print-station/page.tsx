@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Loader2, Printer, CheckCircle, AlertCircle, ClipboardList, CalendarDays, Clock, User, Phone, MapPin, Heart, Smartphone } from "lucide-react";
+import { fetchPendingOrderAction, markOrderPrintedAction } from "./actions";
 
 export default function PrintStation() {
   const [status, setStatus] = useState<"idle" | "printing" | "error">("idle");
@@ -41,16 +42,7 @@ export default function PrintStation() {
     if (isPrintingRef.current) return;
 
     try {
-      const res = await fetch("/api/print/pending", {
-        headers: {
-          "x-print-agent-key": "mehta_sweet_print_agent_secret_key_2026",
-          "Cache-Control": "no-cache",
-        },
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchPendingOrderAction();
       
       if (data.success && data.orders && data.orders.length > 0) {
         // We have an order to print
@@ -82,27 +74,10 @@ export default function PrintStation() {
   const markOrderPrinted = async (orderId: string, jobId?: string) => {
     try {
       addLog(`Marking order ${orderId.slice(0,8)} as printed...`);
-      const res = await fetch("/api/print/completed", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-print-agent-key": "mehta_sweet_print_agent_secret_key_2026",
-        },
-        body: JSON.stringify({
-          orderId,
-          jobId,
-          printerName: "Magic POS Kiosk",
-          printedBy: "Auto Print Station",
-        }),
-      });
-
-      if (res.ok) {
-        addLog(`Order marked successfully.`);
-        setStatus("idle");
-        setCurrentOrder(null);
-      } else {
-        throw new Error("Failed to mark as printed");
-      }
+      await markOrderPrintedAction(orderId, jobId);
+      addLog(`Order marked successfully.`);
+      setStatus("idle");
+      setCurrentOrder(null);
     } catch (err: any) {
       addLog(`Mark printed error: ${err.message}`);
       setStatus("error");

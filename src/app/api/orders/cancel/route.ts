@@ -108,14 +108,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Automatically cancel shipment in Shiprocket
-    try {
-      const { cancelShiprocketOrder } = await import('@/lib/services/shiprocket/returns');
-      cancelShiprocketOrder(orderId, reason).catch(e => console.warn("Shiprocket cancellation warning:", e));
-    } catch (e) {
-      console.warn("Non-fatal Shiprocket cancellation trigger exception:", e);
-    }
-
     // 7. Audit Log (Non-blocking fallback)
     try {
       const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Unknown';

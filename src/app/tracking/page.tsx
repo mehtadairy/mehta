@@ -91,7 +91,7 @@ function TrackingContent() {
         address: `${o.shipping_address?.street || o.shipping_address_line1 || ''}, ${o.shipping_address?.city || o.shipping_city || ''}, ${o.shipping_address?.state || o.shipping_state || ''} ${o.shipping_address?.pincode || o.shipping_postal_code || ''}`,
         paymentStatus: o.payment_status as any,
         courierName: o.courier_name || 'Delhivery Express',
-        trackingUrl: o.tracking_url || `https://shiprocket.co/tracking/${o.awb_number || o.id}`,
+        trackingUrl: o.tracking_url || '',
         items: (o.order_items || []).map((item: any) => ({
           name: item.product_name,
           weight: item.weight || "Box",

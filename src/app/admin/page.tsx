@@ -33,7 +33,7 @@ const AdminDeliveryZones = dynamic(() => import("@/components/AdminDeliveryZones
 const AdminInvoices = dynamic(() => import("@/components/AdminInvoices"), { ssr: false });
 const AdminBlogs = dynamic(() => import("@/components/AdminBlogs"), { ssr: false });
 const AdminWhatsAppCenter = dynamic(() => import("@/components/AdminWhatsAppCenter"), { ssr: false });
-const AdminShipping = dynamic(() => import("@/components/admin/AdminShipping"), { ssr: false });
+const AdminDeliveryPricing = dynamic(() => import("@/components/admin/AdminDeliveryPricing"), { ssr: false });
 const WhatsAppCenter = dynamic(() => import("@/components/WhatsAppCenter"), { ssr: false });
 const AdminPrinters = dynamic(() => import("@/components/AdminPrinters"), { ssr: false });
 import { OrdersSkeleton } from "@/components/admin/OrdersSkeleton";
@@ -75,7 +75,8 @@ import {
     Truck,
     Volume2,
     VolumeX,
-    Sliders
+    Sliders,
+    Package
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -83,14 +84,14 @@ export default function AdminPanel() {
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
     const [loginError, setLoginError] = useState("");
-    const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "whatsapp_orders" | "invoices" | "customers" | "staff" | "categories" | "banners" | "notifications" | "payments" | "recovery" | "backups" | "ingredients" | "zones" | "blogs" | "whatsapp" | "printers">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "delivery_pricing" | "shipping" | "whatsapp_orders" | "invoices" | "customers" | "staff" | "categories" | "banners" | "notifications" | "payments" | "recovery" | "backups" | "ingredients" | "zones" | "blogs" | "whatsapp" | "printers">("dashboard");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const ADMIN_MENU_ITEMS = [
         { id: "dashboard", label: "Overview", fullLabel: "Administrative Overview", icon: LayoutDashboard },
         { id: "products", label: "Inventory", fullLabel: "Sweet Inventory", icon: Dessert, badgeKey: "products" },
         { id: "orders", label: "Orders", fullLabel: "Orders Tracking", icon: ShoppingBag, badgeKey: "orders" },
-        { id: "shipping", label: "Shipping", fullLabel: "🚚 Shiprocket Logistics", icon: Truck },
+        { id: "delivery_pricing", label: "Delivery Pricing", fullLabel: "📦 Delivery Pricing", icon: Package },
         { id: "whatsapp_orders", label: "WhatsApp Orders", fullLabel: "🟢 WhatsApp Orders", icon: ShoppingBag, badgeKey: "whatsapp_orders" },
         { id: "invoices", label: "Invoices", fullLabel: "Invoice Management", icon: FileText },
         { id: "blogs", label: "Blogs CMS", fullLabel: "Blog Articles CMS", icon: PenTool },
@@ -1864,9 +1865,9 @@ export default function AdminPanel() {
                                         </div>
                                     )}
 
-                                    {/* ==================== TAB: SHIPROCKET LOGISTICS ==================== */}
-                                    {activeTab === "shipping" && (
-                                        <AdminShipping />
+                                    {/* ==================== TAB: DELIVERY PRICING ==================== */}
+                                    {(activeTab === "delivery_pricing" || activeTab === "shipping") && (
+                                        <AdminDeliveryPricing />
                                     )}
 
                                     {/* ==================== TAB 3.5: INVOICES ==================== */}

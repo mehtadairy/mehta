@@ -80,7 +80,7 @@ export async function POST(request: Request) {
           console.error("Draft order upsert failed for authenticated session:", orderError.message);
           return NextResponse.json({ error: 'Failed to initialize draft order', details: orderError.message }, { status: 500 });
         }
-        
+
         if (orderItems && orderItems.length > 0) {
           const finalOrderItems = orderItems.map((item: any) => ({
             order_id: orderPayload.id,

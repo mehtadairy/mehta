@@ -175,14 +175,17 @@ export async function POST(request: Request) {
         price: item.price,
         image: item.image
       }));
-      await supabase.from('order_items').upsert(itemsToSave, { onConflict: 'order_id,product_id,weight' });
+      // Delete any existing items for idempotency, then insert
+      await supabase.from('order_items').delete().eq('order_id', orderPayload.id);
+      const { error: itemsError } = await supabase.from('order_items').insert(itemsToSave);
+      if (itemsError) {
+        console.error("Failed to insert verified order items:", itemsError);
+      }
     }
 
-    // Asynchronously create invoice, dispatch WhatsApp, queue POS print & create Shiprocket shipment
+    // Asynchronously create invoice, dispatch WhatsApp & queue POS print
     try {
       createInvoice(orderPayload.id).catch(e => console.error("Invoice creation warning:", e));
-      const { createShiprocketOrder } = await import('@/lib/services/shiprocket/shipment');
-      createShiprocketOrder(savedOrder.id || orderPayload.id).catch(e => console.error("Shiprocket creation warning:", e));
 
       const { PrintingService } = await import('@/lib/services/printing');
       const branchId = (orderPayload.shipping_address as any)?.branch_id || 'Main';
