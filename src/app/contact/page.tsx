@@ -188,8 +188,34 @@ export default function Contact() {
   const hour = new Date().getHours();
   const isOpen = hour >= 9 && hour < 22;
 
+  const contactSchema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact Mehta Sweet Mart",
+    "url": "https://mehtadairy.com/contact",
+    "description": "Get in touch with Mehta Sweet Mart for orders, customer support, or corporate gifting inquiries.",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "Mehta Sweet Mart",
+      "telephone": "+919913252232",
+      "email": "orders@mehtadairy.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Taleti Road",
+        "addressLocality": "Palitana",
+        "addressRegion": "Gujarat",
+        "postalCode": "364270",
+        "addressCountry": "IN"
+      }
+    }
+  };
+
   return (
-    <div className="bg-[#FAF6EE] min-h-screen text-[#2A1E17]">
+    <div className="min-h-screen bg-[#FAF6EE] text-[#2A1E17] font-sans overflow-x-hidden selection:bg-[#D46D2D] selection:text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
+      />
       <Header />
       <WhatsAppFloat />
 

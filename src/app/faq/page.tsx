@@ -92,8 +92,27 @@ export default function FAQPage() {
 
   const toggle = (id: string) => setOpenItem(openItem === id ? null : id);
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": FAQS.flatMap((category) =>
+      category.items.map((item) => ({
+        "@type": "Question",
+        "name": item.q,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": item.a,
+        },
+      }))
+    ),
+  };
+
   return (
     <div className="bg-[#FAF6EE] min-h-screen text-[#2C2C2C]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <Header />
 
       {/* Hero */}
