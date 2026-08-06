@@ -13,6 +13,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { BUSINESS } from '@/lib/businessConfig';
 import AuthSync from "@/components/AuthSync";
 import Script from "next/script";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -163,20 +164,8 @@ export default function RootLayout({
             })
           }}
         />
-        {/* Google Analytics (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-XDFRXBK5HN"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-XDFRXBK5HN');
-          `}
-        </Script>
+        {/* Google Analytics 4 (GA4) Global Script */}
+        <GoogleAnalytics gaId="G-XDFRXBK5HN" />
         
         {/* Google Translate Script */}
         <div id="google_translate_element" className="hidden"></div>

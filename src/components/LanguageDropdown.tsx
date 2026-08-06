@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Globe, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/lib/context/LanguageContext";
+import { trackLanguageChange } from "@/lib/gtag";
 
 interface LanguageDropdownProps {
   buttonClassName?: string;
@@ -61,6 +62,7 @@ export default function LanguageDropdown({
   // 4. Select language option
   const handleSelectLanguage = (langCode: "en" | "gu" | "hi") => {
     clearCloseTimeout();
+    trackLanguageChange(langCode);
     setLanguage(langCode);
     setIsOpen(false);
   };

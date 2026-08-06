@@ -2,6 +2,7 @@
 
 import React from "react";
 import { BUSINESS } from "@/lib/businessConfig";
+import { trackWhatsAppClick } from "@/lib/gtag";
 
 export default function WhatsAppFloat() {
   const message = `Hello ${BUSINESS.name}, I would like to inquire about your sweets and gift boxes.`;
@@ -12,6 +13,7 @@ export default function WhatsAppFloat() {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackWhatsAppClick("floating_button")}
       className="fixed bottom-24 md:bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-emerald-500/30"
       aria-label="Contact us on WhatsApp"
     >

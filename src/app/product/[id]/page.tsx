@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import { getOptimizedImageUrl } from "@/lib/image-utils";
+import { trackViewItem, trackAddToCart, trackWishlistAdd, trackWishlistRemove } from "@/lib/gtag";
 
 const getIngredients = (name: string, category: string) => {
   const n = name.toLowerCase();
@@ -184,6 +185,13 @@ export default function ProductDetails() {
         setProduct(found);
         setSelectedWeight(sortedWeights[0]);
         setQuantity(1);
+
+        trackViewItem({
+          item_id: String(found.id),
+          item_name: found.name,
+          item_category: found.category,
+          price: found.prices[sortedWeights[0]] || Object.values(found.prices)[0] || 0,
+        });
         
         // Load related items (same category, excluding current)
         const related = allProducts
@@ -275,6 +283,15 @@ export default function ProductDetails() {
     }
 
     localStorage.setItem("mehta_cart", JSON.stringify(cart));
+
+    trackAddToCart({
+      item_id: String(product.id),
+      item_name: product.name,
+      item_category: product.category,
+      price: price,
+      quantity: quantity,
+      item_variant: selectedWeight,
+    });
     window.dispatchEvent(new Event("cartUpdated"));
     if (window.innerWidth < 1024) window.dispatchEvent(new Event("openCartDrawer"));
     

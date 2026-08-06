@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import { BUSINESS } from "@/lib/businessConfig";
 import { calculateCartTotalWeight } from "@/lib/services/weight-calculator";
+import { trackBeginCheckout, trackPurchase, trackAddShippingInfo, trackAddPaymentInfo } from "@/lib/gtag";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -312,7 +313,20 @@ function CheckoutContent() {
     // Synchronous local state loading
     const storedCart = localStorage.getItem("mehta_cart");
     if (storedCart) {
-      setCart(JSON.parse(storedCart));
+      const parsedCart = JSON.parse(storedCart);
+      setCart(parsedCart);
+      if (Array.isArray(parsedCart) && parsedCart.length > 0) {
+        trackBeginCheckout({
+          value: parsedCart.reduce((sum: number, item: any) => sum + ((item.price || 0) * (item.quantity || 1)), 0),
+          items: parsedCart.map((item: any) => ({
+            item_id: String(item.productId),
+            item_name: item.productName,
+            price: item.price,
+            quantity: item.quantity,
+            item_variant: item.weight,
+          })),
+        });
+      }
     }
 
 
@@ -772,6 +786,18 @@ function CheckoutContent() {
           setFinalOrderId(orderPayload.id);
           setIsPaying(false);
           setPaymentSuccess(true);
+          trackPurchase({
+            transaction_id: codData.orderNumber || orderPayload.id,
+            value: totalPayable,
+            shipping: effectiveDeliveryCharge,
+            items: cart.map((item: any) => ({
+              item_id: String(item.productId),
+              item_name: item.productName,
+              price: item.price,
+              quantity: item.quantity,
+              item_variant: item.weight,
+            })),
+          });
           // Clear cart on successful order
           localStorage.removeItem("mehta_cart");
           window.dispatchEvent(new Event("cartUpdated"));
@@ -843,6 +869,18 @@ function CheckoutContent() {
             if (verifyData.success) {
               await handleOrderSubmission('Razorpay', 'Paid', response.razorpay_payment_id, response.razorpay_order_id, orderPayload);
               setPaymentSuccess(true);
+              trackPurchase({
+                transaction_id: response.razorpay_payment_id || orderPayload.id,
+                value: totalPayable,
+                shipping: effectiveDeliveryCharge,
+                items: cart.map((item: any) => ({
+                  item_id: String(item.productId),
+                  item_name: item.productName,
+                  price: item.price,
+                  quantity: item.quantity,
+                  item_variant: item.weight,
+                })),
+              });
             } else {
               alert(verifyData.error || "Payment verification failed!");
             }

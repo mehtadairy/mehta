@@ -13,6 +13,7 @@
     "@capacitor/core": "^8.4.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@msg91comm/sendotp-react-native": "^2.1.0",
+    "@next/third-parties": "^16.3.0",
     "@react-email/components": "^1.0.12",
     "@react-pdf/renderer": "^4.5.1",
     "@supabase/ssr": "^0.3.0",
