@@ -26,13 +26,7 @@ export async function POST(request: Request) {
 
     const isMatch = !!(secretExists && signature && computedSignature === signature);
 
-    console.log("--------------------------------------------------");
-    console.log("[RazorpayWebhook] STEP 1 AUDIT - Webhook Signature Verification:");
-    console.log(`  1. Received x-razorpay-signature: ${signature || 'MISSING'}`);
-    console.log(`  2. RAZORPAY_WEBHOOK_SECRET Exists: ${secretExists} (Length: ${secret.length})`);
-    console.log(`  3. Computed HMAC Signature: ${computedSignature || 'N/A'}`);
-    console.log(`  4. Signatures Match Result: ${isMatch}`);
-    console.log("--------------------------------------------------");
+    console.log(`[RazorpayWebhook] Signature match verification result: ${isMatch}`);
 
     // STEP 1: Signature Verification & Event Log
     if (!signature) {

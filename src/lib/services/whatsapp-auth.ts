@@ -86,16 +86,8 @@ export async function sendOTP(mobile: string): Promise<{ success: boolean; error
       return { success: false, error: `DB Insert Error: ${insertError.message}` };
     }
 
-    console.log('--- ENV VARIABLE DEBUGGING ---');
-    console.log('API_CAMPAIGN_KEY =', process.env.API_CAMPAIGN_KEY ? process.env.API_CAMPAIGN_KEY.substring(0, 10) + '...' : 'UNDEFINED');
-    console.log('API_CAMPGAIGN_KEY =', process.env.API_CAMPGAIGN_KEY ? process.env.API_CAMPGAIGN_KEY.substring(0, 10) + '...' : 'UNDEFINED');
-    console.log('AISENSY_PROJECT_API_KEY =', process.env.AISENSY_PROJECT_API_KEY ? process.env.AISENSY_PROJECT_API_KEY.substring(0, 10) + '...' : 'UNDEFINED');
-    console.log('AISENSY_API_CAMPAIGN_NAME =', process.env.AISENSY_API_CAMPAIGN_NAME || 'UNDEFINED');
-    console.log('Parsed CAMPAIGN_KEY =', CAMPAIGN_KEY ? CAMPAIGN_KEY.substring(0, 10) + '...' : 'UNDEFINED');
-    console.log('------------------------------');
-
     if (!CAMPAIGN_KEY) {
-      throw new Error("API_CAMPAIGN_KEY is missing from environment variables. Next.js server might need a restart, or .env.local is not loaded.");
+      throw new Error("API_CAMPAIGN_KEY is missing from environment variables.");
     }
 
     const payload = {
@@ -114,7 +106,7 @@ export async function sendOTP(mobile: string): Promise<{ success: boolean; error
           parameters: [
             {
               type: "text",
-              text: String(otp) // Force it to string just in case
+              text: String(otp)
             }
           ]
         }
@@ -126,14 +118,6 @@ export async function sendOTP(mobile: string): Promise<{ success: boolean; error
         FirstName: "user"
       }
     };
-
-    console.log('--- EXACT AiSensy Outgoing Payload Trace ---');
-    console.log('1. Generated OTP:', otp);
-    console.log('2. Button Array Object:', JSON.stringify(payload.buttons, null, 2));
-    console.log('3. Template Params:', JSON.stringify(payload.templateParams, null, 2));
-    console.log('4. Endpoint URL:', CAMPAIGN_URL);
-    console.log('5. Full JSON Payload (Before Fetch):', JSON.stringify({ ...payload, apiKey: CAMPAIGN_KEY.substring(0, 15) + '***MASKED***' }, null, 2));
-    console.log('--------------------------------------------');
 
     const response = await fetch(CAMPAIGN_URL, {
       method: 'POST',

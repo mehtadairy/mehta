@@ -9,12 +9,8 @@ export async function GET(request: Request) {
 
     // 1. Check for custom JWT Cookie
     const cookieStore = await cookies();
-    const token = cookieStore.get('mehta_customer_token')?.value;
-    console.log("[AUTH-DEBUG] /api/auth/me - Read cookie 'mehta_customer_token':", !!token);
-
     if (token) {
       const payload = await verifyCustomerSession(token);
-      console.log("[AUTH-DEBUG] /api/auth/me - Customer token payload:", payload);
       if (payload?.id) {
         customerId = payload.id;
       }

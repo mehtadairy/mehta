@@ -238,9 +238,6 @@ export class WhatsAppService {
         source: "mehta-checkout"
       };
 
-      console.log(`  5. Complete Request URL: ${campaignUrl}`);
-      console.log(`  4. Complete Request Payload sent to AiSensy:`, JSON.stringify({ ...campaignPayload, apiKey: campaignKey ? campaignKey.substring(0, 8) + '***' : 'MISSING' }, null, 2));
-
       const response = await fetch(campaignUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -98,12 +98,9 @@ export async function verifyCustomerSession(token: string): Promise<any | null> 
   try {
     const { jwtVerify } = await import('jose');
     const JWT_SECRET = getCustomerJWTSecret();
-    console.log("[AUTH-DEBUG] verifyCustomerSession - Verifying token with secret...");
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    console.log("[AUTH-DEBUG] verifyCustomerSession - Verification success. Payload:", payload);
     return payload;
   } catch (error: any) {
-    console.error("[AUTH-DEBUG] verifyCustomerSession - JWT verification failed:", error.message || error);
     return null;
   }
 }

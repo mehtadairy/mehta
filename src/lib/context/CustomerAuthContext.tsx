@@ -71,7 +71,6 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       }
       
       // If not authenticated via custom JWT, try standard Supabase user (Google Auth)
-      console.log("[AUTH-DEBUG] CustomerAuthContext - JWT not authenticated, checking Supabase getUser...");
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // Fetch profile using customer table
