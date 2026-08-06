@@ -163,20 +163,20 @@ export default function RootLayout({
             })
           }}
         />
-        {/* Google Analytics - Replace G-XXXXXXX with actual ID */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-XXXXXXX', {
-                page_path: window.location.pathname,
-              });
-            `,
-          }}
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-XDFRXBK5HN"
+          strategy="afterInteractive"
         />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-XDFRXBK5HN');
+          `}
+        </Script>
         
         {/* Google Translate Script */}
         <div id="google_translate_element" className="hidden"></div>
