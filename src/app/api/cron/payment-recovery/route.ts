@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { WhatsAppService } from '@/lib/services/whatsapp';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 export async function GET(request: Request) {
   // Validate Cron Secret
@@ -46,10 +47,7 @@ export async function GET(request: Request) {
         console.log(`[PaymentRecoveryWorker] Attempting recovery for Payment ${recovery.payment_id}`);
         
         // 1. Generate Order Number
-        const { data: newOrd, error: rpcError } = await supabase.rpc('get_next_order_number');
-        if (rpcError) throw new Error("Failed to generate order number: " + rpcError.message);
-        
-        const generatedOrderNumber = newOrd;
+        const generatedOrderNumber = generateOrderNumber();
 
         // 2. Prepare Order Payload
         // recovery.payload contains the webhook payload or similar. Wait, the webhook doesn't have the cart items.

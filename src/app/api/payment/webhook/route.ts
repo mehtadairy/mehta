@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { WhatsAppService } from '@/lib/services/whatsapp';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -149,9 +150,7 @@ export async function POST(request: Request) {
       // STEP 4: Update Order in Supabase
       try {
         if (!generatedOrderNumber) {
-          const { data: newOrd, error: rpcError } = await supabase.rpc('get_next_order_number');
-          if (rpcError) throw new Error("Failed to generate order number: " + rpcError.message);
-          generatedOrderNumber = newOrd;
+          generatedOrderNumber = generateOrderNumber();
         }
 
         console.log(`[RazorpayWebhook] STEP 4: Updating order status to Paid & Processing...`);

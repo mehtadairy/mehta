@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { getVerifiedCustomerSession } from '@/lib/auth-utils';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 export async function POST(request: Request) {
   try {
@@ -56,9 +57,15 @@ export async function POST(request: Request) {
     if (orderPayload && orderItems) {
       try {
         const rawAddr = orderPayload.shipping_address || orderPayload.shippingAddress || {};
+        
+        let generatedOrderNumber = orderPayload.order_number || orderNumber;
+        if (!generatedOrderNumber) {
+          generatedOrderNumber = generateOrderNumber();
+        }
+
         const cleanOrderData: any = {
           id: orderPayload.id,
-          order_number: orderPayload.order_number || orderNumber || null,
+          order_number: generatedOrderNumber,
           customer_id: session.id, // Strictly bind verified session customer ID
           user_name: orderPayload.user_name || orderPayload.userName || rawAddr.name || 'Customer',
           user_phone: orderPayload.user_phone || orderPayload.userPhone || rawAddr.phone || '',
@@ -91,7 +98,8 @@ export async function POST(request: Request) {
             price: Number(item.price) || 0,
             image: item.image || ''
           }));
-          const { error: itemsError } = await supabase.from('order_items').upsert(finalOrderItems, { onConflict: 'order_id,product_id,weight' });
+          await supabase.from('order_items').delete().eq('order_id', orderPayload.id);
+          const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
           if (itemsError) {
             console.error("Draft order items upsert error:", itemsError.message);
             return NextResponse.json({ error: 'Failed to initialize draft order items', details: itemsError.message }, { status: 500 });

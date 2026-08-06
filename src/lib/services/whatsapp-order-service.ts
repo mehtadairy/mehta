@@ -1,6 +1,7 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { generateOrderNumber } from '@/lib/order-utils';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -124,7 +125,7 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
 
   // Generate unique order identifier and receipt number
   const orderId = crypto.randomUUID();
-  const orderNumber = `WA-${Math.floor(100000 + Math.random() * 900000)}`;
+  const orderNumber = generateOrderNumber();
 
   // 3. Create a Razorpay Order using Orders API
   const rzpOrder = await razorpay.orders.create({
