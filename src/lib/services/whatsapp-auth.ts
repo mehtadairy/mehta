@@ -1,4 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { isMasterOtpEnabled, isMasterOtpValid } from '@/lib/master-otp';
 import crypto from 'crypto';
 
 const PROJECT_ID = process.env.AISENSY_PROJECT_ID;
@@ -31,7 +32,14 @@ export async function sendOTP(mobile: string): Promise<{ success: boolean; error
     }
     const fullMobile = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
 
-    // 1. Rate Limiting Check (60 seconds cooldown for unverified attempts)
+    // Development-Only Master OTP Bypass:
+    // When ENABLE_MASTER_OTP=true in development mode (NODE_ENV !== 'production'):
+    // - Do NOT send SMS or WhatsApp OTP.
+    // - Treat MASTER_OTP (e.g. 123456) as a valid OTP for any phone number.
+    if (isMasterOtpEnabled()) {
+      console.log('[DEV] Master OTP enabled - Skipping real SMS/WhatsApp OTP dispatch for:', fullMobile);
+      return { success: true };
+    }
     const { data: recentOTP } = await supabase
       .from('otp_verifications')
       .select('created_at')
@@ -159,9 +167,10 @@ export async function verifyOTP(mobile: string, otp: string): Promise<{ success:
     const cleanMobile = mobile.replace(/\D/g, '');
     const fullMobile = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
 
-    // Direct bypass check ONLY in development / testing mode
-    const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_TEST_OTP === 'true';
-    if (isDev && otp === '123456') {
+    // Development-Only Master OTP Verification:
+    // When ENABLE_MASTER_OTP=true in development mode (NODE_ENV !== 'production'):
+    // Any phone number can log in using the master OTP (e.g. 123456).
+    if (isMasterOtpValid(otp)) {
       try {
         const { data: record } = await supabase
           .from('otp_verifications')

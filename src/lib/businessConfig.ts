@@ -33,9 +33,9 @@ export const BUSINESS = {
   },
 
   // Google Maps
-  googleMapsUrl: "https://share.google/vDvLY4bVoKkqdhoQu",
-  googleMapsShareUrl: "https://share.google/vDvLY4bVoKkqdhoQu",
-  googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d118944.37520021966!2d71.74818987158223!3d21.51268686561168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3958bcda7611ffc1%3A0x643dc52f85bd8648!2sMehta%20Dairy!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin",
+  googleMapsUrl: "https://maps.app.goo.gl/Q2rW2t8pqS1QxZucA",
+  googleMapsShareUrl: "https://maps.app.goo.gl/Q2rW2t8pqS1QxZucA",
+  googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d237545.60169829684!2d71.51726099453124!3d21.521424000000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be20691efb7b001%3A0x543151aaecae06!2sMEHTA%20SWEET%20MART!5e0!3m2!1sen!2sin!4v1786034276113!5m2!1sen!2sin",
 
   // WhatsApp
   whatsappUrl: (message?: string) =>

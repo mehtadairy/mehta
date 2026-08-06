@@ -44,3 +44,25 @@ AISENSY_PROJECT_API_KEY=your_project_api_password
 AISENSY_PROJECT_ID=your_project_id
 AISENSY_BASE_URL=https://apis.aisensy.com/project-apis/v1
 ```
+
+## Master OTP Testing (Development Only)
+
+Configure environment variables in `.env.local`:
+
+```env
+ENABLE_MASTER_OTP=true
+MASTER_OTP=123456
+```
+
+### Authentication Behavior:
+
+**Development (`NODE_ENV !== "production"`):**
+- Any phone number can log in or sign up.
+- Master OTP = `123456`
+- Outbound SMS/WhatsApp message sending is bypassed.
+- Logs `[DEV] Master OTP used` on server console for debugging.
+
+**Production (`NODE_ENV === "production"`):**
+- Master OTP is strictly **DISABLED**.
+- `ENABLE_MASTER_OTP` is automatically ignored in production.
+- Real OTP verification only.

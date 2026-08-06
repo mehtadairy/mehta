@@ -13,6 +13,8 @@ function hashOTP(phone: string, otp: string) {
   return crypto.createHmac('sha256', secret).update(`${phone}:${otp}`).digest('hex');
 }
 
+import { isMasterOtpEnabled } from '@/lib/master-otp';
+
 export async function POST(request: Request) {
   try {
     const { phone } = await request.json();
@@ -24,6 +26,12 @@ export async function POST(request: Request) {
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     // WhatsApp requires country code. Defaulting to 91 (India) for Mehta Dairy.
     const waPhone = `91${cleanPhone}`;
+
+    // Development-Only Master OTP check
+    if (isMasterOtpEnabled()) {
+      console.log('[DEV] Master OTP enabled - Skipping real WhatsApp message');
+      return NextResponse.json({ success: true, message: 'OTP sent to WhatsApp' });
+    }
 
     // Rate Limiting Check: Prevent more than 3 OTP requests in 5 minutes
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();

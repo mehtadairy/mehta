@@ -9,6 +9,8 @@ function hashOTP(phone: string, otp: string) {
   return crypto.createHmac('sha256', secret).update(`${phone}:${otp}`).digest('hex');
 }
 
+import { isMasterOtpValid } from '@/lib/master-otp';
+
 export async function POST(request: Request) {
   try {
     const { phone, otp, intent = 'login', name, email } = await request.json();
@@ -19,26 +21,30 @@ export async function POST(request: Request) {
 
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     const waPhone = `91${cleanPhone}`;
-    const hashedCode = hashOTP(waPhone, otp);
 
-    // Verify OTP in DB
-    const { data: otpRecord, error: otpError } = await supabase
-      .from('otp_codes')
-      .select('*')
-      .eq('phone', waPhone)
-      .eq('hashed_code', hashedCode)
-      .eq('verified', false)
-      .gte('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Development-Only Master OTP check
+    if (!isMasterOtpValid(otp)) {
+      const hashedCode = hashOTP(waPhone, otp);
 
-    if (otpError || !otpRecord) {
-      return NextResponse.json({ success: false, error: 'Invalid or expired OTP' }, { status: 400 });
+      // Verify OTP in DB
+      const { data: otpRecord, error: otpError } = await supabase
+        .from('otp_codes')
+        .select('*')
+        .eq('phone', waPhone)
+        .eq('hashed_code', hashedCode)
+        .eq('verified', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (otpError || !otpRecord) {
+        return NextResponse.json({ success: false, error: 'Invalid or expired OTP' }, { status: 400 });
+      }
+
+      // Mark OTP as verified
+      await supabase.from('otp_codes').update({ verified: true }).eq('id', otpRecord.id);
     }
-
-    // Mark OTP as verified
-    await supabase.from('otp_codes').update({ verified: true }).eq('id', otpRecord.id);
 
     // ----------------------------------------------------
     // PROCEED WITH AUTHENTICATION (Similar to sync-customer)

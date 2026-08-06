@@ -631,7 +631,7 @@ export default function About() {
             <div className="w-full md:w-[450px] lg:w-[500px] h-[300px] md:h-[350px] rounded-2xl overflow-hidden border border-[#EAE0D3]/80 shadow-xs relative shrink-0">
               <iframe
                 title="Mehta Dairy Palitana Map"
-                src="https://maps.google.com/maps?q=Mehta%20Dairy%2C%20Taleti%20Road%2C%20Palitana%2C%20Gujarat&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                src={BUSINESS.googleMapsEmbedUrl}
                 className="absolute inset-0 w-full h-full border-0"
                 allowFullScreen
                 loading="lazy"
