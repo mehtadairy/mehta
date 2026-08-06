@@ -355,12 +355,10 @@ function AccountContent() {
 
   // Redirection when not logged in
   useEffect(() => {
-    console.log(`[AUTH-DEBUG] Account Page - isAuthChecking: ${isAuthChecking}, isLoggedIn: ${isLoggedIn}`);
     if (!isAuthChecking && !isLoggedIn) {
-      console.log("[AUTH-DEBUG] Account Page - Redirecting to login due to unauthenticated state");
-      router.push("/login?redirect=/account");
+      window.location.href = "/login?redirect=/account";
     }
-  }, [isLoggedIn, isAuthChecking, router]);
+  }, [isLoggedIn, isAuthChecking]);
 
   // Sync profile from context and fetch addresses/orders in parallel
   useEffect(() => {

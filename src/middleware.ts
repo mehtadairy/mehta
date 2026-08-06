@@ -30,7 +30,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  // 1. Refresh Supabase Auth Session (with 1.5s timeout guard to prevent network hangs)
+  let sbUser: any = null;
+  try {
+    const sbRes = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Auth Timeout')), 1500))
+    ]);
+    sbUser = sbRes?.data?.user || null;
+  } catch (e) {
+    // Timeout/network fallback - proceed non-blocking
+  }
 
   const { pathname } = request.nextUrl;
   const customerToken = request.cookies.get('mehta_customer_token')?.value;
@@ -88,9 +98,8 @@ export async function middleware(request: NextRequest) {
       if (customerPayload?.id) isValidCustomer = true;
     }
 
-    if (!isValidCustomer) {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (supabaseUser?.id) isValidCustomer = true;
+    if (!isValidCustomer && sbUser?.id) {
+      isValidCustomer = true;
     }
 
     if (!isValidCustomer) {
