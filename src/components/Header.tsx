@@ -20,6 +20,7 @@ import {
   Globe
 } from "lucide-react";
 import { useLanguage } from "@/lib/context/LanguageContext";
+import LanguageDropdown from "./LanguageDropdown";
 import {
   Coupon,
   Product
@@ -399,34 +400,17 @@ export default function Header() {
             )}
 
             {/* Language Switcher */}
-            <div className="relative group">
-              <button className="flex items-center gap-1 p-1 px-2.5 text-[#2A1E17] hover:text-[#D46D2D] transition-colors rounded-full border border-[#EAE0D3] cursor-pointer bg-white/40">
-                <Globe className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span className="text-[8px] font-bold uppercase">{language}</span>
-              </button>
-              <div className="absolute right-0 top-full hidden group-hover:flex flex-col w-32 rounded-xl border border-[#EAE0D3] bg-white shadow-xl z-50 overflow-hidden mt-1 before:content-[''] before:absolute before:-top-3 before:left-0 before:right-0 before:h-3">
-                <button onClick={() => setLanguage("en")} className={`px-4 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === "en" ? "bg-brand-cream text-[#D46D2D]" : "text-brand-charcoal hover:bg-brand-cream"}`}>English</button>
-                <button onClick={() => setLanguage("gu")} className={`px-4 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === "gu" ? "bg-brand-cream text-[#D46D2D]" : "text-brand-charcoal hover:bg-brand-cream"}`}>ગુજરાતી</button>
-                <button onClick={() => setLanguage("hi")} className={`px-4 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === "hi" ? "bg-brand-cream text-[#D46D2D]" : "text-brand-charcoal hover:bg-brand-cream"}`}>हिंदी</button>
-              </div>
-            </div>
+            <LanguageDropdown />
           </div>
 
           {/* Mobile Actions and Hamburger Toggle */}
           <div className="flex items-center gap-2 lg:hidden">
             {/* Language Switcher for Mobile */}
-            <div className="relative group/mobile">
-              <button 
-                onClick={() => {
-                  const nextLang = language === "en" ? "gu" : language === "gu" ? "hi" : "en";
-                  setLanguage(nextLang);
-                }}
-                className="flex items-center gap-1 p-2 text-brand-charcoal hover:text-[#D46D2D] transition-colors rounded-full border border-[#EAE0D3] bg-white cursor-pointer active:scale-95 shadow-xs"
-              >
-                <Globe className="h-4 w-4 stroke-[2]" />
-                <span className="text-[9px] font-extrabold uppercase">{language}</span>
-              </button>
-            </div>
+            <LanguageDropdown
+              buttonClassName="flex items-center gap-1 p-2 text-brand-charcoal hover:text-[#D46D2D] transition-colors rounded-full border border-[#EAE0D3] bg-white cursor-pointer active:scale-95 shadow-xs"
+              iconClassName="h-4 w-4 stroke-[2]"
+              labelClassName="text-[9px] font-extrabold uppercase"
+            />
 
             {/* Account for Mobile */}
             <Link 
