@@ -26,10 +26,12 @@ import {
   Product
 } from "@/lib/types";
 import { supabase, fetchCategories, fetchProducts } from "@/lib/supabaseClient";
+import { useCustomerAuth } from "@/lib/context/CustomerAuthContext";
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isLoggedIn: isAuthContextLoggedIn, profile: contextProfile, logout: authLogout } = useCustomerAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -149,11 +151,10 @@ export default function Header() {
         setCart([]);
       }
 
-      // Sync Auth
-      const isLoggedIn = localStorage.getItem("mehta_logged_in") === "true";
-      setUserLoggedIn(isLoggedIn);
-      if (isLoggedIn) {
-        const name = localStorage.getItem("mehta_user_name");
+      // Sync Auth from CustomerAuthContext
+      setUserLoggedIn(isAuthContextLoggedIn);
+      if (isAuthContextLoggedIn) {
+        const name = contextProfile?.name || localStorage.getItem("mehta_user_name");
         setUserName(name || "Customer");
       }
 
@@ -238,8 +239,8 @@ export default function Header() {
   };
 
   // Auth Logout
-  const handleLogout = () => {
-    localStorage.removeItem("mehta_logged_in");
+  const handleLogout = async () => {
+    await authLogout();
     setUserLoggedIn(false);
     window.dispatchEvent(new Event("authUpdated"));
     router.push("/");
