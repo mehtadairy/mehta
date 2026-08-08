@@ -1263,7 +1263,7 @@ export default function AdminPanel() {
                     <div className="bg-black/30 border border-white/10 rounded-2xl py-4 px-6 w-full flex flex-col gap-1">
                       <span className="text-[0.68rem] font-bold text-white/50 uppercase tracking-widest">Order ID</span>
                       <span className="text-2xl font-mono font-black text-[#D46D2D]">
-                        {newOrderAlert.order_number || `MD-${newOrderAlert.id?.substring(0, 6).toUpperCase()}`}
+                        {newOrderAlert.order_number || "PENDING"}
                       </span>
                     </div>
 

@@ -7,24 +7,29 @@ export async function GET(request: Request) {
   try {
     let customerId: string | null = null;
     let authUser: any = null;
-
-    // 1. Check for custom JWT Cookie
+    
     const cookieStore = await cookies();
-    const token = cookieStore.get('mehta_customer_token')?.value;
-    if (token) {
-      const payload = await verifyCustomerSession(token);
-      if (payload?.id) {
-        customerId = payload.id;
-      }
-    }
 
-    // 2. Check for authenticated session (Google Auth via Supabase SSR)
-    if (!customerId) {
+    // 1. Attempt to get authenticated session via Supabase SSR first
+    try {
       const ssrClient = await createSSRServerClient();
       const { data: { user } } = await ssrClient.auth.getUser();
       if (user) {
         customerId = user.id;
         authUser = user;
+      }
+    } catch (err) {
+      // Ignore SSR errors and fallback to JWT token
+    }
+
+    // 2. If no Supabase session, check for custom JWT Cookie
+    if (!customerId) {
+      const token = cookieStore.get('mehta_customer_token')?.value;
+      if (token) {
+        const payload = await verifyCustomerSession(token);
+        if (payload?.id) {
+          customerId = payload.id;
+        }
       }
     }
 
@@ -52,21 +57,18 @@ export async function GET(request: Request) {
       });
     }
 
-    // If customer DB record not created yet, return authenticated state with authUser info
-    if (authUser) {
-      return NextResponse.json({
-        authenticated: true,
-        user: {
-          id: authUser.id,
-          name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Google User',
-          email: authUser.email,
-          phone: authUser.phone || null,
-          profile_image: authUser.user_metadata?.avatar_url || null
-        }
-      });
-    }
-
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    // 4. If customer DB record not found but auth session IS valid,
+    // NEVER return 401, as it creates an infinite redirect loop.
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        id: authUser?.id || customerId,
+        name: authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || 'Customer',
+        email: authUser?.email || null,
+        phone: authUser?.phone || null,
+        profile_image: authUser?.user_metadata?.avatar_url || null
+      }
+    });
 
   } catch (error: any) {
     console.error('[API /auth/me] Error:', error);

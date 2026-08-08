@@ -1723,7 +1723,7 @@ export default function WorkerPanel() {
           >
             <div className="flex items-center justify-between border-b border-[#EAE0D3] pb-3 mb-2">
               <h4 className="font-serif text-sm font-bold text-[#2A1E17]">
-                Order Details: #{selectedOrder.order_number || selectedOrder.id.substring(0, 8)}
+                Order Details: #{selectedOrder.order_number}
               </h4>
               <button onClick={() => setSelectedOrder(null)} className="p-1 hover:bg-[#FCF9F2] rounded-full">
                 <X className="h-4.5 w-4.5" />
@@ -1869,7 +1869,7 @@ export default function WorkerPanel() {
             <div className="bg-black/30 border border-white/10 rounded-2xl py-4 px-6 w-full flex flex-col gap-1">
               <span className="text-[0.68rem] font-bold text-white/50 uppercase tracking-widest">Order ID</span>
               <span className="text-2xl font-mono font-black text-[#D46D2D]">
-                {fullscreenOrderAlert.order_number || `MD-${fullscreenOrderAlert.id?.substring(0, 6).toUpperCase()}`}
+                {fullscreenOrderAlert.order_number || "PENDING"}
               </span>
             </div>
 
@@ -1918,7 +1918,7 @@ export default function WorkerPanel() {
               </button>
             </div>
             <p className="text-xs text-[#7E6B5A]">
-              Order <strong>#{newOrderAlert.order_number || newOrderAlert.id.substring(0, 8)}</strong> has been placed by <strong>{newOrderAlert.user_name || "Guest"}</strong> for <strong>₹{newOrderAlert.total}</strong>.
+              Order <strong>{newOrderAlert.order_number || "PENDING"}</strong> has been placed by <strong>{newOrderAlert.user_name || "Guest"}</strong> for <strong>₹{newOrderAlert.total}</strong>.
             </p>
             <div className="flex gap-2 justify-end">
               <button

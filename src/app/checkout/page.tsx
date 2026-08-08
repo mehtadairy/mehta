@@ -69,7 +69,8 @@ const DEFAULT_CITIES = [
 
 import { Address, Coupon, Product } from "@/lib/types";
 import { supabase, fetchProducts } from "@/lib/supabaseClient";
-import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, Minus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck } from "lucide-react";
+import { MapPin, Phone, CreditCard, ChevronRight, Check, Plus, Minus, ShoppingBasket, AlertCircle, ShieldCheck, Loader2, Trash2, Truck, ShoppingBag, ArrowRight, Edit2, CheckCircle2, Clock, MessageSquare, IndianRupee } from 'lucide-react';
+import Image from 'next/image';
 import { useLocation } from "@/lib/context/LocationContext";
 import { showToast } from "@/components/Toast";
 import { Suspense } from "react";
@@ -783,7 +784,7 @@ function CheckoutContent() {
         const codData = await codRes.json();
         
         if (codData.success) {
-          setFinalOrderNumber(codData.orderNumber || orderPayload.order_number || `MD-${orderPayload.id.substring(0, 6).toUpperCase()}`);
+          setFinalOrderNumber(codData.orderNumber || orderPayload.order_number || "PENDING");
           setFinalOrderId(orderPayload.id);
           setIsPaying(false);
           setPaymentSuccess(true);
@@ -868,7 +869,8 @@ function CheckoutContent() {
             }
             
             if (verifyData.success) {
-              await handleOrderSubmission('Razorpay', 'Paid', response.razorpay_payment_id, response.razorpay_order_id, orderPayload);
+              const updatedPayload = { ...orderPayload, order_number: verifyData.orderNumber };
+              await handleOrderSubmission('Razorpay', 'Paid', response.razorpay_payment_id, response.razorpay_order_id, updatedPayload);
               setPaymentSuccess(true);
               trackPurchase({
                 transaction_id: response.razorpay_payment_id || orderPayload.id,
@@ -1579,7 +1581,15 @@ function CheckoutContent() {
                 <div className="grid grid-cols-2 gap-3">
                   {recommendations.map(rec => (
                     <div key={rec.id} className="border border-[#EAE0D3] rounded-2xl p-3 flex flex-col items-center text-center hover:border-[#D46D2D] transition-colors bg-white">
-                      <img src={img.thumbnail(rec.images?.[0]) || "/placeholder.png"} className="w-16 h-16 object-contain rounded-lg mb-2" alt={rec.name} />
+                      <div className="relative w-full h-[90px] mb-2 overflow-hidden bg-[#FAF6EE] rounded-lg">
+                        <Image
+                          src={img.thumbnail(rec.images?.[0]) || "/placeholder.png"}
+                          alt={rec.name}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 180px"
+                          className="object-contain object-center"
+                        />
+                      </div>
                       <span className="text-[10px] font-bold text-[#2A1E17] line-clamp-1 leading-tight mb-1">{rec.name}</span>
                       <span className="text-[10px] text-[#D46D2D] font-bold mb-2">₹{Object.values(rec.prices)[0] as number}</span>
                       <button onClick={(e) => handleAddRecToCart(rec, e)} className="text-[9px] font-bold uppercase tracking-wider text-white bg-[#D46D2D] py-1.5 px-3 rounded-xl hover:bg-[#BF5E23] w-full transition-colors cursor-pointer">
@@ -1843,7 +1853,7 @@ function CheckoutContent() {
                   </div>
 
                   {/* Customer Invoice Download/Email Buttons */}
-                  {invoiceRecord ? (
+                  {invoiceRecord && (
                     <div className="flex gap-2.5 w-full mt-1.5">
                       <a 
                         href={`/api/invoices/download?invoiceId=${invoiceRecord.id}`}
@@ -1885,10 +1895,6 @@ function CheckoutContent() {
                       >
                         {isEmailSending ? "Sending..." : "Email Invoice"}
                       </button>
-                    </div>
-                  ) : (
-                    <div className="text-[0.68rem] text-muted-foreground animate-pulse mt-1 w-full text-center">
-                      Preparing digital invoice receipt...
                     </div>
                   )}
 

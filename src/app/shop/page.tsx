@@ -402,7 +402,8 @@ function ShopContent() {
       // Search Category Pill filter (Requirement 13)
       if (searchPillFilter !== "all") {
         result = result.filter(p => {
-          const cat = p.category.toLowerCase();
+          if (!p.category) return false;
+          const cat = String(p.category).toLowerCase();
           if (searchPillFilter === "sweets") return cat.includes("sweet") || cat.includes("milk") || cat.includes("ghee") || cat.includes("mawa");
           if (searchPillFilter === "farsan" || searchPillFilter === "namkeen" || searchPillFilter === "snacks") return cat.includes("farsan") || cat.includes("namkeen") || cat.includes("snack");
           return cat === searchPillFilter;
@@ -412,9 +413,11 @@ function ShopContent() {
       // Standard Category filter (active ONLY when search is empty)
       if (selectedCategory !== "all") {
         result = result.filter(p => {
-           if (selectedCategory === "milk-sweets" && (p.category.includes("milk") || p.category.includes("mawa"))) return true;
-           if (selectedCategory === "ghee-sweets" && (p.category.includes("ghee") || p.category.includes("traditional"))) return true;
-           if (selectedCategory === "farsan" && (p.category.includes("farsan") || p.category.includes("namkeen") || p.category.includes("snacks"))) return true;
+           if (!p.category) return false;
+           const cat = String(p.category).toLowerCase();
+           if (selectedCategory === "milk-sweets" && (cat.includes("milk") || cat.includes("mawa"))) return true;
+           if (selectedCategory === "ghee-sweets" && (cat.includes("ghee") || cat.includes("traditional"))) return true;
+           if (selectedCategory === "farsan" && (cat.includes("farsan") || cat.includes("namkeen") || cat.includes("snacks"))) return true;
            return p.category === selectedCategory;
         });
       }

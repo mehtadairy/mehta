@@ -18,31 +18,30 @@ const razorpay = new Razorpay({
 // Determine key mode for diagnostics only — never log actual values
 const keyMode = rzpKeyId.startsWith('rzp_live_') ? 'LIVE' : (rzpKeyId.startsWith('rzp_test_') ? 'TEST' : 'UNKNOWN');
 
-/**
- * Generate an order number using the correct RPC function name.
- * We strictly do NOT fallback to timestamp-based numbers.
- */
 async function generateOrderNumber(): Promise<string> {
   const { data, error } = await supabase.rpc('get_next_order_number');
   if (!error && data) {
-    console.log(`[PaymentVerify] Order number generated via get_next_order_number: ${data}`);
+    console.log(`[Payment Verify] order number generation: success (${data})`);
     return data;
   }
   
-  console.error('[PaymentVerify] get_next_order_number RPC error:', { code: error?.code, message: error?.message });
-  throw new Error("Failed to generate order number from database sequence.");
+  console.error('[Payment Verify] FAILED STEP: order number generation', { code: error?.code, message: error?.message });
+  throw new Error(`Failed to generate sequential order number securely: ${error?.message || 'Database error'}`);
 }
 
 export async function POST(request: Request) {
   const step = { current: 'INIT' };
 
   try {
+    console.log('[Payment Verify] START');
+    
     // ── STEP 1: Environment check ─────────────────────────────────────────
     step.current = 'ENV_CHECK';
-    console.log(`[PaymentVerify] ENV: key_mode=${keyMode}, key_id_present=${!!rzpKeyId}, secret_present=${!!rzpKeySecret}`);
-
+    
     if (!rzpKeySecret) {
-      console.error('[PaymentVerify] ENV FAILED: RAZORPAY_KEY_SECRET not set');
+      console.error('[Payment Verify] FAILED STEP: ENV_CHECK');
+      console.error('[Payment Verify] ERROR CODE: CONFIG_ERROR');
+      console.error('[Payment Verify] ERROR MESSAGE: RAZORPAY_KEY_SECRET not set');
       return NextResponse.json({ success: false, error: 'Payment gateway not configured', code: 'CONFIG_ERROR' }, { status: 500 });
     }
 
@@ -60,10 +59,11 @@ export async function POST(request: Request) {
       order_total_present: !!orderPayload?.total,
       order_items_count: Array.isArray(orderItems) ? orderItems.length : 0,
     };
-    console.log('[PaymentVerify] Request received:', JSON.stringify(fieldFlags));
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderPayload?.id || !orderPayload?.total || !Array.isArray(orderItems) || orderItems.length === 0) {
-      console.error('[PaymentVerify] PARSE_BODY FAILED: Missing required fields', fieldFlags);
+      console.error('[Payment Verify] FAILED STEP: PARSE_BODY');
+      console.error('[Payment Verify] ERROR CODE: MISSING_FIELDS');
+      console.error('[Payment Verify] ERROR MESSAGE: Missing required fields in request');
       return NextResponse.json({ success: false, error: 'Missing required fields', code: 'MISSING_FIELDS' }, { status: 400 });
     }
 
@@ -72,9 +72,8 @@ export async function POST(request: Request) {
     let session: any = null;
     try {
       session = await getVerifiedCustomerSession(request);
-      console.log(`[PaymentVerify] Authentication: ${session?.id ? 'SUCCESS' : 'NO_SESSION (proceeding anyway)'}`);
     } catch (authErr: any) {
-      console.warn('[PaymentVerify] Authentication: threw exception (proceeding anyway):', authErr?.message);
+      // safe to proceed without session
     }
 
     // ── STEP 4: Item price & quantity validation ───────────────────────────
@@ -83,7 +82,8 @@ export async function POST(request: Request) {
       const qty = Number(item.quantity);
       const prc = Number(item.price);
       if (isNaN(qty) || qty <= 0 || isNaN(prc) || prc < 0) {
-        console.error('[PaymentVerify] ITEM_VALIDATION FAILED: invalid qty or price', { qty, prc });
+        console.error('[Payment Verify] FAILED STEP: ITEM_VALIDATION');
+        console.error('[Payment Verify] ERROR CODE: INVALID_ITEMS');
         return NextResponse.json({ success: false, error: 'Invalid item quantity or price', code: 'INVALID_ITEMS' }, { status: 400 });
       }
     }
@@ -96,10 +96,10 @@ export async function POST(request: Request) {
       .digest('hex');
 
     if (generated_signature !== razorpay_signature) {
-      console.error('[PaymentVerify] Razorpay signature: FAILED (mismatch)');
+      console.error('[Payment Verify] FAILED STEP: SIGNATURE');
+      console.error('[Payment Verify] ERROR CODE: SIGNATURE_FAILED');
       return NextResponse.json({ success: false, error: 'Invalid payment signature', code: 'SIGNATURE_FAILED' }, { status: 400 });
     }
-    console.log('[PaymentVerify] Razorpay signature: SUCCESS');
 
     // ── STEP 6: Idempotency — check if already paid ───────────────────────
     step.current = 'IDEMPOTENCY';
@@ -110,13 +110,15 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (lookupErr) {
-      console.error('[PaymentVerify] Order lookup: FAILED', { code: lookupErr.code, message: lookupErr.message });
+      console.error('[Payment Verify] FAILED STEP: DB_LOOKUP');
+      console.error('[Payment Verify] ERROR CODE: DB_LOOKUP_ERROR');
       return NextResponse.json({ success: false, error: 'Failed to look up order', code: 'DB_LOOKUP_ERROR' }, { status: 500 });
     }
-    console.log(`[PaymentVerify] Order lookup: ${existingOrder ? 'SUCCESS' : 'NOT_FOUND'}, payment_status=${existingOrder?.payment_status || 'N/A'}`);
+    
+    console.log(`[Payment Verify] order found: ${existingOrder ? 'true' : 'false'}`);
 
     if (existingOrder?.payment_status === 'Paid') {
-      console.log(`[PaymentVerify] Idempotency: already Paid. Returning success.`);
+      console.log(`[Payment Verify] idempotency: already processed. Returning success.`);
       return NextResponse.json({
         success: true,
         message: 'Payment already verified',
@@ -130,16 +132,18 @@ export async function POST(request: Request) {
     let rzpPayment: any = null;
     try {
       rzpPayment = await razorpay.payments.fetch(razorpay_payment_id);
-      console.log(`[PaymentVerify] Razorpay API: SUCCESS — status=${rzpPayment.status}, amount=${rzpPayment.amount}, currency=${rzpPayment.currency}, rzp_order_id=${rzpPayment.order_id}`);
+      console.log(`[Payment Verify] razorpay payment fetched: true`);
     } catch (fetchErr: any) {
-      console.error('[PaymentVerify] Razorpay API: FAILED (proceeding on valid signature):', fetchErr?.message);
+      console.error('[Payment Verify] FAILED STEP: RAZORPAY_API_FETCH');
+      console.error('[Payment Verify] ERROR MESSAGE: Failed to fetch from Razorpay API');
     }
 
     // ── STEP 8: Payment validation ────────────────────────────────────────
     step.current = 'PAYMENT_VALIDATION';
     if (rzpPayment) {
       if (rzpPayment.status !== 'captured' && rzpPayment.status !== 'authorized') {
-        console.error(`[PaymentVerify] Amount validation: FAILED — payment status "${rzpPayment.status}" is not captured/authorized`);
+        console.error(`[Payment Verify] FAILED STEP: PAYMENT_STATUS_CHECK`);
+        console.error(`[Payment Verify] ERROR CODE: PAYMENT_NOT_CAPTURED`);
         return NextResponse.json({
           success: false,
           error: `Payment not completed (status: ${rzpPayment.status})`,
@@ -151,7 +155,8 @@ export async function POST(request: Request) {
       const authoritativeTotal = existingOrder?.total ?? Number(orderPayload.total);
       const expectedPaise = Math.round(Number(authoritativeTotal) * 100);
       if (rzpPayment.amount !== expectedPaise) {
-        console.error(`[PaymentVerify] Amount validation: FAILED — expected=${expectedPaise} paise, got=${rzpPayment.amount} paise`);
+        console.error(`[Payment Verify] FAILED STEP: AMOUNT_VALIDATION`);
+        console.error(`[Payment Verify] ERROR CODE: AMOUNT_MISMATCH`);
         return NextResponse.json({
           success: false,
           error: 'Payment amount does not match order total',
@@ -160,11 +165,12 @@ export async function POST(request: Request) {
       }
 
       if (rzpPayment.currency !== 'INR') {
-        console.error(`[PaymentVerify] Amount validation: FAILED — currency mismatch: ${rzpPayment.currency}`);
+        console.error(`[Payment Verify] FAILED STEP: CURRENCY_VALIDATION`);
+        console.error(`[Payment Verify] ERROR CODE: CURRENCY_MISMATCH`);
         return NextResponse.json({ success: false, error: 'Payment currency mismatch', code: 'CURRENCY_MISMATCH' }, { status: 400 });
       }
 
-      console.log('[PaymentVerify] Amount validation: SUCCESS');
+      console.log('[Payment Verify] amount validation: passed');
     }
 
     // ── STEP 9: Generate order number ─────────────────────────────────────
@@ -188,21 +194,20 @@ export async function POST(request: Request) {
       payment_method: orderPayload.payment_method || 'Razorpay',
     };
 
-    // Attempt 1: Full UPDATE on existing row (preferred — avoids upsert overwriting required FK columns)
-    let { error: updateErr } = await supabase
-      .from('orders')
-      .update({ ...baseUpdate, payment_completed_at: now })
-      .eq('id', orderPayload.id);
+    let upsertErr: any = null;
 
-    if (updateErr && (updateErr.code === '42703' || updateErr.message?.includes('does not exist'))) {
-      console.warn('[PaymentVerify] Database update: column missing, retrying without payment_completed_at:', updateErr.message);
-      const retry = await supabase.from('orders').update(baseUpdate).eq('id', orderPayload.id);
-      updateErr = retry.error;
-    }
+    if (existingOrder) {
+      let { error: updateErr } = await supabase
+        .from('orders')
+        .update({ ...baseUpdate, payment_completed_at: now })
+        .eq('id', orderPayload.id);
 
-    if (updateErr) {
-      // If order doesn't exist yet (Draft was never saved), do a full upsert
-      console.warn('[PaymentVerify] Database update: UPDATE failed, attempting upsert:', { code: updateErr.code, message: updateErr.message });
+      if (updateErr && (updateErr.code === '42703' || updateErr.message?.includes('does not exist'))) {
+        const retry = await supabase.from('orders').update(baseUpdate).eq('id', orderPayload.id);
+        updateErr = retry.error;
+      }
+      upsertErr = updateErr;
+    } else {
       const upsertPayload: any = {
         id: orderPayload.id,
         ...baseUpdate,
@@ -215,14 +220,18 @@ export async function POST(request: Request) {
         user_phone: orderPayload.user_phone || orderPayload.userPhone || '',
         user_email: orderPayload.user_email || orderPayload.userEmail || '',
         coupon_code: orderPayload.coupon_code || null,
-        customer_id: session?.id || existingOrder?.customer_id || null,
+        customer_id: session?.id || null,
         source: orderPayload.source || 'website',
       };
 
-      const { error: upsertErr } = await supabase.from('orders').upsert([upsertPayload], { onConflict: 'id' });
+      const { error: errorResult } = await supabase.from('orders').upsert([upsertPayload], { onConflict: 'id' });
+      upsertErr = errorResult;
+    }
 
-      if (upsertErr) {
-        console.error('[PaymentVerify] Database update: FAILED (all attempts):', { code: upsertErr.code, message: upsertErr.message, details: upsertErr.details, hint: upsertErr.hint });
+    if (upsertErr) {
+      console.error('[Payment Verify] FAILED STEP: DB_UPDATE');
+      console.error('[Payment Verify] ERROR CODE: DB_UPDATE_FAILED');
+      console.error('[Payment Verify] ERROR MESSAGE: Failed to upsert order record', { message: upsertErr.message });
         return NextResponse.json({
           success: false,
           error: 'Failed to record payment in database. Your payment was successful — please contact support with your payment ID.',
@@ -230,9 +239,8 @@ export async function POST(request: Request) {
           paymentId: razorpay_payment_id,
         }, { status: 500 });
       }
-    }
-
-    console.log(`[PaymentVerify] Database update: SUCCESS — order ${generatedOrderNumber} marked Paid`);
+    console.log(`[Payment Verify] database update: success`);
+    console.log(`[Payment Verify] order status: Processing`);
 
     // ── STEP 11: Save order items (idempotent delete+insert) ─────────────
     step.current = 'ORDER_ITEMS';
@@ -248,42 +256,66 @@ export async function POST(request: Request) {
       }));
       await supabase.from('order_items').delete().eq('order_id', orderPayload.id);
       const { error: itemsErr } = await supabase.from('order_items').insert(itemsToSave);
+      
       if (itemsErr) {
-        console.error('[PaymentVerify] Order items insert warning:', { code: itemsErr.code, message: itemsErr.message });
+        console.error('[Payment Verify] FAILED STEP: ORDER_ITEMS_INSERT');
+        console.error('[Payment Verify] ERROR CODE: DB_ITEMS_FAILED');
+        console.error('[Payment Verify] ERROR MESSAGE: Failed to insert order items', { message: itemsErr.message });
+        // Fail the request if items cannot be saved!
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to record order items in database. Your payment was successful — please contact support with your payment ID.',
+          code: 'DB_ITEMS_FAILED',
+          paymentId: razorpay_payment_id,
+        }, { status: 500 });
       } else {
-        console.log(`[PaymentVerify] Order items: ${itemsToSave.length} item(s) saved`);
+        console.log(`[Payment Verify] order items: ${itemsToSave.length} item(s) saved`);
       }
     }
 
     // ── STEP 12: Post-success tasks (non-blocking, errors don't affect response) ──
     step.current = 'POST_SUCCESS';
+    
+    // Invoice
     try {
-      // Invoice
-      createInvoice(orderPayload.id).catch(e => console.error('[PaymentVerify] Invoice warning:', e?.message));
+      createInvoice(orderPayload.id).then(() => {
+        console.log('[Payment Verify] invoice: success');
+      }).catch(e => {
+        console.error('[Payment Verify] FAILED STEP: INVOICE_GENERATION');
+        console.error('[Payment Verify] ERROR MESSAGE: ' + (e?.message || 'Invoice creation failed'));
+      });
+    } catch(e) {}
 
-      // Print queue
+    // Print queue
+    try {
       import('@/lib/services/printing').then(({ PrintingService }) => {
         const branchId = (orderPayload.shipping_address as any)?.branch_id || 'Main';
-        const { data: fullOrder } = {} as any; // fetch is synchronous only — print will use saved data
         PrintingService.queueOrderPrints({ id: orderPayload.id, order_number: generatedOrderNumber, ...orderPayload, order_items: orderItems }, branchId)
-          .catch(e => console.error('[PaymentVerify] Print queue warning:', e?.message));
-      }).catch(e => console.error('[PaymentVerify] Print import warning:', e?.message));
+          .catch(e => {
+            console.error('[Payment Verify] FAILED STEP: PRINT_QUEUE');
+          });
+      }).catch(e => {});
+    } catch(e) {}
 
-      // WhatsApp — use correct signature: (phone: string, orderId: string, amount: number)
+    // WhatsApp
+    try {
       const cleanPhone = String(orderPayload.user_phone || '').replace(/\D/g, '').slice(-10);
       if (cleanPhone.length === 10) {
         WhatsAppService.sendOrderConfirmation(
           `91${cleanPhone}`,
           generatedOrderNumber,
           Number(orderPayload.total)
-        ).catch(e => console.error('[PaymentVerify] WhatsApp warning:', e?.message));
+        ).then(() => {
+          console.log('[Payment Verify] WhatsApp: success');
+        }).catch(e => {
+          console.error('[Payment Verify] FAILED STEP: WHATSAPP_CONFIRMATION');
+          console.error('[Payment Verify] ERROR MESSAGE: ' + (e?.message || 'WhatsApp message failed'));
+        });
       }
-    } catch (postErr: any) {
-      console.warn('[PaymentVerify] Post-success tasks warning:', postErr?.message);
-    }
+    } catch(e) {}
 
     // ── STEP 13: Return success ───────────────────────────────────────────
-    console.log(`[PaymentVerify] COMPLETE: order ${generatedOrderNumber}, payment_id=${razorpay_payment_id}`);
+    console.log(`[Payment Verify] response: success`);
     return NextResponse.json({
       success: true,
       message: 'Payment verified and order confirmed.',
@@ -292,17 +324,14 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error(`[PaymentVerify] UNCAUGHT EXCEPTION at step "${step.current}":`, {
-      name: error?.name,
-      message: error?.message,
-      code: error?.code,
-      supabaseCode: error?.code,
-      supabaseHint: error?.hint,
-      supabaseDetails: error?.details,
-    });
+    console.error(`[Payment Verify] FAILED STEP: UNCAUGHT_EXCEPTION_AT_${step.current}`);
+    console.error(`[Payment Verify] ERROR CODE: SERVER_ERROR`);
+    console.error(`[Payment Verify] ERROR MESSAGE: ${error?.message || 'Unknown error'}`);
+    
     return NextResponse.json({
       success: false,
-      error: 'Payment verification encountered a server error. If your payment was deducted, please check your order history before trying again.',
+      error: 'PAYMENT_VERIFICATION_FAILED',
+      message: 'We could not complete your order confirmation. Please check your order history before retrying.',
       code: 'SERVER_ERROR',
     }, { status: 500 });
   }

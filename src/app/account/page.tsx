@@ -358,12 +358,29 @@ function AccountContent() {
     fetchZones();
   }, []);
 
-  // Redirection when not logged in
+  // Redirection when not logged in with defensive guard against infinite loops
   useEffect(() => {
     if (!isAuthChecking && !isLoggedIn) {
-      window.location.href = "/login?redirect=/account";
+      // Defensive redirect guard: only redirect if we haven't recently bounced
+      const recentBounces = parseInt(sessionStorage.getItem('mehta_auth_bounces') || '0', 10);
+      const lastBounceTime = parseInt(sessionStorage.getItem('mehta_auth_bounce_time') || '0', 10);
+      
+      const now = Date.now();
+      if (recentBounces > 2 && (now - lastBounceTime) < 5000) {
+        console.error("Infinite redirect loop detected. Halting redirect to /login.");
+        return; // Halt the loop
+      }
+
+      sessionStorage.setItem('mehta_auth_bounces', (recentBounces + 1).toString());
+      sessionStorage.setItem('mehta_auth_bounce_time', now.toString());
+      
+      router.replace("/login?redirect=/account");
+    } else if (isLoggedIn) {
+      // Clear bounce tracking on successful auth
+      sessionStorage.removeItem('mehta_auth_bounces');
+      sessionStorage.removeItem('mehta_auth_bounce_time');
     }
-  }, [isLoggedIn, isAuthChecking]);
+  }, [isLoggedIn, isAuthChecking, router]);
 
   // Sync profile from context and fetch addresses/orders in parallel
   useEffect(() => {
@@ -447,7 +464,7 @@ function AccountContent() {
 
         // Fetch addresses, orders, and products concurrently
         const [addrsRes, ordersRes, allProducts] = await Promise.all([
-          supabase.from('addresses').select('id, full_name, mobile, address, locality, city, pincode, state, is_default, address_type, instructions').eq('customer_id', customerId),
+          supabase.from('addresses').select('id, full_name, mobile, address, landmark, city, pincode, state, is_default').eq('customer_id', customerId),
           orderQuery.order('created_at', { ascending: false }),
           fetchProducts()
         ]);

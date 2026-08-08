@@ -51,10 +51,8 @@ export async function POST(req: Request) {
 
     if (!customer) {
       logRejectedSubmission('/api/auth/login/send-otp', 'Non-existent account login attempt', { phone: cleanPhone });
-      // Prevent enumeration: pretend OTP was sent. 
-      // Add a random delay (500-1500ms) to simulate the network call to the SMS provider
-      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 1000) + 500));
-      return NextResponse.json({ success: true, message: 'OTP sent successfully' });
+      // Return 404 so the frontend can automatically redirect the user to the Sign Up flow.
+      return NextResponse.json({ success: false, error: 'No account found. Please sign up.' }, { status: 404 });
     }
 
     const result = await sendOTP(cleanPhone);

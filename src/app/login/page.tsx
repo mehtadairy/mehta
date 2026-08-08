@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabaseClient';
 import { useCustomerAuth } from '@/lib/context/CustomerAuthContext';
+import WhatsAppOTPLayout from '@/components/WhatsAppOTPLayout';
 
 function LoginContent() {
   const router = useRouter();
@@ -27,9 +28,22 @@ function LoginContent() {
 
   const redirectUrl = searchParams.get('redirect') || '/account';
 
-  // 1. Redirect if already authenticated
+  // 1. Redirect if already authenticated with defensive guard
   useEffect(() => {
     if (!isAuthChecking && isLoggedIn) {
+      // Defensive redirect guard: only redirect if we haven't recently bounced
+      const recentBounces = parseInt(sessionStorage.getItem('mehta_auth_bounces') || '0', 10);
+      const lastBounceTime = parseInt(sessionStorage.getItem('mehta_auth_bounce_time') || '0', 10);
+      
+      const now = Date.now();
+      if (recentBounces > 2 && (now - lastBounceTime) < 5000) {
+        console.error("Infinite redirect loop detected. Halting redirect back to account.");
+        return; // Halt the loop
+      }
+
+      sessionStorage.setItem('mehta_auth_bounces', (recentBounces + 1).toString());
+      sessionStorage.setItem('mehta_auth_bounce_time', now.toString());
+      
       router.replace(redirectUrl);
     }
   }, [isLoggedIn, isAuthChecking, redirectUrl, router]);

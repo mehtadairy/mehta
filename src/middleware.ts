@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          // Create a new response only if we haven't already decided to redirect
           response = NextResponse.next({
             request,
           });
@@ -74,7 +75,10 @@ export async function middleware(request: NextRequest) {
       if (isProtectedAdminApi) {
         return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
       }
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      const redirectRes = NextResponse.redirect(new URL('/admin/login', request.url));
+      // Copy over refreshed cookies if any
+      response.cookies.getAll().forEach(cookie => redirectRes.cookies.set(cookie.name, cookie.value));
+      return redirectRes;
     }
   }
 
@@ -92,7 +96,9 @@ export async function middleware(request: NextRequest) {
       if (isProtectedWorkerApi) {
         return NextResponse.json({ error: 'Unauthorized: Worker authentication required' }, { status: 401 });
       }
-      return NextResponse.redirect(new URL('/worker/login', request.url));
+      const redirectRes = NextResponse.redirect(new URL('/worker/login', request.url));
+      response.cookies.getAll().forEach(cookie => redirectRes.cookies.set(cookie.name, cookie.value));
+      return redirectRes;
     }
   }
 
@@ -111,7 +117,9 @@ export async function middleware(request: NextRequest) {
     if (!isValidCustomer) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const redirectRes = NextResponse.redirect(loginUrl);
+      response.cookies.getAll().forEach(cookie => redirectRes.cookies.set(cookie.name, cookie.value));
+      return redirectRes;
     }
   }
 
@@ -122,13 +130,14 @@ export async function middleware(request: NextRequest) {
       const customerPayload = await verifyCustomerSession(customerToken);
       if (customerPayload?.id) isLoggedIn = true;
     }
-    if (!isLoggedIn) {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (supabaseUser?.id) isLoggedIn = true;
+    if (!isLoggedIn && sbUser?.id) {
+      isLoggedIn = true;
     }
 
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL('/account', request.url));
+      const redirectRes = NextResponse.redirect(new URL('/account', request.url));
+      response.cookies.getAll().forEach(cookie => redirectRes.cookies.set(cookie.name, cookie.value));
+      return redirectRes;
     }
   }
 

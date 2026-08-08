@@ -49,10 +49,10 @@ function SignupContent() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/whatsapp-otp/send', {
+      const res = await fetch('/api/auth/signup/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `91${phone}`, intent: 'signup' }),
+        body: JSON.stringify({ phone }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -76,15 +76,13 @@ function SignupContent() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/whatsapp-otp/verify', {
+      const res = await fetch('/api/auth/signup/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: `91${phone}`,
+          phone,
           otp,
-          reqId,
-          intent: 'signup',
-          fullName: name,
+          name,
           email,
         }),
       });
@@ -93,13 +91,15 @@ function SignupContent() {
         throw new Error(data.error || 'Invalid OTP');
       }
 
-      if (data.sessionToken) {
-        document.cookie = `mehta_customer_session=${data.sessionToken}; path=/; max-age=2592000; SameSite=Lax`;
-      }
+      localStorage.setItem("mehta_logged_in", "true");
+      localStorage.setItem("mehta_user_phone", phone.replace(/\D/g, '').slice(-10));
+      
       if (data.customer) {
-        localStorage.setItem('mehta_customer_user', JSON.stringify(data.customer));
+        localStorage.setItem("mehta_user_id", data.customer.id);
+        if (data.customer.name) localStorage.setItem("mehta_user_name", data.customer.name);
+        if (data.customer.email) localStorage.setItem("mehta_user_email", data.customer.email);
       }
-      window.dispatchEvent(new Event('customerAuthChanged'));
+      window.dispatchEvent(new Event('authUpdated'));
 
       router.push(redirectUrl);
     } catch (err: any) {
@@ -113,10 +113,10 @@ function SignupContent() {
     setIsLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/whatsapp-otp/send', {
+      const res = await fetch('/api/auth/signup/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `91${phone}`, intent: 'signup' }),
+        body: JSON.stringify({ phone }),
       });
       const data = await res.json();
       if (!data.success) {
