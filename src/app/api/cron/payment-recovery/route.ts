@@ -78,7 +78,6 @@ export async function GET(request: Request) {
             order_number: generatedOrderNumber,
             payment_status: 'Paid',
             status: 'Processing',
-            paid_at: new Date().toISOString(),
             payment_completed_at: new Date().toISOString(),
             payment_id: recovery.payment_id,
             payment_method: 'Razorpay'

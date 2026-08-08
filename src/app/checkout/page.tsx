@@ -233,12 +233,12 @@ function CheckoutContent() {
               setFinalOrderId(order.id);
               setPaymentSuccess(true);
             } else {
-              alert(verifyData.error || "Payment verification failed!");
+              alert(verifyData.error || "Payment verification failed. If your payment was deducted, please check your order history before trying again.");
               setIsPaying(false);
             }
           } catch (err: any) {
             console.error("Verification error:", err);
-            alert("Error verifying payment transaction.");
+            alert("Payment verification encountered an error. If your payment was deducted, please check your order history before trying again.");
             setIsPaying(false);
           }
         },
@@ -883,11 +883,11 @@ function CheckoutContent() {
                 })),
               });
             } else {
-              alert(verifyData.error || "Payment verification failed!");
+              alert(verifyData.error || "Payment verification failed. If your payment was deducted, please check your order history before trying again.");
             }
           } catch (err: any) {
             console.error("Verification error:", err);
-            alert("Error verifying payment transaction: " + (err?.message || "Unknown error"));
+            alert("Payment verification encountered an error. If your payment was deducted, please check your order history before trying again.");
           } finally {
             setIsPaying(false);
           }

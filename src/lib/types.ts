@@ -90,6 +90,15 @@ export interface Order {
   userEmail?: string;
   invoice?: any;
   createdAt?: string;
+  payment_completed_at?: string;
+  printed?: boolean;
+  print_status?: string;
+  cancellation_reason?: string;
+  cancelled_by?: string;
+  cancelled_at?: string;
+  invoice_url?: string;
+  paid_at?: string;
+  schema_drift?: boolean;
   [key: string]: any;
 }
 

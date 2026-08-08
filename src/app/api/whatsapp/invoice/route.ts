@@ -136,7 +136,6 @@ export async function POST(req: Request) {
           .update({
             payment_status: 'Paid',
             status: 'Processing',
-            paid_at: new Date().toISOString(),
             payment_completed_at: new Date().toISOString()
           })
           .eq('id', order.id);

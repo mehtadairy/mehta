@@ -8,6 +8,9 @@ interface CancelOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newStatus: string) => void;
+  total?: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
 }
 
 const REASONS = [
@@ -19,13 +22,15 @@ const REASONS = [
   "Other"
 ];
 
-export default function CancelOrderDialog({ orderId, isOpen, onClose, onSuccess }: CancelOrderDialogProps) {
+export default function CancelOrderDialog({ orderId, isOpen, onClose, onSuccess, total, paymentMethod, paymentStatus }: CancelOrderDialogProps) {
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [otherReason, setOtherReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   if (!isOpen) return null;
+
+  const isOnlinePaid = (paymentMethod === "Online" || paymentMethod === "Razorpay") && paymentStatus?.toLowerCase() === "paid";
 
   const handleSubmit = async () => {
     if (!selectedReason) {
@@ -75,8 +80,27 @@ export default function CancelOrderDialog({ orderId, isOpen, onClose, onSuccess 
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 p-4 rounded-xl text-xs border border-red-100 dark:border-red-900/20">
-            <strong>Warning:</strong> Once cancelled, this action cannot be undone.
+          <div className="bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 p-4 rounded-xl text-[13px] border border-red-100 dark:border-red-900/20 flex flex-col gap-2">
+            <p><strong>Warning:</strong> Are you sure you want to cancel this order? This action cannot be undone.</p>
+            {total !== undefined && (
+              <div className="mt-2 border-t border-red-200/50 pt-2 font-medium">
+                <div className="flex justify-between">
+                  <span>Order Total:</span>
+                  <span>₹{total}</span>
+                </div>
+                {isOnlinePaid && (
+                  <div className="flex justify-between font-bold text-red-800">
+                    <span>Refund Amount:</span>
+                    <span>₹{total}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {isOnlinePaid && (
+              <p className="text-[11px] mt-1 opacity-90">
+                Refund will be initiated to your original payment method automatically.
+              </p>
+            )}
           </div>
 
           <div>
@@ -101,38 +125,43 @@ export default function CancelOrderDialog({ orderId, isOpen, onClose, onSuccess 
                 </label>
               ))}
             </div>
+
+            {selectedReason === "Other" && (
+              <div className="mt-3 animate-in slide-in-from-top-2">
+                <textarea
+                  value={otherReason}
+                  onChange={(e) => setOtherReason(e.target.value)}
+                  placeholder="Please specify your reason..."
+                  className="w-full bg-white dark:bg-[#2A1E17] border border-[#EAE0D3] dark:border-[#4E3A2D] rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#D46D2D]/30 focus:border-[#D46D2D] outline-none resize-none transition-all placeholder:text-[#A8927E]"
+                  rows={3}
+                />
+              </div>
+            )}
           </div>
 
-          {selectedReason === "Other" && (
-            <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-              <textarea
-                value={otherReason}
-                onChange={(e) => setOtherReason(e.target.value)}
-                placeholder="Please specify your reason..."
-                className="w-full border border-[#EAE0D3] dark:border-[#3E2E23] bg-white dark:bg-[#1E1510] rounded-xl p-3 text-xs text-[#2A1E17] dark:text-[#FCF9F2] focus:ring-2 focus:ring-[#D46D2D] focus:border-[#D46D2D] outline-none resize-none transition-all placeholder:text-[#7E6B5A]/50"
-                rows={3}
-              />
+          {error && (
+            <div className="text-red-500 text-xs font-medium bg-red-50 p-2 rounded-lg border border-red-100">
+              {error}
             </div>
           )}
-
-          {error && <p className="text-red-500 text-xs font-semibold">{error}</p>}
         </div>
 
-        <div className="p-6 bg-[#FAF6EE] dark:bg-[#201611] border-t border-[#EAE0D3] dark:border-[#3E2E23] flex gap-3 justify-end">
-          <button 
+        <div className="p-4 bg-[#FAF6EE] dark:bg-[#2A1E17] border-t border-[#EAE0D3] dark:border-[#3E2E23] flex flex-row gap-3">
+          <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2.5 text-xs font-bold text-[#7E6B5A] hover:text-[#2A1E17] dark:text-[#A8927E] dark:hover:text-[#FCF9F2] hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-all active:scale-95"
+            className="flex-1 bg-white dark:bg-[#3E2E23] hover:bg-gray-50 dark:hover:bg-[#4E3A2D] text-[#2A1E17] dark:text-[#FCF9F2] border border-[#EAE0D3] dark:border-[#4E3A2D] py-2.5 rounded-xl font-bold text-xs transition-colors disabled:opacity-50"
           >
-            Cancel
+            Keep Order
           </button>
           <button 
             onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-5 py-2.5 text-xs font-bold text-white bg-[#D46D2D] hover:bg-[#BF5E23] rounded-xl transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+            disabled={!selectedReason || isSubmitting}
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Confirm Cancellation
+            Cancel Order
           </button>
         </div>
       </div>

@@ -111,7 +111,11 @@ import {
   DollarSign,
   Filter,
   ArrowUpDown,
-  Sliders
+  Sliders,
+  CreditCard,
+  Truck,
+  Package,
+  FileText
 } from "lucide-react";
 import { useLocation } from "@/lib/context/LocationContext";
 
@@ -1343,83 +1347,103 @@ function AccountContent() {
                         <div className="flex flex-col gap-6">
                           {filtered.map((order) => {
                             const isExpanded = expandedOrderId === order.id;
-                            const mainProduct = order.items[0];
+                            // Group identical products with same variant/weight and price
+                            const groupedItems = order.items?.reduce((acc: any[], item: any) => {
+                              const existing = acc.find(i => i.productId === item.productId && i.weight === item.weight && i.price === item.price);
+                              if (existing) {
+                                existing.quantity = (existing.quantity || 1) + (item.quantity || 1);
+                              } else {
+                                acc.push({ ...item, quantity: item.quantity || 1 });
+                              }
+                              return acc;
+                            }, []) || [];
+
+                            const totalQuantity = groupedItems.reduce((sum: number, it: any) => sum + (it.quantity || 1), 0);
 
                             return (
-                              <div key={order.id} className="border border-[#EAE0D3] rounded-3xl overflow-hidden shadow-2xs bg-white flex flex-col">
+                              <div key={order.id} className="border border-[#EAE0D3]/80 rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.02)] bg-white flex flex-col mb-4">
                                 
-                                {/* Order Card Main Section */}
-                                <div className="p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                                  {/* Large Product Image */}
-                                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center">
-                                    {mainProduct?.image && !mainProduct.image.includes("logo.png") ? (
-                                      <img
-                                        src={img.thumbnail(mainProduct.image)}
-                                        alt={mainProduct.productName || "Sweet Box"}
-                                        className="h-full w-full object-cover"
-                                        onError={(e) => {
-                                          const parent = e.currentTarget.parentElement;
-                                          if (parent) {
-                                            parent.innerHTML = '<div class="h-full w-full bg-[#FDF2EC] flex items-center justify-center text-[#D46D2D] text-lg">📦</div>';
-                                          }
-                                        }}
-                                      />
-                                    ) : (
-                                      <div className="h-full w-full bg-[#FDF2EC] flex items-center justify-center text-[#D46D2D] text-lg font-bold">
-                                        📦
-                                      </div>
+                                {/* 1. Order Header (Compact) */}
+                                <div className="bg-[#FAF6EE]/50 px-4 py-3 border-b border-[#EAE0D3]/50 flex justify-between items-center gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-lg bg-[#FDF2EC] flex flex-shrink-0 items-center justify-center text-[#D46D2D] border border-[#F3DFD1]">
+                                      <Package className="h-4 w-4" strokeWidth={2.5} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-serif font-bold text-[#2A1E17] text-sm tracking-wide leading-tight">ORDER #{order.orderNumber || order.id.slice(0, 8)}</span>
+                                      <span className="text-[10px] text-gray-500 font-medium mt-0.5">Placed {order.date}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                    <span className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border ${
+                                      order.status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                      order.status === "Cancelled" ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                                    }`}>
+                                      {order.status}
+                                    </span>
+                                    {order.status === "Cancelled" && order.paymentStatus && order.paymentStatus.toLowerCase().includes("refund") && (
+                                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                                        order.paymentStatus === "Refund Completed" ? "bg-emerald-50 text-emerald-800 border-emerald-300" :
+                                        order.paymentStatus === "Refund Reversed" ? "bg-purple-50 text-purple-800 border-purple-300" :
+                                        order.paymentStatus === "Refund Failed" ? "bg-red-50 text-red-800 border-red-300" :
+                                        "bg-amber-50 text-amber-800 border-amber-300 animate-pulse"
+                                      }`}>
+                                        {order.paymentStatus}
+                                      </span>
                                     )}
                                   </div>
+                                </div>
 
-                                  {/* Order description, amount, status chip */}
-                                  <div className="flex-grow flex flex-col">
-                                    <div className="flex flex-wrap justify-between items-start gap-2">
-                                      <div>
-                                        <h4 className="font-serif text-sm font-bold text-[#2A1E17] leading-tight">
-                                          {mainProduct?.productName || "Mehta Dairy Sweets"}
-                                          {order.items.length > 1 && ` +${order.items.length - 1} items`}
-                                        </h4>
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5 block">
-                                          Order #{order.orderNumber || order.id.slice(0, 8)}
-                                        </span>
-                                      </div>
-                                      
-                                      <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full border ${
-                                        order.status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-150" :
-                                        order.status === "Cancelled" ? "bg-rose-50 text-rose-700 border-rose-150" : "bg-amber-50 text-amber-700 border-amber-150"
-                                      }`}>
-                                        {order.status}
-                                      </span>
+                                <div className="px-4 py-3 flex flex-col gap-3.5">
+                                  {/* 2. Items Section (Compact) */}
+                                  <div className="flex flex-col">
+                                    <div className="flex justify-between items-center mb-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-[#EAE0D3]/30 pb-1.5">
+                                      <span>Items in this order</span>
+                                      <span>{totalQuantity} {totalQuantity === 1 ? 'Item' : 'Items'}</span>
                                     </div>
+                                    <div className="flex flex-col gap-1">
+                                      {groupedItems.map((item: any, itemIdx: number) => (
+                                        <div key={itemIdx} className="flex justify-between items-center py-0.5">
+                                          <span className="font-semibold text-[#2A1E17] text-[13px]">{item.productName || "Sweet Box"}</span>
+                                          <span className="text-[11px] font-bold text-[#7E6B5A]">
+                                            {item.weight || "Standard"} × {item.quantity}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
 
-                                    {/* Order details parameters row */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-[10px] font-semibold text-[#7E6B5A]">
-                                      <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-400 uppercase font-black">Placed Date</span>
-                                        <span className="text-slate-800 mt-0.5">{order.date}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-400 uppercase font-black">Total Weight</span>
-                                        <span className="text-slate-800 mt-0.5">{mainProduct?.weight || "500g"}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-400 uppercase font-black">Expected Delivery</span>
-                                        <span className="text-slate-800 mt-0.5">{order.status === 'Delivered' ? 'Delivered ✓' : '2-3 Days'}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-400 uppercase font-black">Grand Total</span>
-                                        <span className="text-brand-orange text-xs font-black mt-0.5">₹{order.total}</span>
-                                      </div>
+                                  {/* 3. Compact Status */}
+                                  <div className="flex items-center gap-2 text-xs font-semibold text-[#2A1E17] bg-[#FCF9F2]/60 px-3 py-2 rounded-lg border border-[#EAE0D3]/40">
+                                    <div className={`h-1.5 w-1.5 rounded-full ${order.status === 'Cancelled' ? 'bg-rose-500' : order.status === 'Delivered' ? 'bg-emerald-500' : 'bg-[#D46D2D]'}`}></div>
+                                    {order.status === 'Cancelled' ? 'Cancelled' : 
+                                     order.status === 'Delivered' ? 'Delivered successfully' : 
+                                     `${order.status} · Expected delivery 2–3 Days`}
+                                  </div>
+
+                                  {/* 4. Summary Row (Compact) */}
+                                  <div className="flex justify-between items-center pt-2.5 border-t border-[#EAE0D3]/40">
+                                    <div className="flex flex-col">
+                                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Placed</span>
+                                      <span className="text-xs font-semibold text-[#2A1E17]">{order.date}</span>
+                                    </div>
+                                    <div className="flex flex-col text-center">
+                                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Units</span>
+                                      <span className="text-xs font-semibold text-[#2A1E17]">{totalQuantity}</span>
+                                    </div>
+                                    <div className="flex flex-col text-right">
+                                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Grand Total</span>
+                                      <span className="text-[13px] font-black text-[#D46D2D]">₹{order.total}</span>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Order Action Buttons */}
-                                <div className="px-5 py-3.5 bg-gray-50 border-t border-[#EAE0D3]/60 flex flex-wrap gap-2.5 items-center justify-between text-xs font-bold">
-                                  <div className="flex items-center gap-2">
+                                {/* 5. Action Buttons (Compact) */}
+                                <div className="px-4 py-3 bg-[#FAF6EE]/40 border-t border-[#EAE0D3]/50 flex flex-wrap gap-2 items-center justify-between">
+                                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                     <button
                                       onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                                      className="bg-white hover:bg-gray-50 text-[#2A1E17] border border-[#EAE0D3] px-4 py-2 rounded-xl transition-all cursor-pointer shadow-3xs"
+                                      className="flex-1 sm:flex-none text-center bg-white hover:bg-gray-50 text-[#2A1E17] border border-[#EAE0D3] px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all shadow-3xs"
                                     >
                                       {isExpanded ? "Hide Details" : "View Details"}
                                     </button>
@@ -1429,19 +1453,18 @@ function AccountContent() {
                                         href={`/api/invoices/download?invoiceId=${order.invoice.id}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="bg-white hover:bg-gray-50 text-amber-700 border border-[#EAE0D3] px-4 py-2 rounded-xl transition-all cursor-pointer shadow-3xs"
+                                        className="flex-1 sm:flex-none text-center bg-white hover:bg-gray-50 text-amber-700 border border-[#EAE0D3] px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all shadow-3xs flex items-center justify-center gap-1.5"
                                       >
-                                        📥 Invoice
+                                        <FileText className="w-3.5 h-3.5" /> Invoice
                                       </a>
                                     ) : null}
                                   </div>
 
-                                  <div className="flex gap-2">
-                                    {/* Cancel order dialog launch */}
+                                  <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                                     {['Pending Payment', 'Paid', 'Confirmed', 'Processing'].includes(order.status) && (
                                       <button
                                         onClick={() => setCancellingOrderId(order.id)}
-                                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-2 rounded-xl transition-all cursor-pointer"
+                                        className="flex-1 sm:flex-none bg-transparent hover:bg-rose-50 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all"
                                       >
                                         Cancel Order
                                       </button>
@@ -1449,9 +1472,9 @@ function AccountContent() {
 
                                     <button
                                       onClick={() => handleOrderAgain(order.items)}
-                                      className="bg-[#D46D2D] hover:bg-[#BF5E23] text-white px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                                      className="flex-1 sm:flex-none bg-[#D46D2D] hover:bg-[#BF5E23] text-white px-4 py-2 rounded-lg text-[11px] font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
                                     >
-                                      Buy Again
+                                      <ShoppingBag className="w-3.5 h-3.5" /> Buy Again
                                     </button>
                                   </div>
                                 </div>
@@ -1623,6 +1646,9 @@ function AccountContent() {
                   <CancelOrderDialog
                     orderId={cancellingOrderId}
                     isOpen={!!cancellingOrderId}
+                    total={orders.find(o => o.id === cancellingOrderId)?.total}
+                    paymentMethod={orders.find(o => o.id === cancellingOrderId)?.paymentMethod}
+                    paymentStatus={orders.find(o => o.id === cancellingOrderId)?.paymentStatus}
                     onClose={() => setCancellingOrderId(null)}
                     onSuccess={(newStatus) => {
                       setOrders(prev => prev.map(o => o.id === cancellingOrderId ? { ...o, status: newStatus } as any : o));

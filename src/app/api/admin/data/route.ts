@@ -32,14 +32,28 @@ export async function GET(request: Request) {
       invoicesResult,
       notificationsResult,
       recoveryResult,
+      refundsResult,
     ] = await Promise.all([
       // 1. Orders with nested order_items and invoices (lean columns)
       supabaseServer
         .from('orders')
-        .select('id, order_number, created_at, status, total, subtotal, delivery_charge, discount, payment_status, payment_method, payment_id, paid_at, payment_completed_at, invoice_url, user_name, user_phone, user_email, shipping_address, source, cancellation_reason, cancelled_by, cancelled_at, printed, print_status, order_items(product_id, product_name, weight, quantity, price, image), invoices(id, invoice_number, pdf_url, created_at)', { count: 'exact' })
+        .select('id, order_number, created_at, status, total, subtotal, delivery_charge, discount, payment_status, payment_method, payment_id, payment_completed_at, invoice_url, user_name, user_phone, user_email, shipping_address, source, cancellation_reason, cancelled_by, cancelled_at, printed, print_status, order_items(product_id, product_name, weight, quantity, price, image), invoices(id, invoice_number, pdf_url, created_at)', { count: 'exact' })
         .neq('status', 'Draft')
         .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1),
+        .range(offset, offset + limit - 1)
+        .then(async (r) => {
+          if (r.error && (r.error.code === '42703' || r.error.message.includes('does not exist'))) {
+            console.warn("Schema drift detected in orders table, falling back to safe columns");
+            const safeResult = await supabaseServer
+              .from('orders')
+              .select('id, order_number, created_at, status, total, subtotal, delivery_charge, discount, payment_status, payment_method, payment_id, user_name, user_phone, user_email, shipping_address, source, order_items(product_id, product_name, weight, quantity, price, image)', { count: 'exact' })
+              .neq('status', 'Draft')
+              .order('created_at', { ascending: false })
+              .range(offset, offset + limit - 1);
+            return { ...safeResult, schema_drift: true } as any;
+          }
+          return r;
+        }),
 
       // 2. Customers — lean fields only
       supabaseServer
@@ -48,10 +62,10 @@ export async function GET(request: Request) {
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1),
 
-      // 3. Payments — lean fields only
+      // 3. Payments — lean fields only (payment_method & razorpay_payment_id don't exist in this table)
       supabaseServer
         .from('payments')
-        .select('id, order_id, amount, status, payment_method, razorpay_payment_id, created_at', { count: 'exact' })
+        .select('id, order_id, amount, status, created_at', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1)
         .then(r => r, err => ({ data: [], count: 0, error: err })),
@@ -78,6 +92,14 @@ export async function GET(request: Request) {
         .order('created_at', { ascending: false })
         .limit(50)
         .then(r => r, err => ({ data: [], error: err })),
+
+      // 7. Refunds — lean fields + limit 50
+      supabaseServer
+        .from('refunds')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+        .then(r => r, err => ({ data: [], error: err })),
     ]);
 
     if (ordersResult.error) throw ordersResult.error;
@@ -99,7 +121,9 @@ export async function GET(request: Request) {
         invoices: invoicesResult.data || [],
         notifications: notificationsResult.data || [],
         paymentRecoveries: recoveryResult.data || [],
-      }
+        refunds: refundsResult?.data || [],
+      },
+      schema_drift: (ordersResult as any).schema_drift || false,
     });
 
   } catch (error: any) {
