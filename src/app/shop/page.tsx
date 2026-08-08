@@ -847,7 +847,7 @@ function ShopContent() {
                           />
                         </div>
                         <span className="font-serif text-[10px] font-extrabold text-[#4A2F1F] tracking-wide line-clamp-1 mt-1">
-                          {t(`cat.${cat.slug}`) || cat.name}
+                          {t(`cat.${cat.slug}`) === `cat.${cat.slug}` ? cat.name : t(`cat.${cat.slug}`)}
                         </span>
                       </button>
                     );
@@ -1185,7 +1185,7 @@ function ShopContent() {
                           <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 border border-[#EAE0D3]/60 bg-[#FAF6EE]">
                             <img src={img.thumbnail(catImage)} alt={cat.name || cat.slug} className="w-full h-full object-cover" />
                           </div>
-                          <span>{t(`cat.${cat.slug}`) || cat.name}</span>
+                          <span>{t(`cat.${cat.slug}`) === `cat.${cat.slug}` ? cat.name : t(`cat.${cat.slug}`)}</span>
                         </div>
                         <span className="text-[9px] bg-[#EAE0D3]/50 text-[#7E6B5A] px-2 py-0.5 rounded-full font-bold">
                           {getCategoryCount(cat.slug)}
@@ -1308,7 +1308,7 @@ function ShopContent() {
                           : "bg-white text-[#2A1E17] border-[#EAE0D3]"
                           }`}
                       >
-                        {cat.slug === "all" ? t('category.all_items') : t(`cat.${cat.slug}`)}
+                        {cat.slug === "all" ? t('category.all_items') : (t(`cat.${cat.slug}`) === `cat.${cat.slug}` ? cat.name : t(`cat.${cat.slug}`))}
                       </button>
                     ))}
                   </div>
