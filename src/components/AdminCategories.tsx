@@ -164,7 +164,7 @@ export default function AdminCategories({ categories, setCategories }: { categor
               <label className="block text-xs font-semibold text-brand-charcoal mb-1">Category Image (Upload or Paste Link)</label>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-4">
-                  {imageUrl && <img src={img.thumbnail(imageUrl)} alt="Category" className="w-16 h-16 object-cover rounded-lg border border-brand-beige" />}
+                  {imageUrl && <img src={img.thumbnail(imageUrl)} alt="Category" className="w-16 h-16 object-contain rounded-lg border border-brand-beige bg-white" />}
                   <label className="cursor-pointer border border-dashed border-brand-beige rounded-lg px-4 py-3 text-xs text-center hover:bg-brand-cream/50 transition-colors flex-grow">
                     <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                     {isUploading ? (
@@ -219,7 +219,7 @@ export default function AdminCategories({ categories, setCategories }: { categor
               <tr key={cat.id || cat.slug} className="border-b border-brand-beige/50 hover:bg-brand-cream/10 transition-colors">
                 <td className="py-3 px-4">
                   {cat.image_url ? (
-                    <img src={img.thumbnail(cat.image_url)} alt={cat.name} className="w-10 h-10 object-cover rounded-md border border-brand-beige shadow-xs" />
+                    <img src={img.thumbnail(cat.image_url)} alt={cat.name} className="w-10 h-10 object-contain bg-white rounded-md border border-brand-beige shadow-xs" />
                   ) : (
                     <div className="w-10 h-10 rounded-md bg-brand-cream flex items-center justify-center text-muted-foreground border border-brand-beige">N/A</div>
                   )}
