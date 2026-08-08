@@ -729,7 +729,7 @@ function ShopContent() {
                 <span>&gt;</span>
                 <span className="hover:text-[#D46D2D] cursor-pointer">Shop Categories</span>
                 <span>&gt;</span>
-                <span className="text-[#D46D2D]">{selectedCategory === 'all' ? 'All Items' : t('cat.' + selectedCategory)}</span>
+                <span className="text-[#D46D2D]">{selectedCategory === 'all' ? 'All Items' : (categories.find(c => c.slug === selectedCategory || c.id === selectedCategory)?.name || t('cat.' + selectedCategory))}</span>
               </div>
 
               {/* Category Page Title / Search Results Header (Requirements 2, 3) */}
@@ -759,7 +759,7 @@ function ShopContent() {
                 ) : (
                   <div>
                     <h3 className="font-serif text-2xl font-extrabold text-[#2A1E17]">
-                      {selectedCategory === 'all' ? 'All Items' : t('cat.' + selectedCategory)}{' '}
+                      {selectedCategory === 'all' ? 'All Items' : (categories.find(c => c.slug === selectedCategory || c.id === selectedCategory)?.name || t('cat.' + selectedCategory))}{' '}
                       <span className="text-sm font-sans font-normal text-[#7E6B5A]">({filteredProducts.length} items)</span>
                     </h3>
                     <p className="text-[11px] text-[#7E6B5A] mt-1 leading-relaxed max-w-xl">
