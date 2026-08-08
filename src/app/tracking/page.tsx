@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { img } from "@/lib/image-utils";
 import { 
   Package, 
   Truck, 
@@ -376,7 +377,7 @@ function TrackingContent() {
                   <div className="flex flex-col gap-4 flex-grow">
                     {order.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-4 py-2 border-b border-[#EAE0D3] last:border-0 last:pb-0">
-                        <img src={item.img} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-brand-cream" />
+                        <img src={img.thumbnail(item.img)} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-brand-cream" />
                         <div className="flex-grow">
                           <p className="text-sm font-bold text-brand-charcoal">{item.name}</p>
                           <p className="text-xs text-brand-gold font-bold uppercase mt-1">{item.weight}</p>

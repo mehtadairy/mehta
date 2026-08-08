@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         console.log(`[PaymentRecoveryWorker] Attempting recovery for Payment ${recovery.payment_id}`);
         
         // 1. Generate Order Number
-        const generatedOrderNumber = generateOrderNumber();
+        const generatedOrderNumber = await generateOrderNumber(supabase);
 
         // 2. Prepare Order Payload
         // recovery.payload contains the webhook payload or similar. Wait, the webhook doesn't have the cart items.

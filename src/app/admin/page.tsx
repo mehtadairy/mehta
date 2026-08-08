@@ -285,10 +285,10 @@ export default function AdminPanel() {
             const dbIngredients = await fetchIngredients();
             setAllIngredients(dbIngredients);
             
-            const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+            const { data: cats } = await supabase.from('categories').select('id, name, slug, description, image_url, sort_order, status').order('sort_order', { ascending: true });
             if (cats) setCategories(cats);
 
-            const { data: bans } = await supabase.from('banners').select('*').order('created_at', { ascending: true });
+            const { data: bans } = await supabase.from('banners').select('id, image_url, badge, headline, boldline, sub, cta_label, link, is_graphic_only, active, created_at').order('created_at', { ascending: true });
             if (bans) setBanners(bans);
 
             // Fetch protected data via secure API route
@@ -440,8 +440,11 @@ export default function AdminPanel() {
             }
         };
 
-        // Poll every 10 seconds (10,000 ms)
-        const interval = setInterval(pollOrders, 10000);
+        // Fallback polling every 60 seconds (Supabase Realtime WebSocket handles instant order alerts)
+        const interval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
+            pollOrders();
+        }, 60000);
 
         // Supabase Realtime Listener (instant websocket backup)
         const channel = supabase

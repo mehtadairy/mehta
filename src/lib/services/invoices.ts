@@ -235,18 +235,18 @@ export async function sendWhatsAppInvoiceWithRetry(
 export async function createInvoice(orderId: string): Promise<InvoiceData | null> {
   console.log(`[InvoiceService] Generating invoice for orderId: ${orderId}`);
   try {
-    const { data: existing } = await supabase.from("invoices").select("*").eq("order_id", orderId).maybeSingle();
+    const { data: existing } = await supabase.from("invoices").select("id, invoice_number, order_id, pdf_url, total_amount, created_at").eq("order_id", orderId).maybeSingle();
     if (existing) {
       console.log(`[InvoiceService] Invoice already exists for order ${orderId}: ${existing.invoice_number}`);
       return existing as InvoiceData;
     }
 
-    const { data: order, error: orderError } = await supabase.from("orders").select("*, order_items(*)").eq("id", orderId).maybeSingle();
+    const { data: order, error: orderError } = await supabase.from("orders").select("id, order_number, user_name, user_phone, user_email, shipping_address, total, subtotal, delivery_charge, discount, payment_method, payment_status, status, created_at, order_items(product_name, weight, quantity, price, image)").eq("id", orderId).maybeSingle();
     if (orderError || !order) throw new Error(`Order not found for ID: ${orderId}`);
 
     const currentYear = new Date().getFullYear();
     const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
-    const { count } = await supabase.from("invoices").select("*", { count: "exact", head: true })
+    const { count } = await supabase.from("invoices").select("id", { count: "exact", head: true })
       .gte("created_at", `${currentYear}-01-01T00:00:00Z`).lt("created_at", `${currentYear + 1}-01-01T00:00:00Z`);
 
     // 6-digit zero padding with safety check to avoid duplicates

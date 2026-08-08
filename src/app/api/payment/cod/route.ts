@@ -110,7 +110,7 @@ export async function POST(request: Request) {
 
     let generatedOrderNumber = orderPayload?.order_number;
     if (!generatedOrderNumber) {
-      generatedOrderNumber = generateOrderNumber();
+      generatedOrderNumber = await generateOrderNumber(supabase);
     }
 
     const finalOrderData: any = {

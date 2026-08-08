@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     // 1. Find customer using customerId
     const { data: customer, error: customerErr } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, phone, full_name')
       .eq('id', customerId)
       .maybeSingle();
 
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     // 2. Fetch customer's default delivery address
     let { data: addressData, error: addressError } = await supabase
       .from('addresses')
-      .select('*')
+      .select('id, customer_id, pincode, city, address, is_default')
       .eq('customer_id', customer.id)
       .eq('is_default', true)
       .maybeSingle();
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
     if (!addressData) {
       const { data: anyAddress } = await supabase
         .from('addresses')
-        .select('*')
+        .select('id, customer_id, pincode, city, address, is_default')
         .eq('customer_id', customer.id)
         .limit(1)
         .maybeSingle();

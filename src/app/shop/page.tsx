@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import { HighlightText } from "@/components/HighlightText";
 import { useLanguage } from "@/lib/context/LanguageContext";
+import { img } from "@/lib/image-utils";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -980,7 +981,7 @@ function ShopContent() {
                                         className="py-2.5 px-2 hover:bg-[#FAF6EE] rounded-lg transition-colors cursor-pointer flex items-center justify-between"
                                       >
                                         <div className="flex items-center gap-3">
-                                          <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=100'} alt={p.name} className="w-8 h-8 object-cover rounded-md border border-[#EAE0D3]" />
+                                          <img src={img.thumbnail(p.images?.[0]) || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=100'} alt={p.name} className="w-8 h-8 object-cover rounded-md border border-[#EAE0D3]" />
                                           <div>
                                             <h5 className="text-xs font-bold text-brand-charcoal">
                                               <HighlightText text={p.name} query={searchQuery} />
@@ -1179,7 +1180,7 @@ function ShopContent() {
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 border border-[#EAE0D3]/60 bg-[#FAF6EE]">
-                            <img src={catImage} alt={cat.name || cat.slug} className="w-full h-full object-cover" />
+                            <img src={img.thumbnail(catImage)} alt={cat.name || cat.slug} className="w-full h-full object-cover" />
                           </div>
                           <span>{t(`cat.${cat.slug}`) || cat.name}</span>
                         </div>

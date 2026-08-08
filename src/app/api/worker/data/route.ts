@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     // 3. Fetch Orders with range limit
     const { data: userOrders, error: ordersError, count: totalOrders } = await supabaseServer
       .from('orders')
-      .select('*, order_items(*)', { count: 'exact' })
+      .select('id, order_number, created_at, status, total, payment_status, user_name, user_phone, user_email, shipping_address, printed, print_status, order_items(product_id, product_name, weight, quantity, price, image)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     try {
       const { data, error } = await supabaseServer
         .from('invoices')
-        .select('*, orders(*)')
+        .select('id, order_id, invoice_number, pdf_url, total_amount, created_at')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
       if (!error && data) invoicesData = data;
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     try {
       const { data, error } = await supabaseServer
         .from('customers')
-        .select('*')
+        .select('id, full_name, phone, email, created_at, total_orders')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
       if (!error && data) customersData = data;

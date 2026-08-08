@@ -11,6 +11,7 @@ import ProductRecommendations from "@/components/ProductRecommendations";
 import { BUSINESS } from "@/lib/businessConfig";
 import { calculateCartTotalWeight } from "@/lib/services/weight-calculator";
 import { trackBeginCheckout, trackPurchase, trackAddShippingInfo, trackAddPaymentInfo } from "@/lib/gtag";
+import { img } from "@/lib/image-utils";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -1534,7 +1535,7 @@ function CheckoutContent() {
                     {cart.map((item, idx) => (
                       <div key={idx} className="flex gap-3 justify-between items-center text-xs">
                         <div className="flex gap-2.5 items-center">
-                          <img src={item.image} alt={item.productName} className="h-10 w-10 rounded-lg object-cover bg-[#FAF6EE] border border-[#EAE0D3] flex-shrink-0" />
+                          <img src={img.thumbnail(item.image)} alt={item.productName} className="h-10 w-10 rounded-lg object-cover bg-[#FAF6EE] border border-[#EAE0D3] flex-shrink-0" />
                           <div>
                             <h4 className="font-serif font-bold text-[#2A1E17] line-clamp-1">{item.productName}</h4>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -1578,7 +1579,7 @@ function CheckoutContent() {
                 <div className="grid grid-cols-2 gap-3">
                   {recommendations.map(rec => (
                     <div key={rec.id} className="border border-[#EAE0D3] rounded-2xl p-3 flex flex-col items-center text-center hover:border-[#D46D2D] transition-colors bg-white">
-                      <img src={rec.images?.[0] || "/placeholder.png"} className="w-16 h-16 object-contain rounded-lg mb-2" alt={rec.name} />
+                      <img src={img.thumbnail(rec.images?.[0]) || "/placeholder.png"} className="w-16 h-16 object-contain rounded-lg mb-2" alt={rec.name} />
                       <span className="text-[10px] font-bold text-[#2A1E17] line-clamp-1 leading-tight mb-1">{rec.name}</span>
                       <span className="text-[10px] text-[#D46D2D] font-bold mb-2">₹{Object.values(rec.prices)[0] as number}</span>
                       <button onClick={(e) => handleAddRecToCart(rec, e)} className="text-[9px] font-bold uppercase tracking-wider text-white bg-[#D46D2D] py-1.5 px-3 rounded-xl hover:bg-[#BF5E23] w-full transition-colors cursor-pointer">

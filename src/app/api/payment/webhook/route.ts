@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       // STEP 4: Update Order in Supabase
       try {
         if (!generatedOrderNumber) {
-          generatedOrderNumber = generateOrderNumber();
+          generatedOrderNumber = await generateOrderNumber(supabase);
         }
 
         console.log(`[RazorpayWebhook] STEP 4: Updating order status to Paid & Processing...`);

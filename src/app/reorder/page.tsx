@@ -8,6 +8,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import ProductCard from "@/components/ProductCard";
 import { supabase, fetchProducts } from "@/lib/supabaseClient";
+import { img } from "@/lib/image-utils";
 import { Order, OrderItem, Product } from "@/lib/types";
 import { 
   Search, Package, FileText, Download, ShoppingBag, 
@@ -111,7 +112,7 @@ function OrderDetailsDrawer({
                     <div key={idx} className="flex items-center gap-4 p-4 bg-white border border-brand-beige/50 rounded-xl shadow-sm">
                       <div className="w-16 h-16 bg-brand-cream rounded-lg overflow-hidden flex-shrink-0">
                         {item.image ? (
-                          <img src={item.image} alt={item.productName} className="w-full h-full object-cover" />
+                          <img src={img.thumbnail(item.image)} alt={item.productName} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package className="w-6 h-6"/></div>
                         )}
@@ -574,7 +575,7 @@ function ReorderContent() {
                             <div className="flex -space-x-3">
                               {o.items?.slice(0, 4).map((i:any, j:number) => (
                                 <div key={j} className="w-10 h-10 rounded-full border-2 border-white bg-brand-cream overflow-hidden shadow-sm relative group/img">
-                                  {i.image || i.image_url ? <img src={i.image || i.image_url} alt="" className="w-full h-full object-cover" /> : <Package className="w-4 h-4 m-auto mt-2 text-muted-foreground" />}
+                                  {i.image || i.image_url ? <img src={img.thumbnail(i.image || i.image_url)} alt="" className="w-full h-full object-cover" /> : <Package className="w-4 h-4 m-auto mt-2 text-muted-foreground" />}
                                 </div>
                               ))}
                               {o.items?.length > 4 && (
@@ -673,7 +674,7 @@ function ReorderContent() {
                     {wishlistProducts.slice(0, 3).map(p => (
                       <div key={p.id} className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-brand-cream rounded-lg overflow-hidden shrink-0">
-                          <img src={p.images[0]} className="w-full h-full object-cover" />
+                          <img src={img.thumbnail(p.images[0])} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-grow overflow-hidden">
                           <p className="font-bold text-sm text-brand-charcoal truncate">{p.name}</p>

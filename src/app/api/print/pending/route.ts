@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       // Fallback query directly on orders table for 100% backward compatibility
       const { data: orders } = await supabaseServer
         .from('orders')
-        .select('*, order_items(*), invoices(*)')
+        .select('id, order_number, user_name, user_phone, shipping_address, subtotal, delivery_charge, discount, total, payment_method, payment_status, status, print_status, cancellation_reason, created_at, order_items(product_name, weight, quantity, price), invoices(invoice_number)')
         .eq('printed', false)
         .in('print_status', ['pending', 'reprint'])
         .order('created_at', { ascending: true });
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
     // 2. Fetch printer configuration settings
     const { data: settings } = await supabaseServer
       .from('printer_settings')
-      .select('*')
+      .select('selected_printer, paper_width, auto_print_enabled, print_copies, print_kitchen_receipt, print_packing_slip, auto_retry')
       .eq('branch', 'Main')
       .maybeSingle();
 

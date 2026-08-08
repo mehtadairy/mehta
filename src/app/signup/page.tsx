@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Phone, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
+import WhatsAppOTPLayout from '@/components/WhatsAppOTPLayout';
+import { useCustomerAuth } from '@/lib/context/CustomerAuthContext';
+
 function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isLoggedIn, isLoading: isAuthChecking } = useCustomerAuth();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -16,146 +21,156 @@ function SignupContent() {
   const [step, setStep] = useState<'PHONE' | 'PHONE_OTP'>('PHONE');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reqId, setReqId] = useState('');
 
-  const googlePicture = searchParams ? searchParams.get('picture') : null;
-  const reason = searchParams ? searchParams.get('reason') : null;
+  const redirectUrl = searchParams.get('redirect') || '/account';
 
-  React.useEffect(() => {
-    if (!searchParams) return;
-    const pName = searchParams.get('name');
-    const pEmail = searchParams.get('email');
-    const pPhone = searchParams.get('phone');
-    if (pName) setName(pName);
-    if (pEmail) setEmail(pEmail);
-    if (pPhone) setPhone(pPhone.replace(/\D/g, '').slice(-10));
-  }, [searchParams]);
+  useEffect(() => {
+    if (!isAuthChecking && isLoggedIn) {
+      router.replace(redirectUrl);
+    }
+  }, [isLoggedIn, isAuthChecking, redirectUrl, router]);
 
   const handleContinue = async () => {
-    setError('');
-    
-    if (!name || name.trim().length < 2) {
-      setError('Please enter your full name.');
+    if (!name.trim()) {
+      setError('Please enter your full name');
       return;
     }
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address');
       return;
     }
-    if (phone.length !== 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+    if (!phone || phone.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number');
       return;
     }
 
     setIsLoading(true);
+    setError('');
 
     try {
-      const res = await fetch('/api/auth/signup/send-otp', {
+      const res = await fetch('/api/auth/whatsapp-otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({ phone: `91${phone}`, intent: 'signup' }),
       });
       const data = await res.json();
-      
-      setIsLoading(false);
-      if (data.success) {
-        setStep('PHONE_OTP');
-      } else {
-        setError(data.error || 'Failed to send OTP. Please try again.');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to send OTP');
       }
+      setReqId(data.reqId || '');
+      setStep('PHONE_OTP');
     } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setIsLoading(false);
-      setError(err?.message || 'Failed to send OTP. Please try again.');
     }
   };
 
   const handleVerifyOTP = async () => {
-    setError('');
-    
-    if (otp.length < 4) {
-      setError('Please enter a valid OTP.');
+    if (!otp || otp.length < 6) {
+      setError('Please enter complete 6-digit OTP');
       return;
     }
-
     setIsLoading(true);
+    setError('');
+
     try {
-      const res = await fetch('/api/auth/signup/verify-otp', {
+      const res = await fetch('/api/auth/whatsapp-otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone, 
+        body: JSON.stringify({
+          phone: `91${phone}`,
           otp,
-          name: name.trim(),
-          email: email.trim()
-        })
+          reqId,
+          intent: 'signup',
+          fullName: name,
+          email,
+        }),
       });
       const data = await res.json();
-      
-      if (data.success) {
-        localStorage.setItem("mehta_logged_in", "true");
-        localStorage.setItem("mehta_user_phone", phone.replace(/\D/g, '').slice(-10));
-        
-        if (data.customer) {
-          localStorage.setItem("mehta_user_id", data.customer.id);
-          if (data.customer.name) localStorage.setItem("mehta_user_name", data.customer.name);
-          if (data.customer.email) localStorage.setItem("mehta_user_email", data.customer.email);
-        }
-        
-        window.dispatchEvent(new Event("authUpdated"));
-        
-        const redirectUrl = searchParams.get("redirect") || "/";
-        router.push(redirectUrl);
-      } else {
-        setIsLoading(false);
-        setError(data.error || 'Invalid OTP. Please try again.');
+      if (!data.success) {
+        throw new Error(data.error || 'Invalid OTP');
       }
+
+      if (data.sessionToken) {
+        document.cookie = `mehta_customer_session=${data.sessionToken}; path=/; max-age=2592000; SameSite=Lax`;
+      }
+      if (data.customer) {
+        localStorage.setItem('mehta_customer_user', JSON.stringify(data.customer));
+      }
+      window.dispatchEvent(new Event('customerAuthChanged'));
+
+      router.push(redirectUrl);
     } catch (err: any) {
+      setError(err.message || 'Verification failed. Please check the OTP.');
+    } finally {
       setIsLoading(false);
-      setError(err?.message || 'Invalid OTP. Please try again.');
     }
   };
 
   const handleResendOTP = async () => {
-    setError('');
-    setOtp('');
     setIsLoading(true);
+    setError('');
     try {
-      const res = await fetch('/api/auth/signup/send-otp', {
+      const res = await fetch('/api/auth/whatsapp-otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({ phone: `91${phone}`, intent: 'signup' }),
       });
       const data = await res.json();
-      
-      setIsLoading(false);
-      if (data.success) {
-        setError("OTP Resent successfully via WhatsApp!");
-      } else {
-        setError(data.error || 'Failed to resend OTP.');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to resend OTP');
       }
+      setError('Resent OTP successfully on WhatsApp!');
     } catch (err: any) {
+      setError(err.message || 'Failed to resend OTP');
+    } finally {
       setIsLoading(false);
-      setError(err?.message || 'Failed to resend OTP.');
     }
   };
 
+  if (step === 'PHONE_OTP') {
+    return (
+      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4 sm:p-6 py-12">
+        <WhatsAppOTPLayout
+          phone={phone}
+          otp={otp}
+          setOtp={setOtp}
+          onVerify={handleVerifyOTP}
+          onChangeNumber={() => {
+            setStep('PHONE');
+            setOtp('');
+            setError('');
+          }}
+          onResend={handleResendOTP}
+          isLoading={isLoading}
+          error={error}
+          title="Create Account"
+          subtitle="Verify your mobile number to complete registration."
+          buttonText="Verify OTP & Register"
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#FAF6EE] flex flex-col pt-16 sm:pt-20">
-      <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 max-w-md mx-auto w-full mb-12">
-        
+    <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-md">
         {/* Brand Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10 w-full"
+          className="text-center mb-8 w-full flex flex-col items-center"
         >
-          <div className="mx-auto flex items-center justify-center mb-6">
-            <img src="/logo.png" alt="Mehta Dairy" className="h-16 w-auto object-contain" />
+          <div className="inline-flex items-center justify-center p-1 rounded-full border-2 border-[#D4AF37]/80 bg-[#FAF5EE] shadow-xs mb-4">
+            <img src="/logo.png" alt="Mehta Dairy" className="h-12 w-auto object-contain px-2 py-0.5" />
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A2F1F] tracking-tight">
-            Create an Account
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2A1E17] tracking-tight">
+            Create Account
           </h1>
-          <p className="text-[#8B7355] text-sm mt-3 font-medium">
-            Join Mehta Dairy for exclusive deals and faster checkout.
+          <p className="text-[#7E6B5A] text-xs sm:text-sm mt-2 font-medium">
+            Join Mehta Dairy family for fresh delivery.
           </p>
         </motion.div>
 
@@ -164,186 +179,91 @@ function SignupContent() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white w-full rounded-3xl shadow-xl shadow-[#4A2F1F]/5 p-6 sm:p-8 border border-[#EAE0D3]/50 relative overflow-hidden"
+          className="bg-white w-full rounded-[32px] shadow-2xl shadow-[#4A2F1F]/5 p-6 sm:p-8 border border-[#EFE9DF] relative overflow-hidden"
         >
-          {/* Decorative Top Border */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#D97706] to-[#F59E0B]" />
-
-          {/* Reason Notification Banner */}
-          {reason === 'google_not_found' && (
-            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-900 text-xs font-bold shadow-2xs">
-              {googlePicture ? (
-                <img src={googlePicture} alt="Google Profile" className="w-9 h-9 rounded-full border border-amber-300 shrink-0 object-cover" />
-              ) : (
-                <span className="text-xl">⚠️</span>
-              )}
-              <div>
-                <p className="font-extrabold text-amber-950">Google Account Not Registered</p>
-                <p className="text-[11px] text-amber-800 font-medium mt-0.5">No account was found for this Google account. Please complete your signup.</p>
-              </div>
-            </div>
-          )}
-
-          {reason === 'not_registered' && (
-            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-900 text-xs font-bold shadow-2xs">
-              <span className="text-xl">📱</span>
-              <div>
-                <p className="font-extrabold text-amber-950">Mobile Number Not Registered</p>
-                <p className="text-[11px] text-amber-800 font-medium mt-0.5">This mobile number isn't registered yet. Please create your account.</p>
-              </div>
-            </div>
-          )}
-
-          {step === 'PHONE' ? (
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-2 mb-2">
-                <Link
-                  href="/login"
-                  className="w-full bg-[#FAF6EE] hover:bg-[#EAE0D3] text-[#4A2F1F] border border-[#EAE0D3] rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center shadow-sm transition-all active:scale-95"
-                >
-                  Already have an account? Log In
-                </Link>
-              </div>
-
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-[#EAE0D3]"></div>
-                <span className="flex-shrink-0 mx-4 text-[#8B7355] text-xs font-bold uppercase tracking-wider">Sign Up</span>
-                <div className="flex-grow border-t border-[#EAE0D3]"></div>
-              </div>
-
-              <div className="flex flex-col gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="block w-full px-4 py-4 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full px-4 py-4 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-2">
-                  Mobile Number
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-[#4A2F1F] font-bold text-base">+91</span>
-                    <div className="h-5 w-px bg-[#EAE0D3] mx-3" />
-                    <Phone className="h-5 w-5 text-[#8B7355] group-focus-within:text-[#D97706] transition-colors" />
-                  </div>
-                  <input
-                    id="signup_phone_input"
-                    type="tel"
-                    placeholder="Enter 10 digit number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="block w-full pl-24 pr-4 py-4 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
-                    disabled={isLoading}
-                  />
-                </div>
-                {error && (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-xs font-bold mt-2 ml-1">
-                    {error}
-                  </motion.p>
-                )}
-              </div>
-
-              <button
-                onClick={handleContinue}
-                disabled={isLoading || phone.length !== 10 || !name || !email}
-                className="w-full bg-[#4A2F1F] hover:bg-black text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95"
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 mb-1">
+              <Link
+                href="/login"
+                className="w-full bg-[#FAF6EE] hover:bg-[#EAE0D3] text-[#4A2F1F] border border-[#EAE0D3] rounded-2xl py-3.5 px-6 font-bold text-sm flex justify-center items-center shadow-xs transition-all active:scale-95"
               >
-                {isLoading ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                ) : (
-                  <>
-                    Sign Up Securely
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
+                Already have an account? Log In
+              </Link>
             </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              <div>
-                <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-2">
-                  Enter OTP sent to +91 {phone}
-                </label>
+
+            <div>
+              <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="block w-full px-4 py-3.5 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-1.5">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="block w-full px-4 py-3.5 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#4A2F1F] uppercase tracking-wider mb-1.5">
+                Mobile Number
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <span className="text-[#4A2F1F] font-bold text-base">+91</span>
+                  <div className="h-5 w-px bg-[#EAE0D3] mx-3" />
+                  <Phone className="h-5 w-5 text-[#8B7355] group-focus-within:text-[#D97706] transition-colors" />
+                </div>
                 <input
-                  type="text"
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="block w-full px-4 py-4 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] text-center tracking-[0.5em] focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
+                  id="signup_phone_input"
+                  type="tel"
+                  placeholder="Enter 10 digit number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  className="block w-full pl-24 pr-4 py-3.5 border-2 border-[#EAE0D3] rounded-2xl text-base font-bold text-[#4A2F1F] placeholder:text-[#8B7355]/50 focus:ring-0 focus:border-[#D97706] transition-all bg-[#FAF6EE]/30 focus:bg-white"
                   disabled={isLoading}
-                  autoFocus
                 />
-                {error && (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-xs font-bold mt-2 ml-1 text-center ${error.includes('Resent') ? 'text-green-600' : 'text-red-500'}`}>
-                    {error}
-                  </motion.p>
-                )}
               </div>
-
-              <button
-                onClick={handleVerifyOTP}
-                disabled={isLoading || otp.length < 4}
-                className="w-full bg-[#D97706] hover:bg-[#B45309] text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95"
-              >
-                {isLoading ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                ) : (
-                  <>
-                    Verify OTP & Register
-                    <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  </>
-                )}
-              </button>
-
-              <div className="flex justify-between items-center px-1 mt-2">
-                <button
-                  onClick={() => {
-                    setStep('PHONE');
-                    setOtp('');
-                    setError('');
-                  }}
-                  className="text-xs font-bold text-[#8B7355] hover:text-[#4A2F1F] transition-colors"
-                  disabled={isLoading}
-                >
-                  Change Number
-                </button>
-                <button
-                  onClick={handleResendOTP}
-                  className="text-xs font-bold text-[#D97706] hover:text-[#B45309] transition-colors"
-                  disabled={isLoading}
-                >
-                  Resend OTP
-                </button>
-              </div>
+              {error && (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-xs font-bold mt-2 ml-1">
+                  {error}
+                </motion.p>
+              )}
             </div>
-          )}
 
-          <div className="mt-8 pt-6 border-t border-[#EAE0D3] flex items-center justify-center gap-2 text-xs font-medium text-[#8B7355]">
-            <ShieldCheck className="w-4 h-4 text-green-600" />
+            <button
+              onClick={handleContinue}
+              disabled={isLoading || phone.length !== 10 || !name || !email}
+              className="w-full bg-[#4A2F1F] hover:bg-black text-white rounded-2xl py-4 px-6 font-bold text-base flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95 cursor-pointer mt-1"
+            >
+              {isLoading ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                <>
+                  Sign Up Securely
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-[#EAE0D3] flex items-center justify-center gap-2 text-xs font-semibold text-[#2E7D32]">
+            <ShieldCheck className="w-4 h-4 text-[#2E7D32]" />
             Secured by WhatsApp
           </div>
         </motion.div>

@@ -125,7 +125,7 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
 
   // Generate unique order identifier and receipt number
   const orderId = crypto.randomUUID();
-  const orderNumber = generateOrderNumber();
+  const orderNumber = await generateOrderNumber(supabase);
 
   // 3. Create a Razorpay Order using Orders API
   const rzpOrder = await razorpay.orders.create({

@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         
         let generatedOrderNumber = orderPayload.order_number || orderNumber;
         if (!generatedOrderNumber) {
-          generatedOrderNumber = generateOrderNumber();
+          generatedOrderNumber = await generateOrderNumber(supabase);
         }
 
         const cleanOrderData: any = {

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     // 1. Fetch latest OTP for email
     const { data: otpRecord, error: fetchError } = await supabase
       .from('email_otps')
-      .select('*')
+      .select('id, email, otp_hash, used, expires_at, attempts')
       .eq('email', emailLower)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     // 4. Upsert Customer
     let { data: customer, error: customerFetchError } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, email, full_name, phone, is_blocked, addresses')
       .eq('email', emailLower)
       .single();
 

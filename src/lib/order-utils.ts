@@ -1,16 +1,25 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-export function generateOrderNumber(): string {
-  const now = new Date();
-  // Format YYMMDD
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  
-  // Format XXXX (Random 4-digit number)
-  const randDigits = Math.floor(1000 + Math.random() * 9000);
-  
-  return `MD-${yy}${mm}${dd}-${randDigits}`;
+export async function generateOrderNumber(supabase: SupabaseClient): Promise<string> {
+  try {
+    const { data: newOrd, error: rpcError } = await supabase.rpc('generate_daily_order_number');
+    
+    if (rpcError) {
+      console.error("[generateOrderNumber] RPC Error:", rpcError);
+      throw new Error("Failed to generate order number from database sequence.");
+    }
+    
+    if (!newOrd) {
+      throw new Error("Database sequence returned null.");
+    }
+
+    return newOrd;
+  } catch (e) {
+    console.error("[generateOrderNumber] Critical Error:", e);
+    // If the database fails, we must throw to prevent duplicate numbers. 
+    // We strictly do NOT fallback to Math.random() as per requirements.
+    throw e;
+  }
 }
 
 /**

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     // 🔒 Secure Bcrypt Verification for Admin Accounts
     const { data: adminUser, error } = await supabase
       .from('admin_users')
-      .select('*')
+      .select('id, email, password_hash, name, role, is_active')
       .eq('email', email)
       .maybeSingle();
 

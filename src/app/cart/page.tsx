@@ -9,6 +9,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import WhatsAppOrderBtn from "@/components/WhatsAppOrderBtn";
 import { getCoupons, Coupon, generateSlug } from "@/lib/types";
 import ProductRecommendations from "@/components/ProductRecommendations";
+import { img } from "@/lib/image-utils";
 import { BUSINESS } from "@/lib/businessConfig";
 import { 
   ShoppingBasket, 
@@ -122,7 +123,7 @@ export default function Cart() {
                       className="bg-white rounded-2xl border border-brand-beige p-4 sm:p-5 flex flex-row items-start gap-4 shadow-xs relative"
                     >
                       <img 
-                        src={item.image} 
+                        src={img.thumbnail(item.image)} 
                         alt={item.productName} 
                         className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-cover bg-brand-cream border border-brand-beige flex-shrink-0"
                       />

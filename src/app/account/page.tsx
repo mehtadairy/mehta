@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import { BUSINESS } from "@/lib/businessConfig";
 import { useCustomerAuth } from "@/lib/context/CustomerAuthContext";
 import CancelOrderDialog from "@/components/CancelOrderDialog";
+import { img } from "@/lib/image-utils";
 
 
 const INDIAN_STATES = [
@@ -331,7 +332,7 @@ function AccountContent() {
 
   useEffect(() => {
     const fetchZones = async () => {
-      const { data } = await supabase.from('delivery_zones').select('*');
+      const { data } = await supabase.from('delivery_zones').select('id, name, city, pincode, pincodes, delivery_charge, free_above');
       if (data) {
         const formattedZones: any[] = [];
         data.forEach((zone: any) => {
@@ -442,7 +443,7 @@ function AccountContent() {
 
         // Fetch addresses, orders, and products concurrently
         const [addrsRes, ordersRes, allProducts] = await Promise.all([
-          supabase.from('addresses').select('*').eq('customer_id', customerId),
+          supabase.from('addresses').select('id, full_name, mobile, address, locality, city, pincode, state, is_default, address_type, instructions').eq('customer_id', customerId),
           orderQuery.order('created_at', { ascending: false }),
           fetchProducts()
         ]);
@@ -1353,7 +1354,7 @@ function AccountContent() {
                                   <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center">
                                     {mainProduct?.image && !mainProduct.image.includes("logo.png") ? (
                                       <img
-                                        src={mainProduct.image}
+                                        src={img.thumbnail(mainProduct.image)}
                                         alt={mainProduct.productName || "Sweet Box"}
                                         className="h-full w-full object-cover"
                                         onError={(e) => {
@@ -1815,7 +1816,7 @@ function AccountContent() {
                                       setAddrState(fetchedState);
                                     }
 
-                                    const { data: zones } = await supabase.from('delivery_zones').select('*');
+                                    const { data: zones } = await supabase.from('delivery_zones').select('id, name, city, pincode, pincodes, delivery_charge, free_above');
                                     const activeZones = zones || deliveryZones;
 
                                     const matchedZone = activeZones.find((zone: any) => {

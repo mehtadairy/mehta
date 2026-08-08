@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       // Verify OTP in DB
       const { data: otpRecord, error: otpError } = await supabase
         .from('otp_codes')
-        .select('*')
+        .select('id, phone, hashed_code, verified, expires_at')
         .eq('phone', waPhone)
         .eq('hashed_code', hashedCode)
         .eq('verified', false)
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     let { data: customer, error: fetchError } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, phone, full_name, email, is_blocked, addresses')
       .eq('phone', cleanPhone)
       .single();
 

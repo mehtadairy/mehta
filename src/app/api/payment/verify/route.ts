@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     console.log("Webhook delay detected. Finalizing paid order directly in verify endpoint...");
     let generatedOrderNumber = orderPayload.order_number;
     if (!generatedOrderNumber) {
-      generatedOrderNumber = generateOrderNumber();
+      generatedOrderNumber = await generateOrderNumber(supabase);
     }
 
     const updatedPayload: any = {
