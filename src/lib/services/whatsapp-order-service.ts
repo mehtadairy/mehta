@@ -2,6 +2,7 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { generateOrderNumber } from '@/lib/order-utils';
+import { getShippingSettings, calculateSlabShipping } from '@/lib/services/shipping-calculator';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -18,12 +19,14 @@ export interface WhatsAppOrderInput {
   customerMobile: string;
   customerAddress: string;
   customerPincode: string;
+  customerState?: string;
   items: WhatsAppOrderItem[];
 }
 
-export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
-  const { customerName, customerMobile, customerAddress, customerPincode, items } = payload;
-
+export async function createWhatsAppOrder(
+  { customerName, customerMobile, customerAddress, customerPincode, customerState, items }: WhatsAppOrderInput,
+  createdBy: string = 'System'
+) {
   // 1. Resolve Customer ID
   let customerId = null;
   const cleanPhone = customerMobile.replace(/\D/g, '').slice(-10);
@@ -85,37 +88,16 @@ export async function createWhatsAppOrder(payload: WhatsAppOrderInput) {
     });
   }
 
-  // Calculate delivery charge using delivery_zones table
+  // Calculate delivery charge using the new slab system
   let deliveryCharge = 0;
   try {
     const userPincode = (customerPincode || '').trim();
     if (!userPincode) {
-      throw new Error("Delivery not available.");
+      throw new Error("Delivery not available. Please provide a pincode.");
     }
-
-    const { data: zones, error: zonesError } = await supabase
-      .from('delivery_zones')
-      .select('id, name, city, pincodes, pincode, delivery_charge, free_above');
-
-    if (zonesError || !zones || zones.length === 0) {
-      throw new Error("Delivery not available.");
-    }
-
-    const matchedZone = zones.find((zone: any) => {
-      const pincodesStr = zone.pincodes || zone.pincode || "";
-      const pincodesArr = pincodesStr.split(",").map((p: string) => p.trim());
-      return pincodesArr.includes(userPincode);
-    });
-
-    if (!matchedZone) {
-      throw new Error("Delivery not available.");
-    }
-
-    if (matchedZone.free_delivery_above && subtotal >= Number(matchedZone.free_delivery_above)) {
-      deliveryCharge = 0;
-    } else {
-      deliveryCharge = Number(matchedZone.delivery_charge) || 0;
-    }
+    const settings = await getShippingSettings();
+    const calculation = calculateSlabShipping(orderItems, { pincode: userPincode, state: customerState }, settings);
+    deliveryCharge = calculation.totalShippingCharge;
   } catch (err: any) {
     console.error("Error calculating delivery charge in createWhatsAppOrder:", err);
     throw new Error(err.message || "Delivery not available.");

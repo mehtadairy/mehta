@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { styles as globalStyles, COLORS } from './invoiceStyles';
+import { styles as globalStyles, COLORS, formatIndianCurrency } from './invoiceStyles';
 import { InvoiceItem } from './types';
 
 const localStyles = StyleSheet.create({
@@ -110,8 +110,8 @@ export const ProductTable = ({ items }: ProductTableProps) => (
         </View>
         <Text style={[localStyles.tdText, localStyles.col3]}>{item.weight}</Text>
         <Text style={[localStyles.tdText, localStyles.col4, { color: '#111827', fontWeight: 600 }]}>{item.qty}</Text>
-        <Text style={[localStyles.tdText, localStyles.col5]}>₹{Number(item.price).toFixed(2)}</Text>
-        <Text style={[localStyles.tdText, localStyles.col6, { color: '#111827', fontWeight: 700 }]}>₹{Number(item.total).toFixed(2)}</Text>
+        <Text style={[localStyles.tdText, localStyles.col5]}>{formatIndianCurrency(Number(item.price))}</Text>
+        <Text style={[localStyles.tdText, localStyles.col6, { color: '#111827', fontWeight: 700 }]}>{formatIndianCurrency(Number(item.total))}</Text>
       </View>
     ))}
   </View>

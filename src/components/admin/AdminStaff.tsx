@@ -77,7 +77,6 @@ const ALL_PERMISSIONS = [
   { id: "whatsapp_orders", label: "WhatsApp Orders", category: "Orders" },
   { id: "customers", label: "Customer Directory", category: "CRM" },
   { id: "categories", label: "Category Management", category: "Catalog" },
-  { id: "zones", label: "Delivery Zones", category: "Logistics" },
   { id: "banners", label: "Homepage Banners", category: "Content" },
   { id: "invoices", label: "Invoice Management", category: "Finance" },
   { id: "payments", label: "Payment Analytics", category: "Finance" },

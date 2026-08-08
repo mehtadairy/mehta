@@ -59,7 +59,7 @@ export default function TermsAndConditions() {
                   <Truck className="h-4.5 w-4.5 text-brand-orange" /> 2. Delivery & Pincode Serviceability
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Our delivery zones are calculated automatically based on input pincodes:
+                  Our delivery charges and serviceability are calculated automatically based on input pincodes:
                 </p>
                 <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 flex flex-col gap-1.5 pl-2">
                   <li><strong>Gujarat Deliveries:</strong> Usually reach within <strong>1 to 2 days</strong> after dispatch.</li>

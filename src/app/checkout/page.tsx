@@ -114,7 +114,6 @@ function CheckoutContent() {
 
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryDays, setDeliveryDays] = useState("");
-  const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
   const [customCities, setCustomCities] = useState<string[]>([]);
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState<{ type: 'success' | 'warning' | 'error' | '', message: string }>({ type: '', message: '' });
@@ -345,30 +344,10 @@ function CheckoutContent() {
           return;
         }
 
-        // 1. Fetch delivery zones and products in parallel
-        const [zonesRes, allProds] = await Promise.all([
-          supabase.from('delivery_zones').select('id, name, city, pincodes, pincode'),
+        // 1. Fetch products
+        const [allProds] = await Promise.all([
           fetchProducts()
         ]);
-
-        // Process delivery zones
-        if (zonesRes.data) {
-          const formattedZones: any[] = [];
-          zonesRes.data.forEach((zone: any) => {
-            const pincodesStr = zone.pincodes || zone.pincode || "";
-            const pincodesArr = pincodesStr.split(",").map((p: string) => p.trim()).filter(Boolean);
-            pincodesArr.forEach((pin: string) => {
-              formattedZones.push({
-                id: `${zone.id}-${pin}`,
-                name: zone.name || zone.city || "Zone",
-                city: zone.city || "",
-                state: "Gujarat",
-                pincode: pin
-              });
-            });
-          });
-          setDeliveryZones(formattedZones);
-        }
 
         // Process recommendations
         if (allProds && allProds.length > 0) {
@@ -1418,7 +1397,7 @@ function CheckoutContent() {
                             required
                           >
                             <option value="">Select City</option>
-                            {Array.from(new Set([...deliveryZones.map(z => z.city), ...DEFAULT_CITIES, ...customCities])).filter(Boolean).sort().map((city) => (
+                            {Array.from(new Set([...DEFAULT_CITIES, ...customCities])).filter(Boolean).sort().map((city) => (
                               <option key={city} value={city}>{city}</option>
                             ))}
                           </select>

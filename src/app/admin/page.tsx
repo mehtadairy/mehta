@@ -29,7 +29,7 @@ const AdminRecovery = dynamic(() => import("@/components/AdminRecovery"), { ssr:
 const AdminAnalytics = dynamic(() => import("@/components/AdminAnalytics"), { ssr: false });
 const AdminBackups = dynamic(() => import("@/components/AdminBackups"), { ssr: false });
 const AdminIngredients = dynamic(() => import("@/components/AdminIngredients"), { ssr: false });
-const AdminDeliveryZones = dynamic(() => import("@/components/AdminDeliveryZones"), { ssr: false });
+
 const AdminInvoices = dynamic(() => import("@/components/AdminInvoices"), { ssr: false });
 const AdminBlogs = dynamic(() => import("@/components/AdminBlogs"), { ssr: false });
 const AdminWhatsAppCenter = dynamic(() => import("@/components/AdminWhatsAppCenter"), { ssr: false });
@@ -84,7 +84,7 @@ export default function AdminPanel() {
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
     const [loginError, setLoginError] = useState("");
-    const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "delivery_pricing" | "shipping" | "whatsapp_orders" | "invoices" | "customers" | "staff" | "categories" | "banners" | "notifications" | "payments" | "recovery" | "backups" | "ingredients" | "zones" | "blogs" | "whatsapp" | "printers">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "delivery_pricing" | "shipping" | "whatsapp_orders" | "invoices" | "customers" | "staff" | "categories" | "banners" | "notifications" | "payments" | "recovery" | "backups" | "ingredients" | "blogs" | "whatsapp" | "printers">("dashboard");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const ADMIN_MENU_ITEMS = [
@@ -98,7 +98,6 @@ export default function AdminPanel() {
         { id: "customers", label: "Customers", fullLabel: "Customers Directory", icon: Users },
         { id: "staff", label: "Staff & Access", fullLabel: "👥 Staff & Access Management", icon: ShieldCheck },
         { id: "categories", label: "Categories", fullLabel: "Category Management", icon: Dessert },
-        { id: "zones", label: "Zones", fullLabel: "Delivery Zones", icon: MapPin },
         { id: "banners", label: "Banners", fullLabel: "Homepage Banners", icon: UploadCloud },
         { id: "backups", label: "Backups", fullLabel: "Database Backups", icon: Database },
         { id: "printers", label: "Thermal Printers", fullLabel: "Automatic Printing Settings", icon: Printer },
@@ -1977,10 +1976,7 @@ export default function AdminPanel() {
 
 
 
-                                    {/* ==================== TAB 8.5: DELIVERY ZONES ==================== */}
-                                    {activeTab === "zones" && (
-                                        <AdminDeliveryZones />
-                                    )}
+
 
                                     {/* ==================== TAB 9: NOTIFICATIONS ==================== */}
                                     {activeTab === "notifications" && <AdminNotifications />}

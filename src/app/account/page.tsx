@@ -282,7 +282,6 @@ function AccountContent() {
   const [addrPincode, setAddrPincode] = useState("");
   const [addrNickname, setAddrNickname] = useState("Home");
   const [isDefaultAddr, setIsDefaultAddr] = useState(false);
-  const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
   const [customCities, setCustomCities] = useState<string[]>([]);
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -334,29 +333,6 @@ function AccountContent() {
     );
   };
 
-  useEffect(() => {
-    const fetchZones = async () => {
-      const { data } = await supabase.from('delivery_zones').select('id, name, city, pincode, pincodes, delivery_charge, free_above');
-      if (data) {
-        const formattedZones: any[] = [];
-        data.forEach((zone: any) => {
-          const pincodesStr = zone.pincodes || zone.pincode || "";
-          const pincodesArr = pincodesStr.split(",").map((p: string) => p.trim()).filter(Boolean);
-          pincodesArr.forEach((pin: string) => {
-            formattedZones.push({
-              id: `${zone.id}-${pin}`,
-              name: zone.name || zone.city || "Zone",
-              city: zone.city || "",
-              state: "Gujarat",
-              pincode: pin
-            });
-          });
-        });
-        setDeliveryZones(formattedZones);
-      }
-    };
-    fetchZones();
-  }, []);
 
   // Redirection when not logged in with defensive guard against infinite loops
   useEffect(() => {
@@ -577,58 +553,77 @@ function AccountContent() {
     }
   };
 
+  // Email Verification Effect Cooldown Timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleSaveEmail = async () => {
+    if (!editEmail) return;
+    setIsEmailActionLoading(true);
+    setEmailStatusMessage(null);
+    try {
+      const res = await fetch('/api/account/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: editEmail })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update email.');
+      }
+      
+      // Update profile locally to reflect unverified email
+      if (profile) {
+        setProfile({
+          ...profile,
+          email: editEmail.trim().toLowerCase(),
+          email_verified: false
+        });
+      }
+      
+      setEmailStatusMessage("Verification email sent. Please check your inbox.");
+      setIsChangingEmail(false);
+      setResendCooldown(60);
+      refreshProfile();
+    } catch (err: any) {
+      setEmailStatusMessage(err.message || 'An error occurred.');
+    } finally {
+      setIsEmailActionLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0) return;
+    setIsEmailActionLoading(true);
+    setEmailStatusMessage(null);
+    try {
+      const res = await fetch('/api/account/email/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to resend verification email.');
+      }
+      
+      setEmailStatusMessage("Verification email sent. Please check your inbox.");
+      setResendCooldown(60);
+    } catch (err: any) {
+      setEmailStatusMessage(err.message || 'An error occurred.');
+    } finally {
+      setIsEmailActionLoading(false);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName) return;
-
-    // Phone number changes are disabled
-
-    if (editEmail && editEmail !== profile?.email) {
-      // Need to verify email first
-      setIsEmailOtpSending(true);
-      try {
-        const res = await fetch('/api/auth/email/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: editEmail })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Failed to send OTP');
-        setShowEmailOtpModal(true);
-      } catch (err: any) {
-        console.error("Failed to send OTP", err);
-        alert(err.message || "Failed to send OTP to this email.");
-      } finally {
-        setIsEmailOtpSending(false);
-      }
-      return;
-    }
-
-    await updateProfileToDB(editName, editEmail, editPhone);
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    setIsEmailOtpSending(true);
-    try {
-      const res = await fetch('/api/auth/email/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: editEmail, otp: emailOtp })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Invalid OTP');
-
-      // Successfully verified email!
-      if (data.customer && profile) {
-         await updateProfileToDB(editName, editEmail, editPhone, data.customer.id);
-      }
-
-      setShowEmailOtpModal(false);
-    } catch (err: any) {
-      alert(err.message || "Invalid OTP.");
-    } finally {
-      setIsEmailOtpSending(false);
-    }
+    await updateProfileToDB(editName, profile?.email || "", editPhone);
   };
 
   const handleOpenAddressForm = () => {
@@ -1859,27 +1854,10 @@ function AccountContent() {
                                       setAddrState(fetchedState);
                                     }
 
-                                    const { data: zones } = await supabase.from('delivery_zones').select('id, name, city, pincode, pincodes, delivery_charge, free_above');
-                                    const activeZones = zones || deliveryZones;
-
-                                    const matchedZone = activeZones.find((zone: any) => {
-                                      const pincodesStr = zone.pincodes || zone.pincode || "";
-                                      const pincodesArr = pincodesStr.split(",").map((p: string) => p.trim());
-                                      return pincodesArr.includes(val);
+                                    setPincodeStatus({
+                                      type: 'success',
+                                      message: "Area details fetched successfully."
                                     });
-
-                                    if (matchedZone) {
-                                      const charge = Number(matchedZone.delivery_charge) || 0;
-                                      setPincodeStatus({
-                                        type: 'success',
-                                        message: `Serviceable Area! Shipping: ₹${charge} | Delivery: ${matchedZone.estimated_days || '1-2 Days'}`
-                                      });
-                                    } else {
-                                      setPincodeStatus({
-                                        type: 'warning',
-                                        message: "This area is outside our home delivery region."
-                                      });
-                                    }
                                   } else {
                                     setPincodeStatus({
                                       type: 'error',
@@ -1920,7 +1898,7 @@ function AccountContent() {
                               required
                             >
                               <option value="">Select City</option>
-                              {Array.from(new Set([...DEFAULT_CITIES, ...customCities])).map(city => (
+                              {Array.from(new Set([...DEFAULT_CITIES, ...customCities])).filter(Boolean).sort().map((city) => (
                                 <option key={city} value={city}>{city}</option>
                               ))}
                             </select>

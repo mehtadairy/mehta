@@ -9,6 +9,7 @@ interface CustomerProfile {
   name: string | null;
   full_name?: string | null; // Support fallback mappings
   email: string | null;
+  email_verified?: boolean;
   phone: string | null;
   profile_image?: string | null;
   avatar_url?: string | null; // Support fallback mappings
@@ -48,6 +49,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
             name: data.user.name || data.user.full_name || null,
             full_name: data.user.name || data.user.full_name || null,
             email: data.user.email || null,
+            email_verified: data.user.email_verified || false,
             phone: data.user.phone || null,
             profile_image: data.user.profile_image || data.user.avatar_url || null,
             avatar_url: data.user.profile_image || data.user.avatar_url || null,

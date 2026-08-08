@@ -1,4 +1,42 @@
-import { StyleSheet } from '@react-pdf/renderer';
+import { StyleSheet, Font } from '@react-pdf/renderer';
+
+// Register Noto Sans to support Indian Rupee Symbol (₹) and other Unicode elements
+Font.register({
+  family: 'Noto Sans',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf',
+      fontWeight: 400
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyDPA99d.ttf',
+      fontWeight: 500
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAjBN9d.ttf',
+      fontWeight: 600
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf',
+      fontWeight: 700
+    }
+  ]
+});
+
+export const formatIndianCurrency = (num: number): string => {
+  const parts = Number(num || 0).toFixed(2).split('.');
+  const integerPart = parts[0];
+  const decimalPart = parts[1];
+  
+  // Format integer part to Indian numbering format (e.g., 2,00,000.00)
+  let lastThree = integerPart.substring(integerPart.length - 3);
+  const otherParts = integerPart.substring(0, integerPart.length - 3);
+  if (otherParts !== '') {
+    lastThree = ',' + lastThree;
+  }
+  const formattedInteger = otherParts.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+  return `₹${formattedInteger}.${decimalPart}`;
+};
 
 export const COLORS = {
   background: '#ffffff',
@@ -17,7 +55,7 @@ export const COLORS = {
 export const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.background,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Noto Sans',
     paddingBottom: 40,
     fontSize: 9,
     color: COLORS.textDark,

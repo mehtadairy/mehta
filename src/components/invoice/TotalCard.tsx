@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from '@react-pdf/renderer';
-import { styles as globalStyles, COLORS } from './invoiceStyles';
+import { styles as globalStyles, COLORS, formatIndianCurrency } from './invoiceStyles';
 
 const localStyles = StyleSheet.create({
   container: {
@@ -32,6 +32,7 @@ const localStyles = StyleSheet.create({
     color: '#D97706',
     fontSize: 18,
     fontWeight: 700,
+    textAlign: 'right',
   },
   wordsText: {
     fontSize: 9,
@@ -68,28 +69,28 @@ export const TotalCard = ({ subtotal, delivery, discount, gst, grandTotal }: Tot
   <View style={localStyles.container}>
     <View style={localStyles.totalRow}>
       <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Subtotal</Text>
-      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{subtotal.toFixed(2)}</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827', textAlign: 'right', minWidth: 100 }]}>{formatIndianCurrency(subtotal)}</Text>
     </View>
     <View style={localStyles.totalRow}>
       <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Delivery Charges</Text>
-      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{delivery.toFixed(2)}</Text>
+      <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827', textAlign: 'right', minWidth: 100 }]}>{formatIndianCurrency(delivery)}</Text>
     </View>
     {discount > 0 && (
       <View style={localStyles.totalRow}>
         <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>Discount</Text>
-        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#10A314' }]}>-₹{discount.toFixed(2)}</Text>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#10A314', textAlign: 'right', minWidth: 100 }]}>-{formatIndianCurrency(discount)}</Text>
       </View>
     )}
     {gst > 0 && (
       <View style={localStyles.totalRow}>
         <Text style={[globalStyles.cardLabel, { fontSize: 10 }]}>GST Included (18%)</Text>
-        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827' }]}>₹{gst.toFixed(2)}</Text>
+        <Text style={[globalStyles.cardLabel, { fontSize: 10, color: '#111827', textAlign: 'right', minWidth: 100 }]}>{formatIndianCurrency(gst)}</Text>
       </View>
     )}
     
     <View style={localStyles.grandTotalBox}>
       <Text style={localStyles.grandTotalLabel}>Grand Total</Text>
-      <Text style={localStyles.grandTotalValue}>₹{grandTotal.toFixed(2)}</Text>
+      <Text style={[localStyles.grandTotalValue, { minWidth: 120 }]}>{formatIndianCurrency(grandTotal)}</Text>
     </View>
   </View>
 );

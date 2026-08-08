@@ -5,6 +5,7 @@ import { WhatsAppService } from '@/lib/services/whatsapp';
 import { verifyCustomerSession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 import { generateOrderNumber } from '@/lib/order-utils';
+import { getShippingSettings, calculateSlabShipping } from '@/lib/services/shipping-calculator';
 
 export async function POST(request: Request) {
   try {
@@ -82,25 +83,10 @@ export async function POST(request: Request) {
 
     if (shippingAddress && shippingAddress.id !== 'pickup') {
       const userPincode = (shippingAddress.pincode || '').trim();
-      const { data: zones, error: zonesError } = await supabase
-        .from('delivery_zones')
-        .select('*');
-
-      if (!zonesError && zones) {
-        const matchedZone = zones.find((zone: any) => {
-          const pincodesStr = zone.pincodes || zone.pincode || '';
-          const pincodesArr = pincodesStr.split(',').map((p: string) => p.trim());
-          return pincodesArr.includes(userPincode);
-        });
-
-        if (matchedZone) {
-          if (matchedZone.free_delivery_above && serverSubtotal >= Number(matchedZone.free_delivery_above)) {
-            deliveryCharge = 0;
-          } else {
-            deliveryCharge = Number(matchedZone.delivery_charge) || 0;
-          }
-        }
-      }
+      const userState = (shippingAddress.state || '').trim();
+      const settings = await getShippingSettings();
+      const calculation = calculateSlabShipping(orderPayload.items || [], { pincode: userPincode, state: userState }, settings);
+      deliveryCharge = calculation.totalShippingCharge;
     }
 
     const discountVal = Math.max(0, Number(orderPayload?.discount) || 0);
