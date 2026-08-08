@@ -8,10 +8,13 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code');
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
-  const redirect = requestUrl.searchParams.get('redirect') || requestUrl.searchParams.get('next') || '/account';
   const origin = requestUrl.origin;
 
   const cookieStore = await cookies();
+
+  // Read post-login destination if stored in mehta_auth_redirect cookie
+  const cookieRedirect = cookieStore.get('mehta_auth_redirect')?.value;
+  const redirectPath = cookieRedirect ? decodeURIComponent(cookieRedirect) : (requestUrl.searchParams.get('redirect') || requestUrl.searchParams.get('next') || '/account');
 
   console.log('[OAuth Callback] Incoming request', {
     codePresent: Boolean(code),
@@ -36,8 +39,11 @@ export async function GET(request: Request) {
   }
 
   // Target redirect destination
-  const targetRedirectUrl = new URL(redirect, origin);
+  const targetRedirectUrl = new URL(redirectPath, origin);
   const response = NextResponse.redirect(targetRedirectUrl);
+
+  // Clear transient mehta_auth_redirect cookie
+  response.cookies.set('mehta_auth_redirect', '', { path: '/', maxAge: 0 });
 
   // 3. Create Server-Side Supabase Client with @supabase/ssr
   const supabase = createServerClient(
@@ -62,15 +68,19 @@ export async function GET(request: Request) {
   const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   const exchangeSuccess = Boolean(exchangeData?.session && !exchangeError);
-  console.log('[OAuth Callback] Session Exchange', {
-    exchangeSuccess,
-    userAuthenticated: Boolean(exchangeData?.session?.user),
-  });
 
   if (exchangeError || !exchangeData?.session?.user) {
-    console.error('[OAuth Callback] PKCE exchange failed:', exchangeError?.message);
+    console.error('[OAuth Callback] PKCE Exchange Error Details:', {
+      message: exchangeError?.message,
+      status: exchangeError?.status,
+      name: exchangeError?.name,
+      codePresent: Boolean(code),
+      verifierCookiePresent: cookieStore.getAll().some((c) => c.name.includes('code-verifier')),
+      allCookieNames: cookieStore.getAll().map((c) => c.name),
+    });
+    
     const loginErrorUrl = new URL('/login', origin);
-    loginErrorUrl.searchParams.set('error', 'Failed to complete Google authentication session exchange');
+    loginErrorUrl.searchParams.set('error', exchangeError?.message || 'Failed to complete Google authentication session exchange');
     return NextResponse.redirect(loginErrorUrl);
   }
 
@@ -108,6 +118,5 @@ export async function GET(request: Request) {
     resultingCookieNames: response.cookies.getAll().map((c) => c.name),
   });
 
-  // Return response containing all newly set HTTP-only cookies
   return response;
 }

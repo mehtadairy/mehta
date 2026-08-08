@@ -96,10 +96,12 @@ function LoginContent() {
       await browserSupabase.auth.signOut().catch(() => {});
       
       const redirectParam = searchParams.get('redirect');
-      const callbackUrl = new URL('/auth/callback', window.location.origin);
       if (redirectParam) {
-        callbackUrl.searchParams.set('redirect', redirectParam);
+        document.cookie = `mehta_auth_redirect=${encodeURIComponent(redirectParam)}; path=/; max-age=300; SameSite=Lax`;
       }
+
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const callbackUrl = `${siteUrl.replace(/\/$/, '')}/auth/callback`;
 
       const { error } = await browserSupabase.auth.signInWithOAuth({
         provider: 'google',
@@ -108,7 +110,7 @@ function LoginContent() {
             access_type: 'offline',
             prompt: 'consent',
           },
-          redirectTo: callbackUrl.toString(),
+          redirectTo: callbackUrl,
         },
       });
       if (error) throw error;

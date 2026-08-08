@@ -7,9 +7,17 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
 // Legacy standard client for public data fetching (products, categories, etc.)
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
 // SSR-compatible browser client for Authentication
 export function createBrowserSupabaseClient() {
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  if (typeof window === 'undefined') {
+    return createBrowserClient(supabaseUrl, supabaseKey);
+  }
+  if (!browserClient) {
+    browserClient = createBrowserClient(supabaseUrl, supabaseKey);
+  }
+  return browserClient;
 }
 
 import { Product, Category, sortCategories } from './types';
