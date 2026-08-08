@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock.supabase.co';
@@ -10,32 +10,27 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 // Legacy standard client for server-side scripts (bypasses RLS)
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
-// SSR-compatible Server Client for Authentication
-export function createSSRServerClient() {
-  return createServerClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key', {
-    cookies: {
-      async get(name: string) {
-        const cookieStore = await cookies();
-        return cookieStore.get(name)?.value;
+// SSR-compatible Server Client for Authentication (@supabase/ssr 0.3.0+ pattern)
+export async function createSSRServerClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    supabaseUrl,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key',
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            // Ignored if called from Server Component
+          }
+        },
       },
-      async set(name: string, value: string, options: CookieOptions) {
-        try {
-          const cookieStore = await cookies();
-          cookieStore.set({ name, value, ...options });
-        } catch (error) {
-          // The `set` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing user sessions.
-        }
-      },
-      async remove(name: string, options: CookieOptions) {
-        try {
-          const cookieStore = await cookies();
-          cookieStore.set({ name, value: '', ...options });
-        } catch (error) {
-          // The `delete` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing user sessions.
-        }
-      },
-    },
-  });
+    }
+  );
 }

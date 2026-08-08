@@ -93,8 +93,7 @@ function LoginContent() {
     setIsLoading(true);
     try {
       const browserSupabase = createBrowserSupabaseClient();
-      await browserSupabase.auth.signOut().catch(() => {});
-      
+
       const redirectParam = searchParams.get('redirect');
       if (redirectParam) {
         document.cookie = `mehta_auth_redirect=${encodeURIComponent(redirectParam)}; path=/; max-age=300; SameSite=Lax`;
