@@ -20,29 +20,17 @@ const keyMode = rzpKeyId.startsWith('rzp_live_') ? 'LIVE' : (rzpKeyId.startsWith
 
 /**
  * Generate an order number using the correct RPC function name.
- * Falls back to a timestamp-based number only if DB is unreachable.
+ * We strictly do NOT fallback to timestamp-based numbers.
  */
 async function generateOrderNumber(): Promise<string> {
-  // The production DB has get_next_order_number (not generate_daily_order_number)
   const { data, error } = await supabase.rpc('get_next_order_number');
   if (!error && data) {
     console.log(`[PaymentVerify] Order number generated via get_next_order_number: ${data}`);
     return data;
   }
-  // Log the RPC error safely
-  if (error) {
-    console.error('[PaymentVerify] get_next_order_number RPC error:', { code: error.code, message: error.message });
-    // Try the old name as secondary fallback
-    const { data: d2, error: e2 } = await supabase.rpc('generate_daily_order_number');
-    if (!e2 && d2) {
-      console.log('[PaymentVerify] Order number generated via generate_daily_order_number (fallback)');
-      return d2;
-    }
-    console.error('[PaymentVerify] Both RPC functions failed. Using timestamp fallback.', e2?.message);
-  }
-  // Last resort: timestamp-based number to avoid blocking the payment
-  const ts = Date.now().toString(36).toUpperCase();
-  return `ORD-${ts}`;
+  
+  console.error('[PaymentVerify] get_next_order_number RPC error:', { code: error?.code, message: error?.message });
+  throw new Error("Failed to generate order number from database sequence.");
 }
 
 export async function POST(request: Request) {

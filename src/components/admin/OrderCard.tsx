@@ -273,6 +273,30 @@ export function OrderCard({
               </div>
             </div>
 
+            {/* Distinct Timestamps (Only shown if they exist) */}
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 flex flex-col sm:flex-row flex-wrap gap-4 text-[11px]">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-bold text-gray-400 uppercase tracking-wider text-[9px]">Order Placed</span>
+                <span className="font-semibold text-gray-800">{order.date}</span>
+              </div>
+              {order.paymentCompletedAt && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-emerald-600 uppercase tracking-wider text-[9px]">Payment Completed</span>
+                  <span className="font-semibold text-emerald-900">
+                    {new Date(order.paymentCompletedAt).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' })} • {new Date(order.paymentCompletedAt).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                  </span>
+                </div>
+              )}
+              {order.cancelledAt && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-rose-600 uppercase tracking-wider text-[9px]">Cancelled At</span>
+                  <span className="font-semibold text-rose-900">
+                    {new Date(order.cancelledAt).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' })} • {new Date(order.cancelledAt).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                  </span>
+                </div>
+              )}
+            </div>
+
             {/* Complete Items Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {order.items.map((item, idx) => (

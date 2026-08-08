@@ -299,7 +299,7 @@ export default function AdminPanel() {
                   const formattedOrders = data.orders.map((o: any) => ({
                       id: o.id,
                       orderNumber: o.order_number,
-                      date: new Date(o.created_at).toLocaleDateString(),
+                      date: new Date(o.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' }) + ' • ' + new Date(o.created_at).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
                       createdAtRaw: o.created_at,
                       status: o.status,
                       total: o.total,
@@ -381,7 +381,7 @@ export default function AdminPanel() {
                         const fetchedOrders = data.orders.map((o: any) => ({
                             id: o.id,
                             orderNumber: o.order_number,
-                            date: new Date(o.created_at).toLocaleDateString(),
+                            date: new Date(o.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' }) + ' • ' + new Date(o.created_at).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
                             createdAtRaw: o.created_at,
                             status: o.status,
                             total: o.total,

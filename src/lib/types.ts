@@ -98,6 +98,9 @@ export interface Order {
   cancelled_at?: string;
   invoice_url?: string;
   paid_at?: string;
+  paymentCompletedAt?: string;
+  cancelledAt?: string;
+  createdAtRaw?: string;
   schema_drift?: boolean;
   [key: string]: any;
 }

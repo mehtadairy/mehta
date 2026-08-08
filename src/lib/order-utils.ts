@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 export async function generateOrderNumber(supabase: SupabaseClient): Promise<string> {
   try {
-    const { data: newOrd, error: rpcError } = await supabase.rpc('generate_daily_order_number');
+    const { data: newOrd, error: rpcError } = await supabase.rpc('get_next_order_number');
     
     if (rpcError) {
       console.error("[generateOrderNumber] RPC Error:", rpcError);
@@ -16,8 +16,8 @@ export async function generateOrderNumber(supabase: SupabaseClient): Promise<str
     return newOrd;
   } catch (e) {
     console.error("[generateOrderNumber] Critical Error:", e);
-    // If the database fails, we must throw to prevent duplicate numbers. 
-    // We strictly do NOT fallback to Math.random() as per requirements.
+    // If the database fails, we must throw to prevent duplicate/random numbers. 
+    // We strictly do NOT fallback to timestamps or Math.random() as per requirements.
     throw e;
   }
 }
