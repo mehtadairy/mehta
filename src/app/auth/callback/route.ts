@@ -4,15 +4,24 @@ import { cookies } from 'next/headers';
 import { syncGoogleUserOnServer, setCustomerSessionCookie } from './actions';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const error = searchParams.get('error');
-  const errorDescription = searchParams.get('error_description');
-  const redirect = searchParams.get('redirect') || searchParams.get('next') || '/account';
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const error = requestUrl.searchParams.get('error');
+  const errorDescription = requestUrl.searchParams.get('error_description');
+  const redirect = requestUrl.searchParams.get('redirect') || requestUrl.searchParams.get('next') || '/account';
+  const origin = requestUrl.origin;
+
+  const cookieStore = await cookies();
+
+  console.log('[OAuth Callback] Incoming request', {
+    codePresent: Boolean(code),
+    errorPresent: Boolean(error),
+    cookieNames: cookieStore.getAll().map((c) => c.name),
+  });
 
   // 1. Handle OAuth Provider Error
   if (error) {
-    console.error('OAuth provider error in callback:', error);
+    console.error('[OAuth Callback] Provider error:', errorDescription || error);
     const loginErrorUrl = new URL('/login', origin);
     loginErrorUrl.searchParams.set('error', errorDescription || error);
     return NextResponse.redirect(loginErrorUrl);
@@ -20,13 +29,13 @@ export async function GET(request: Request) {
 
   // 2. Validate PKCE Authorization Code
   if (!code) {
-    console.error('Missing authorization code in OAuth callback');
+    console.error('[OAuth Callback] Missing authorization code');
     const loginErrorUrl = new URL('/login', origin);
     loginErrorUrl.searchParams.set('error', 'Missing authorization code from login provider');
     return NextResponse.redirect(loginErrorUrl);
   }
 
-  const cookieStore = await cookies();
+  // Target redirect destination
   const targetRedirectUrl = new URL(redirect, origin);
   const response = NextResponse.redirect(targetRedirectUrl);
 
@@ -52,8 +61,14 @@ export async function GET(request: Request) {
   // 4. Exchange PKCE authorization code for a session
   const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
+  const exchangeSuccess = Boolean(exchangeData?.session && !exchangeError);
+  console.log('[OAuth Callback] Session Exchange', {
+    exchangeSuccess,
+    userAuthenticated: Boolean(exchangeData?.session?.user),
+  });
+
   if (exchangeError || !exchangeData?.session?.user) {
-    console.error('PKCE exchange error:', exchangeError?.message);
+    console.error('[OAuth Callback] PKCE exchange failed:', exchangeError?.message);
     const loginErrorUrl = new URL('/login', origin);
     loginErrorUrl.searchParams.set('error', 'Failed to complete Google authentication session exchange');
     return NextResponse.redirect(loginErrorUrl);
@@ -63,20 +78,35 @@ export async function GET(request: Request) {
   const email = user.email || '';
   const name = user.user_metadata?.full_name || user.user_metadata?.name || 'Google User';
 
+  let customerSessionCreated = false;
+  let customerFound = false;
+
   if (email) {
     // 5. Sync or auto-create customer profile cleanly on the server
     const { success, customer, error: syncError } = await syncGoogleUserOnServer(user.id, email, name);
+    customerFound = Boolean(success && customer);
 
     if (success && customer) {
-      // 6. Issue secure mehta_customer_token HTTP-only cookie for customer JWT auth
-      const tokenResult = await setCustomerSessionCookie(customer);
+      // 6. Issue secure mehta_customer_token HTTP-only cookie on response
+      const tokenResult = await setCustomerSessionCookie(customer, response);
+      customerSessionCreated = Boolean(tokenResult.success);
       if (!tokenResult.success) {
-        console.error('Failed to set customer session cookie:', tokenResult.error);
+        console.error('[OAuth Callback] Failed to set customer session cookie:', tokenResult.error);
       }
     } else {
-      console.error('Error syncing customer profile in callback:', syncError);
+      console.error('[OAuth Callback] Error syncing customer profile:', syncError);
     }
   }
+
+  console.log('[OAuth Callback] Result summary', {
+    codePresent: true,
+    exchangeSuccess: true,
+    userAuthenticated: true,
+    customerFound,
+    customerSessionCreated,
+    redirect: targetRedirectUrl.pathname,
+    resultingCookieNames: response.cookies.getAll().map((c) => c.name),
+  });
 
   // Return response containing all newly set HTTP-only cookies
   return response;

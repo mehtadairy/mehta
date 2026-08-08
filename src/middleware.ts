@@ -43,6 +43,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // 0. Forward authorization code to /auth/callback if Google redirected to /?code=...
+  if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
+    const callbackUrl = new URL('/auth/callback', request.url);
+    callbackUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(callbackUrl);
+  }
+
   const customerToken = request.cookies.get('mehta_customer_token')?.value;
 
   // Paths that require authentication

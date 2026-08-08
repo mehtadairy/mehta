@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { supabaseServer as supabase, createSSRServerClient } from '@/lib/supabaseServer';
 import { verifyCustomerSession } from '@/lib/auth-utils';
 import { cookies } from 'next/headers';
 
@@ -19,17 +19,11 @@ export async function GET(request: Request) {
 
     // 2. Check for authenticated session (Google Auth via Supabase SSR)
     if (!customerId) {
-      const authHeader = request.headers.get('Authorization');
-      let user = null;
-      if (authHeader) {
-        const authToken = authHeader.replace('Bearer ', '');
-        const { data } = await supabase.auth.getUser(authToken);
-        user = data?.user;
-      } else {
-        const { data } = await supabase.auth.getUser();
-        user = data?.user;
+      const ssrClient = createSSRServerClient();
+      const { data: { user } } = await ssrClient.auth.getUser();
+      if (user) {
+        customerId = user.id;
       }
-      if (user) customerId = user.id;
     }
 
     if (!customerId) {

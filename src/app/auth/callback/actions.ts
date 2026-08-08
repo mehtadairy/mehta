@@ -111,7 +111,7 @@ export async function createGoogleUserOnServer(userId: string, email: string, na
   }
 }
 
-export async function setCustomerSessionCookie(customer: any) {
+export async function setCustomerSessionCookie(customer: any, response?: any) {
   try {
     if (!customer || !customer.id) return { success: false, error: "Invalid customer payload" };
     const secret = getCustomerJWTSecret();
@@ -131,7 +131,10 @@ export async function setCustomerSessionCookie(customer: any) {
     const cookieStore = await cookies();
     const cookieOptions = getCustomerCookieOptions(headerStore.get('host'));
     cookieStore.set('mehta_customer_token', token, cookieOptions);
-    return { success: true };
+    if (response?.cookies) {
+      response.cookies.set('mehta_customer_token', token, cookieOptions);
+    }
+    return { success: true, token };
   } catch (err: any) {
     console.error("Failed to set customer session cookie:", err);
     return { success: false, error: err.message };

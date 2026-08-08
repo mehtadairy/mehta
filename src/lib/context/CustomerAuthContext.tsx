@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createBrowserSupabaseClient } from '@/lib/supabaseClient';
 
 interface CustomerProfile {
   id: string;
@@ -71,10 +71,11 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       }
       
       // If not authenticated via custom JWT, try standard Supabase user (Google Auth)
-      const { data: { user } } = await supabase.auth.getUser();
+      const browserSupabase = createBrowserSupabaseClient();
+      const { data: { user } } = await browserSupabase.auth.getUser();
       if (user) {
         // Fetch profile using customer table
-        let { data: customer } = await supabase
+        let { data: customer } = await browserSupabase
           .from('customers')
           .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
           .or(`id.eq.${user.id},auth_user_id.eq.${user.id}`)
@@ -82,7 +83,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
 
         // Auto-heal/sync if profile is not found by ID, but they have an email matching a legacy profile
         if (!customer && user.email) {
-          const { data: legacyCustomer } = await supabase
+          const { data: legacyCustomer } = await browserSupabase
             .from('customers')
             .select('id, name, full_name, email, phone, profile_image, avatar_url, auth_user_id')
             .eq('email', user.email)
@@ -90,7 +91,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
             
           if (legacyCustomer) {
             console.log("[AUTH-DEBUG] Linking legacy customer record by email:", user.email);
-            const { data: updatedCustomer } = await supabase
+            const { data: updatedCustomer } = await browserSupabase
               .from('customers')
               .update({ auth_user_id: user.id, auth_provider: 'google' })
               .eq('id', legacyCustomer.id)
@@ -197,7 +198,8 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       await fetch('/api/auth/logout', { method: 'POST' }).catch(err => console.error(err));
       
       // 2. Sign out of Supabase
-      await supabase.auth.signOut().catch(err => console.error(err));
+      const browserSupabase = createBrowserSupabaseClient();
+      await browserSupabase.auth.signOut().catch(err => console.error(err));
 
       // 3. Clear storage
       localStorage.removeItem("mehta_logged_in");
